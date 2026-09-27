@@ -21,21 +21,21 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The passes in an EGL context on the machine's GPU render what core's CPU pipeline renders, within [TOLERANCE] of 8
- * bits, as the web page's PassesTest holds WebGL 2 to it; the map of differences, whose pixels near the threshold may
- * cross it for images a step apart, is held to the share core counts. [EsPassesTest] runs them over OpenGL ES 3.0, as
- * Linux and ANGLE draw, and [DesktopGlPassesTest] over desktop OpenGL 3.3 core, as WGL draws on Windows.
+ * The passes in a context [TestApi] opens render what core's CPU pipeline renders, within [TOLERANCE] of 8 bits, as
+ * the web page's PassesTest holds WebGL 2 to it; the map of differences, whose pixels near the threshold may cross it
+ * for images a step apart, is held to the share core counts. [EsPassesTest] runs them over OpenGL ES 3.0, as Linux and
+ * ANGLE draw, and [DesktopGlPassesTest] over desktop OpenGL 3.3 core, as WGL draws on Windows.
  *
  * Every test runs on the one thread JUnit runs a class on, where its context is current.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class PassesTest(private val api: EglContext.Api) {
+abstract class PassesTest(private val api: TestApi) {
     private lateinit var context: GlContext
     private lateinit var passes: Passes
 
     @BeforeAll
     fun makeContext() {
-        context = EglContext.onDevice(api)
+        context = api.open()
         println("${api.title}: ${context.renderer}, ${context.version}")
         passes = Passes(context.gl)
     }
@@ -148,6 +148,6 @@ abstract class PassesTest(private val api: EglContext.Api) {
     }
 }
 
-class EsPassesTest : PassesTest(EglContext.Api.ES)
+class EsPassesTest : PassesTest(TestApi.ES)
 
-class DesktopGlPassesTest : PassesTest(EglContext.Api.DESKTOP)
+class DesktopGlPassesTest : PassesTest(TestApi.DESKTOP)

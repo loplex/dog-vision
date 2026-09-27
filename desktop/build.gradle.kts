@@ -15,14 +15,20 @@ plugins {
 /** The class whose main the window and its JARs start with. */
 val mainClassName = "cz.loplex.dogvision.desktop.MainKt"
 
-/** LWJGL's native part for this machine, which only Linux on x86-64 has been tried on. */
-val lwjglNatives = "natives-linux"
+/** Whether this machine is Windows, where the run and the tests draw through ANGLE and WGL, as the window does. */
+val onWindows = System.getProperty("os.name").startsWith("Windows")
 
-/** The LWJGL modules with a native part on this machine: desktop GL's is for the tests of LwjglGl through EGL. */
-val lwjglWithNatives = listOf(libs.lwjgl.asProvider(), libs.lwjgl.opengles, libs.lwjgl.opengl)
+/** LWJGL's native part for this machine: Linux's or Windows's, on x86-64. */
+val lwjglNatives = if (onWindows) "natives-windows" else "natives-linux"
+
+/** The LWJGL modules with a native part on Linux: desktop GL's is for the tests of LwjglGl through EGL. */
+val lwjglWithLinuxNatives = listOf(libs.lwjgl.asProvider(), libs.lwjgl.opengles, libs.lwjgl.opengl)
 
 /** The LWJGL modules with a native part on Windows, where GLFW makes the WGL context. */
-val lwjglWithWindowsNatives = lwjglWithNatives + libs.lwjgl.glfw
+val lwjglWithWindowsNatives = lwjglWithLinuxNatives + libs.lwjgl.glfw
+
+/** The LWJGL modules with a native part on this machine. */
+val lwjglWithNatives = if (onWindows) lwjglWithWindowsNatives else lwjglWithLinuxNatives
 
 kotlin {
     jvm {
@@ -48,6 +54,7 @@ kotlin {
             for (library in lwjglWithNatives) {
                 runtimeOnly("${library.get().module}:${libs.versions.lwjgl.get()}:$lwjglNatives")
             }
+            if (onWindows) runtimeOnly(libs.nucleus.angle.natives)
         }
         jvmTest.dependencies {
             implementation(project(":testing"))
