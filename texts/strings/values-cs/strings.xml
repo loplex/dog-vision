@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Psí vidění</string>
+    <string name="original">originál</string>
+    <string name="species_label">%1$s (%2$s)</string>
+    <string name="difference_caption">červeně: znatelně odlišné (%1$s pixelů)</string>
+    <string name="percent">%1$s %%</string>
+    <string name="toggle_controls">Zobrazit nebo skrýt nastavení</string>
+    <string name="species">Druh</string>
+    <string name="simulation">Simulace</string>
+    <string name="adaptation">Adaptace na scénu [%]</string>
+    <string name="strength">Síla simulace [%]</string>
+    <string name="colour_saturation">Sytost barev</string>
+    <string name="chroma_fixed">Daná projekcí</string>
+    <string name="chroma_rnl">Podle rozlišování (RNL)</string>
+    <string name="acuity">Ostrost</string>
+    <string name="acuity_blur">Rozostřit na ostrost druhu</string>
+    <string name="field_of_view">Šířka záběru [°]</string>
+    <string name="view">Zobrazení</string>
+    <string name="side_by_side">Vedle sebe</string>
+    <string name="compare_with">Porovnat s</string>
+    <string name="difference">Mapa rozdílů</string>
+    <string name="reset">Obnovit</string>
+    <string name="language">Jazyk</string>
+    <string name="system_language">Podle systému</string>
+    <string name="selected_species">Vybraný druh</string>
+    <string name="about">Co to znamená</string>
+    <string name="close">Zavřít</string>
+    <string name="fact_colour_vision">Barevné vidění</string>
+    <string name="fact_cone_peaks">Maxima čípků</string>
+    <string name="fact_s_cones">Čípky S</string>
+    <string name="fact_l_to_m">Poměr L : M</string>
+    <string name="fact_neutral_point">Neutrální bod</string>
+    <string name="fact_rnl_scale">Škála RNL</string>
+    <string name="fact_acuity">Ostrost</string>
+    <plurals name="cone_types">
+        <item quantity="one">%1$s, %2$d typ čípků</item>
+        <item quantity="few">%1$s, %2$d typy čípků</item>
+        <item quantity="many">%1$s, %2$d typu čípků</item>
+        <item quantity="other">%1$s, %2$d typů čípků</item>
+    </plurals>
+    <string name="percent_range">%1$s–%2$s %%</string>
+    <string name="share_of_cones">%1$s čípků</string>
+    <string name="assumed">předpoklad</string>
+    <string name="no_colour_axis">žádná barevná osa</string>
+    <string name="sees_only_grey">(vidí jen šeď)</string>
+    <string name="rnl_of_fixed">%1$s vůči projekci</string>
+    <string name="gains_and">" a "</string>
+    <string name="not_found_measured">měření nenalezeno;</string>
+    <string name="left_sharp">ponecháno ostré</string>
+    <string name="acuity_value">%1$s c/°</string>
+    <string name="acuity_across">%1$s c/° vodorovně,</string>
+    <string name="acuity_up">%1$s svisle</string>
+    <string name="note_l_shifted">L posunutý o 10 nm, viz text</string>
+    <string name="note_m_shifted">M posunutý o 10 nm, viz text</string>
+    <string name="note_s_assumed">S předpokládán</string>
+    <string name="note_range_11_7_to_14">11,7 až 14</string>
+    <string name="note_range_1_8_to_3_8">1,8 až 3,8</string>
+    <string name="note_about_60">asi 60</string>
+    <string name="note_in_air">na vzduchu</string>
+    <string name="note_stripes_8_2_arcmin">pruhy 8,2′</string>
+    <string name="about_species" formatted="false">Živočich, jehož vidění se simuluje, s typem barevného vidění v závorce.\n\nVětšina dichromatických savců vypadá velmi podobně: mají stejné dva geny pro čípky, naladěné nanejvýš pár desítek nanometrů od sebe. Velké skoky jsou mezi typy barevného vidění, ne mezi druhy jednoho typu.</string>
+    <string name="about_adaptation" formatted="false">Jak moc se čípky přizpůsobí scéně místo dennímu světlu.\n\nPři 0 je oko adaptované na denní světlo, takže scéna osvětlená teplým západem slunce vypadá teple. Při 100 se signál každého čípku přeškáluje tak, aby průměrná barva scény byla neutrální, podobně jako oko, které je v tom světle už chvíli, přestane jeho nádech vnímat (von Kriesova adaptace na „šedý svět“).</string>
+    <string name="about_strength" formatted="false">Míchá simulaci s původním obrazem: 0 ukáže originál, 100 plnou simulaci.\n\nMezi tím barvy, které živočich nerozliší, splynou jen zčásti.</string>
+    <string name="about_chroma_fixed" formatted="false">Barvy, které živočich nerozliší, splynou a ostatní si ponechají sytost, jakou jim projekce zrovna dá.\n\nSplynutí říká, které barvy vypadají stejně, ale ne, jak živé jsou ostatní: to nemá přirozené měřítko. U trichromata nesplyne nic, takže obraz zůstane beze změny.</string>
+    <string name="about_chroma_rnl" formatted="false">Sytost se přeškáluje tak, aby člověk, který se na obraz dívá, rozlišil stejně barevných kroků, kolik by jich živočich rozlišil ve scéně. Živočich, který rozlišuje barvy hůř než my, dostane bledší barvy.\n\nKroky počítá model šumem omezených receptorů (RNL) z podílu jednotlivých druhů čípků; faktory jsou v řádku Škála RNL v panelu Vybraný druh.\n\nPředpokládá, že čípky živočicha jsou stejně zašuměné jako naše, a je sladěný poblíž šedé, takže výrazně syté barvy jsou extrapolované.</string>
+    <string name="about_acuity_blur" formatted="false">Odstraní detail jemnější, než druh rozliší, rozostřením podle jeho změřené ostrosti (řádek Ostrost v panelu Vybraný druh).\n\nRozostření je vidět, jen když má obraz víc pixelů na stupeň, než druh rozliší. Obraz z kamery široký 640 pixelů, který zabírá 60°, má asi 11 pixelů na stupeň, takže rozostření psa je menší než půl pixelu a neviditelné, kdežto velká fotka ho ukáže zřetelně.</string>
+    <string name="about_field_of_view" formatted="false">Kolik stupňů zorného pole obraz zabírá zleva doprava. Rozostření se určuje na stupeň, takže tohle rozhoduje, kolik pixelů je široké: poloviční úhel znamená poloviční rozostření.\n\n60° je obvyklé u kamery. Výsledek sedí, když se na obraz díváte pod stejným úhlem; zmenšený ho vaše vlastní ostrost rozostří ještě víc.</string>
+    <string name="about_side_by_side" formatted="false">Ukáže vedle simulace druhý obraz: originál, nebo jiný druh vybraný v poli Porovnat s. Vypnuté ukáže jen simulaci.</string>
+    <string name="about_compare_with" formatted="false">Co ukazuje druhý obraz: originál, nebo jiný druh vykreslený se stejným nastavením, aby šlo dva živočichy přímo porovnat.</string>
+    <string name="about_difference" formatted="false">Přidá třetí obraz: šedě tam, kde první dva obrazy vypadají stejně, červeně tam, kde se liší o víc než jeden právě postřehnutelný rozdíl, a tím sytěji, čím je rozdíl větší.\n\nPorovnává oba obrazy tak, jak je vidí člověk, v prostoru CIELAB, kde je jeden právě postřehnutelný rozdíl asi ΔE 2,3 (Mahy et al. 1994), takže zachytí rozdíly v barvě i v ostrosti.\n\nMěří dvě vykreslení, každé už omezené na to, co jeho živočich rozliší. Práh je průměrný, takže okraj červené oblasti je přibližný.</string>
+    <string name="about_reset" formatted="false">Vrátí všechny ovládací prvky na výchozí hodnoty.</string>
+    <string name="about_fact_colour_vision" formatted="false">Kolik druhů čípků živočich má, a tedy kolik nezávislých barevných signálů jeho oko vysílá.\n\nTrichromat jako my má tři. Kamera nezaznamená nic, co by mu splývalo, takže jeho obraz zůstane beze změny, pokud Sytost barev není nastavená Podle rozlišování.\n\nDichromat má dva. Barvy, které se liší jen v jednom směru, pro něj vypadají stejně, a simulace je ukáže na ose modrá–žlutá.\n\nČípkový monochromat má jeden a vidí odstíny šedi.</string>
+    <string name="about_fact_cone_peaks" formatted="false">Vlnová délka, na kterou je každý druh čípku nejcitlivější: S pro krátké, M pro střední a L pro dlouhé vlnové délky. Delší čípek dichromata je uveden jako L, ať ho zdroj nazývá jakkoli.\n\nV závorce je studie, ze které jsou maxima převzata; README projektu dog-vision uvádí všechny zdroje celé v části References. Poznámka za citací označuje hodnotu, která není prostě změřená, třeba záměrně posunutý čípek nebo předpokládanou hodnotu.\n\nKaždý čípek je modelován jen z tohoto maxima, šablonou pigmentu, kterou popsali Govardovskii et al. (2000). Jeho citlivost je v polovině výšky široká asi 100 nm, a proto posun o pár nanometrů mezi druhy změní málo.\n\nLidské čípky mají maxima 420,7; 530,3 a 558,9 nm.</string>
+    <string name="about_fact_s_cones" formatted="false">Podíl čípků S mezi všemi čípky, se zdrojem. Kde zdroj uvádí rozpětí napříč sítnicí, použije se jeho střed.\n\nPoužívá ho jen sytost barev Podle rozlišování (RNL): čím méně čípků daného druhu, tím zašuměnější je jejich signál a tím větší musí být barevný rozdíl podél jejich osy, aby byl postřehnutelný.\n\n„Předpoklad“ znamená, že měření nebylo nalezeno a použije se 10 %, střed rozpětí změřených druhů.</string>
+    <string name="about_fact_l_to_m" formatted="false">Kolik čípků L má trichromat na každý čípek M. Používá ho jen sytost barev Podle rozlišování (RNL).\n\nLidé s normálním barevným viděním mají od zhruba dvojnásobku čípků L oproti M až po opačný poměr (Roorda &amp; Williams 1999), proto má každý trichromat 1 : 1 a hodnota je označená jako předpoklad.</string>
+    <string name="about_fact_neutral_point" formatted="false">Vlnová délka čistého spektrálního světla, které dichromat nerozezná od bílé. Kratší vlnové délky mu připadají namodralé, delší nažloutlé.\n\nHodnota pochází z modelu, spočítaná z maxim čípků. U psa odpovídá změřenému neutrálnímu bodu kolem 480 nm (Neitz, Geist &amp; Jacobs 1989). U lidského deuteranopa vychází výrazně pod změřenými 505 nm, nejspíš proto, že model nezahrnuje čočku ani makulární pigment.</string>
+    <string name="about_fact_rnl_scale" formatted="false">O kolik sytost barev Podle rozlišování (RNL) mění sytost oproti sytosti dané projekcí. Pod 1 rozlišuje druh barvy hůř než my, nad 1 lépe.\n\nVychází z modelu šumem omezených receptorů (receptor noise limited, Vorobyev &amp; Osorio 1998), který počítá právě postřehnutelné rozdíly ze šumu každého čípku, daného podílem čípků jeho druhu. Výstup se přeškáluje, dokud člověk, který se na něj dívá, nenapočítá tolik rozdílů, kolik by jich napočítal živočich. Trichromat má dvě barevné osy, a tedy dva faktory; monochromat žádný.\n\nPředpokládá, že čípky živočicha jsou stejně zašuměné jako naše, což je změřené skoro u žádného savce.</string>
+    <string name="about_fact_acuity" formatted="false">Nejjemnější pruhy, které druh rozliší, v cyklech na stupeň: dvojice jednoho tmavého a jednoho světlého pruhu v jednom stupni zorného pole. Člověk rozliší asi 72.\n\nPři zaškrtnutém Rozostřit na ostrost druhu se odstraní detail jemnější než tato hranice, stejně jako to dělá AcuityView (Caves &amp; Johnsen 2018).\n\nSkot rozliší detail vedle sebe lépe než nad sebou, protože má zornici ve tvaru vodorovného oválu. Druh bez měření zůstane ostrý.</string>
+    <string name="camera_needed">Kamera ukazuje scénu tak, jak ji vidí vybraný živočich. Povolte aplikaci kameru, aby se zobrazil živý obraz.</string>
+    <string name="allow_camera">Povolit kameru</string>
+    <string name="camera_failed">Kameru nejde otevřít: %1$s</string>
+    <string name="open_media">Otevřít fotku nebo video</string>
+    <string name="show_camera">Kamera</string>
+    <string name="switch_camera">Přepnout mezi zadní a přední kamerou</string>
+    <string name="media_failed">%1$s nejde otevřít jako fotka ani jako video</string>
+    <string name="video_failed">%1$s nejde přehrát: %2$s</string>
+    <string name="save_snapshot">Uložit snímek</string>
+    <string name="save_full_size">Uložit fotku v plném rozlišení</string>
+    <string name="save_video_full_size">Uložit video v plném rozlišení</string>
+    <string name="cancel_conversion">Zrušit převod</string>
+    <string name="saved">Uloženo %1$s do složky %2$s</string>
+    <string name="saved_video">Uloženo %1$s do složky %2$s, %3$s</string>
+    <string name="written_with_sound">%1$s (%2$s), s původním zvukem</string>
+    <string name="written_without_sound">%1$s (%2$s); originál nemá zvuk</string>
+    <string name="scaled_to">%1$s, zmenšeno na %2$s kvůli enkodéru</string>
+    <string name="written_silent">%1$s (%2$s)</string>
+    <string name="record">Nahrávat video</string>
+    <string name="stop_recording">Zastavit nahrávání</string>
+    <string name="recording">Nahrávám %1$s: %2$s</string>
+    <string name="finishing">Dokončuji %1$s</string>
+    <string name="recording_failed">Nahrávání selhalo: %1$s</string>
+    <string name="snapshot_failed">Snímek nejde uložit: %1$s</string>
+    <string name="converting">Převádím: %1$s</string>
+    <string name="conversion_failed">Převod selhal: %1$s</string>
+    <string name="too_large">fotka je na dostupnou paměť příliš velká</string>
+    <string name="storage_needed">Ukládání do galerie vyžaduje na této verzi Androidu oprávnění k úložišti.</string>
+    <string name="monochromat">monochromat</string>
+    <string name="dichromat">dichromat</string>
+    <string name="trichromat">trichromat</string>
+    <string name="species_dog">pes</string>
+    <string name="species_cat">kočka</string>
+    <string name="species_horse">kůň</string>
+    <string name="species_cow">kráva</string>
+    <string name="species_sheep">ovce</string>
+    <string name="species_goat">koza</string>
+    <string name="species_pig">prase</string>
+    <string name="species_fallow_deer">daněk</string>
+    <string name="species_white_tailed_deer">jelenec běloocasý</string>
+    <string name="species_guinea_pig">morče</string>
+    <string name="species_tree_squirrel">veverka</string>
+    <string name="species_ground_squirrel">sysel kalifornský</string>
+    <string name="species_ferret">fretka</string>
+    <string name="species_protanope">protanop</string>
+    <string name="species_deuteranope">deuteranop</string>
+    <string name="species_human">člověk</string>
+    <string name="species_protanomalous">protanomál</string>
+    <string name="species_deuteranomalous">deuteranomál</string>
+    <string name="species_macaque">makak</string>
+    <string name="species_howler_monkey">vřešťan</string>
+    <string name="species_marmoset_female">kosman, samice</string>
+    <string name="species_harbour_seal">tuleň obecný</string>
+    <string name="species_bottlenose_dolphin">delfín skákavý</string>
+
+    <!-- The language, named in itself, as a language choice lists it -->
+    <string name="language_name">Čeština</string>
+
+    <!-- What only the web page says -->
+    <string name="choose_media">Otevřete fotku nebo video nebo je sem přetáhněte a uvidíte je tak, jak je vidí vybraný živočich.</string>
+    <string name="no_webgl2">Tento prohlížeč neumí zobrazení vykreslit, protože nepodporuje WebGL 2.</string>
+    <string name="gl_failed">Tento prohlížeč neumí zobrazení vykreslit: %1$s</string>
+    <string name="snapshot_not_encoded">prohlížeč ho neumí převést do PNG</string>
+    <string name="browser_language">Podle prohlížeče</string>
+    <string name="switch_camera_short">Přepnout kameru</string>
+    <string name="camera_refused">Kamera ukazuje scénu tak, jak ji vidí vybraný živočich. Aby se zobrazil živý obraz, povolte ji stránce v prohlížeči a prohlížeči v nastavení zařízení.</string>
+    <string name="camera_none">prohlížeč žádnou kameru nenašel</string>
+    <string name="camera_busy">možná ji používá jiná aplikace, nebo ji systém prohlížeči nedovolil spustit</string>
+
+    <!-- What only the desktop window says -->
+    <string name="draw_failed">Zobrazení nejde vykreslit: %1$s</string>
+    <string name="ffmpeg_missing">Videa a kamera potřebují %1$s, který patří k ffmpeg a tady nejde spustit. Nainstalujte ffmpeg tak, aby byl v PATH.</string>
+
+    <!-- What only the command line says; option names, species ids and file names stay as they are typed -->
+    <string name="usage_synopsis">použití: dog-vision [volby] [soubor]</string>
+    <string name="usage_about">Simuluje, jak zvíře vidí barvy, na živé kameře nebo na fotce.</string>
+    <string name="usage_camera">živá kamera v okně</string>
+    <string name="usage_photo">převede fotku, zapíše photo.dog.png</string>
+    <string name="usage_window">ukáže fotku nebo video v okně</string>
+    <string name="usage_options">volby:</string>
+    <string name="usage_option_species">simulované zvíře (výchozí %1$s)</string>
+    <string name="usage_option_compare">ukáže tento druh vedle --species místo originálu</string>
+    <string name="usage_option_difference">přidá mapu míst, kde se oba obrázky znatelně liší</string>
+    <string name="usage_option_adaptation">adaptace na průměr scény, 0-1 (výchozí %1$s)</string>
+    <string name="usage_option_strength">0 = originál, 1 = plná simulace (výchozí %1$s)</string>
+    <string name="usage_option_chroma_scale">fixed nebo rnl (výchozí %1$s)</string>
+    <string name="usage_option_acuity">rozostří na zrakovou ostrost druhu</string>
+    <string name="usage_option_fov">kolik stupňů obrázek zabírá na šířku, pro --acuity (výchozí %1$s)</string>
+    <string name="usage_option_window">ukáže soubor v okně místo převodu</string>
+    <string name="usage_option_camera">kamera, kterou okno ukáže, číslovaná od 0: na Linuxu /dev/videoN (výchozí %1$s)</string>
+    <string name="usage_option_output_dir">zapíše převedený soubor tam místo vedle originálu</string>
+    <string name="usage_option_gl">jak okno kreslí na Windows: angle, nebo wgl (výchozí angle, a kde nejde spustit, wgl)</string>
+    <string name="usage_option_help">ukáže tuto nápovědu a skončí</string>
+    <string name="usage_species">druhy:</string>
+    <string name="usage_error">dog-vision: chyba: %1$s</string>
+    <string name="usage_one_file">Zadat jde jen jeden soubor, ne ještě %1$s</string>
+    <string name="usage_needs_value">%1$s potřebuje hodnotu</string>
+    <string name="usage_takes_no_value">%1$s nebere žádnou hodnotu</string>
+    <string name="usage_unknown_option">Neznámá volba %1$s</string>
+    <string name="usage_no_species">%1$s: druh %2$s neexistuje</string>
+    <string name="usage_not_chroma_scale">%1$s: %2$s není fixed ani rnl</string>
+    <string name="usage_not_number">%1$s: %2$s není číslo</string>
+    <string name="usage_not_share">%1$s: %2$s není mezi 0 a 1</string>
+    <string name="usage_not_angle">%1$s: %2$s není úhel</string>
+    <string name="usage_not_camera">%1$s: %2$s není číslo kamery</string>
+    <string name="usage_not_gl">%1$s: %2$s není angle ani wgl</string>
+    <string name="photo_unreadable">%1$s nejde přečíst: %2$s</string>
+    <string name="photo_not_photo">%1$s nejde přečíst jako fotku; převod videa zatím není podporovaný</string>
+    <string name="photo_unwritable">%1$s nejde zapsat: %2$s</string>
+    <string name="photo_written">Zapsáno %1$s</string>
+    <string name="pixels_differ">%1$s pixelů se znatelně liší</string>
+    <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky</string>
+</resources>

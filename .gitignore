@@ -1,0 +1,25 @@
+# Gradle: its per-project cache and every module's build output
+.gradle/
+build/
+# Kotlin Gradle plugin 2.x: daemon session files and error logs
+.kotlin/
+# Path to the local Android SDK, written by the IDE for each machine
+local.properties
+# Android: built packages and profiler captures
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+# Signing keys and the file holding their passwords
+*.jks
+*.keystore
+keystore.properties
+# JetBrains IDE project settings, regenerated from the Gradle build on import
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+# Local Claude Code state, e.g. plugin settings and locks
+.claude/

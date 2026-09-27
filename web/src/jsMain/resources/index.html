@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Dog vision</title>
+    <!-- No icon: without one, a browser asks the server for favicon.ico. -->
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="bar">
+    <h1 id="title">Dog vision</h1>
+    <div class="actions">
+        <button id="save" class="button" type="button" disabled>Save snapshot</button>
+        <button id="record" class="button" type="button" hidden>Record video</button>
+        <button id="stop" class="button stop" type="button" hidden>Stop recording</button>
+        <button id="camera" class="button" type="button" hidden>Camera</button>
+        <button id="switch" class="button" type="button" hidden>Switch camera</button>
+        <label class="button">
+            <input id="open" type="file" accept="image/*,video/*">
+            <span id="open-text">Open a photo or a video</span>
+        </label>
+    </div>
+</header>
+<main class="page">
+    <section id="stage" class="stage">
+        <canvas id="view"></canvas>
+        <div id="captions"></div>
+        <p id="prompt" class="prompt" role="status"></p>
+        <div id="notice" class="notice" role="status" hidden></div>
+    </section>
+    <aside id="controls" class="controls"></aside>
+</main>
+<script src="dog-vision.js"></script>
+</body>
+</html>

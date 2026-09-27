@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An eye whose iris is split into the two hues a dichromat tells apart: blue and yellow. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,54 C34,38 44,33 54,33 C64,33 74,38 84,54 C74,70 64,75 54,75 C44,75 34,70 24,54 Z" />
+    <path
+        android:fillColor="#3F6FD8"
+        android:pathData="M54,40 A14,14 0 0,0 54,68 Z" />
+    <path
+        android:fillColor="#E8C13A"
+        android:pathData="M54,40 A14,14 0 0,1 54,68 Z" />
+    <path
+        android:fillColor="#1B1B1B"
+        android:pathData="M54,48 A6,6 0 1,1 53.99,48 Z" />
+</vector>

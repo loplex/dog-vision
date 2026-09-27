@@ -1,0 +1,325 @@
+:root {
+    --background: #f6f5f2;
+    --surface: #ffffff;
+    --stage: #1b1b1d;
+    --text: #1d1c1a;
+    --muted: #5e5b55;
+    --line: #dedbd4;
+    --accent: #8a4b12;
+    --accent-text: #ffffff;
+    --caption: #e9e7e3;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--text);
+    background: var(--background);
+    accent-color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #161615;
+        --surface: #20201e;
+        --stage: #0d0d0d;
+        --text: #ecebe7;
+        --muted: #a9a59d;
+        --line: #36352f;
+        --accent: #e0a060;
+        --accent-text: #1d1c1a;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background: var(--background);
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.bar h1 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.button, .controls button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 18px;
+    font: inherit;
+    font-weight: 500;
+    color: var(--accent-text);
+    background: var(--accent);
+    cursor: pointer;
+}
+
+/* A button that does not apply, as the camera's where the browser offers none. */
+.button[hidden] {
+    display: none;
+}
+
+/* Stopping a recording, in the red the Android app's stop button has in either theme. */
+.button.stop {
+    color: #ffffff;
+    background: #d32f2f;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.button:has(:focus-visible), button.button:focus-visible, .controls button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* The file input is read by assistive technology through its label, and hidden from sight. */
+.button input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.page {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    min-height: 0;
+}
+
+.stage {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--stage);
+}
+
+.stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#captions {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* A caption under its image, wrapped to at most two lines of the box it has. */
+.caption {
+    position: absolute;
+    padding: 4px 2px 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    color: var(--caption);
+    text-align: center;
+}
+
+.prompt {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 24px;
+    color: var(--caption);
+    text-align: center;
+}
+
+.prompt[hidden] {
+    display: none;
+}
+
+/*
+ * What went wrong, at the bottom of the images as the app's message, until it is clicked; light in either theme, since
+ * the stage is dark in both.
+ */
+.notice {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    max-width: calc(100% - 32px);
+    transform: translateX(-50%);
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: var(--stage);
+    background: var(--caption);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
+    cursor: pointer;
+}
+
+.notice[hidden] {
+    display: none;
+}
+
+.controls {
+    overflow-y: auto;
+    padding: 4px 16px 24px;
+    border-left: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.controls section {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.controls h2 {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* The language, after the last section, as the Android app's panel ends with it. */
+.controls .language {
+    padding: 12px 0;
+}
+
+.controls .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin-top: 6px;
+}
+
+.controls .row > label {
+    flex: 1;
+}
+
+.controls .label {
+    margin: 10px 0 0;
+}
+
+.controls output {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.controls select, .controls input[type="range"] {
+    width: 100%;
+    margin: 4px 0 2px;
+}
+
+.controls select {
+    min-height: 34px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit;
+    color: var(--text);
+    background: var(--background);
+}
+
+.controls :disabled, .controls label:has(:disabled) {
+    opacity: 0.5;
+}
+
+/*
+ * A fact: its label in a column of its own, and its value, which breaks only between its pieces, unless a piece is
+ * longer than the whole line.
+ */
+.controls .fact {
+    flex-wrap: nowrap;
+    align-items: baseline;
+}
+
+.controls .fact-label {
+    flex: none;
+    width: 112px;
+    font-weight: 500;
+}
+
+.controls .fact-value {
+    flex: 1;
+    min-width: 0;
+}
+
+/* On top, not on its baseline: an inline block's baseline is its last line's, which would drop the label to it. */
+.controls .piece {
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: top;
+}
+
+/* What a control means: a small round button beside it, and the text it shows under it. */
+.controls button.info {
+    justify-content: center;
+    width: 24px;
+    min-height: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--muted);
+    border-radius: 50%;
+    font-family: Georgia, serif;
+    font-size: 0.8rem;
+    font-style: italic;
+    font-weight: 700;
+    color: var(--muted);
+    background: transparent;
+}
+
+.controls button.info[aria-expanded="true"] {
+    border-color: var(--accent);
+    color: var(--accent-text);
+    background: var(--accent);
+}
+
+.about p {
+    margin: 4px 0 8px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+@media (max-width: 760px) {
+    .page {
+        grid-template-columns: 1fr;
+        grid-template-rows: 62vh auto;
+    }
+
+    .controls {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+    }
+}

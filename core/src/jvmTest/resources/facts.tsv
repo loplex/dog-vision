@@ -1,0 +1,134 @@
+dog	Colour vision	dichromat, 2 cone types
+dog	Cone peaks	S 429 nm,	L 555 nm	(Neitz, Geist & Jacobs 1989)
+dog	S cones	10%–18% of cones	(Mowat et al. 2008)
+dog	Neutral point	479 nm	(model)
+dog	RNL scale	x0.86 of fixed
+dog	Acuity	11.6 c/deg	(Odom et al. 1983)
+cat	Colour vision	dichromat, 2 cone types
+cat	Cone peaks	S 450 nm,	L 550 nm	(Guenther & Zrenner 1993)
+cat	S cones	10%–20% of cones	(Linberg et al. 2001)
+cat	Neutral point	491 nm	(model)
+cat	RNL scale	x0.84 of fixed
+cat	Acuity	10 c/deg	(Wässle 1971)
+horse	Colour vision	dichromat, 2 cone types
+horse	Cone peaks	S 428 nm,	L 539 nm	(Carroll et al. 2001)
+horse	S cones	10%–25% of cones	(Sandmann et al. 1996)
+horse	Neutral point	474 nm	(model)
+horse	RNL scale	x0.89 of fixed
+horse	Acuity	23.3 c/deg	(Timney & Keil 1992)
+cow	Colour vision	dichromat, 2 cone types
+cow	Cone peaks	S 451.3 nm,	L 555.3 nm	(Jacobs, Deegan & Neitz 1998)
+cow	S cones	5%–10% of cones	(Schiviz et al. 2008)
+cow	Neutral point	493 nm	(model)
+cow	RNL scale	x0.61 of fixed
+cow	Acuity	2.6 c/deg side by side,	1.6 one above another	(Rehkämper et al. 2000)
+sheep	Colour vision	dichromat, 2 cone types
+sheep	Cone peaks	S 445.3 nm,	L 552.2 nm	(Jacobs, Deegan & Neitz 1998)
+sheep	S cones	5%–10% of cones	(Schiviz et al. 2008)
+sheep	Neutral point	488 nm	(model)
+sheep	RNL scale	x0.61 of fixed
+sheep	Acuity	12.8 c/deg	(Sumita et al. 2013,	11.7 to 14)
+goat	Colour vision	dichromat, 2 cone types
+goat	Cone peaks	S 443.3 nm,	L 552.5 nm	(Jacobs, Deegan & Neitz 1998)
+goat	S cones	10% of cones	(assumed)
+goat	Neutral point	487 nm	(model)
+goat	RNL scale	x0.71 of fixed
+goat	Acuity	not found measured;	left sharp
+pig	Colour vision	dichromat, 2 cone types
+pig	Cone peaks	S 440.7 nm,	L 556.7 nm	(Jacobs, Deegan & Neitz 1998)
+pig	S cones	5%–10% of cones	(Schiviz et al. 2008)
+pig	Neutral point	487 nm	(model)
+pig	RNL scale	x0.63 of fixed
+pig	Acuity	not found measured;	left sharp
+fallow-deer	Colour vision	dichromat, 2 cone types
+fallow-deer	Cone peaks	S 453.6 nm,	L 542.2 nm	(Jacobs, Deegan & Neitz 1998)
+fallow-deer	S cones	10% of cones	(assumed)
+fallow-deer	Neutral point	490 nm	(model)
+fallow-deer	RNL scale	x0.65 of fixed
+fallow-deer	Acuity	not found measured;	left sharp
+white-tailed-deer	Colour vision	dichromat, 2 cone types
+white-tailed-deer	Cone peaks	S 456 nm,	L 536.8 nm	(Jacobs, Deegan & Neitz 1998)
+white-tailed-deer	S cones	10% of cones	(assumed)
+white-tailed-deer	Neutral point	490 nm	(model)
+white-tailed-deer	RNL scale	x0.62 of fixed
+white-tailed-deer	Acuity	not found measured;	left sharp
+guinea-pig	Colour vision	dichromat, 2 cone types
+guinea-pig	Cone peaks	S 429 nm,	L 529 nm	(Jacobs & Deegan 1994)
+guinea-pig	S cones	10% of cones	(assumed)
+guinea-pig	Neutral point	472 nm	(model)
+guinea-pig	RNL scale	x0.61 of fixed
+guinea-pig	Acuity	not found measured;	left sharp
+tree-squirrel	Colour vision	dichromat, 2 cone types
+tree-squirrel	Cone peaks	S 444 nm,	L 543 nm	(Blakeslee, Jacobs & Neitz 1988)
+tree-squirrel	S cones	10% of cones	(assumed)
+tree-squirrel	Neutral point	484 nm	(model)
+tree-squirrel	RNL scale	x0.67 of fixed
+tree-squirrel	Acuity	2.8 c/deg	(Jacobs, Birch & Blakeslee 1982,	1.8 to 3.8)
+ground-squirrel	Colour vision	dichromat, 2 cone types
+ground-squirrel	Cone peaks	S 436.7 nm,	L 518.9 nm	(Jacobs, Neitz & Crognale 1985)
+ground-squirrel	S cones	7% of cones	(Kryger et al. 1998)
+ground-squirrel	Neutral point	472 nm	(model)
+ground-squirrel	RNL scale	x0.44 of fixed
+ground-squirrel	Acuity	4 c/deg	(Jacobs et al. 1980)
+ferret	Colour vision	dichromat, 2 cone types
+ferret	Cone peaks	S 430 nm,	L 558 nm	(Calderone & Jacobs 2003)
+ferret	S cones	7% of cones	(Calderone & Jacobs 2003)
+ferret	Neutral point	481 nm	(model)
+ferret	RNL scale	x0.60 of fixed
+ferret	Acuity	not found measured;	left sharp
+protanope	Colour vision	dichromat, 2 cone types
+protanope	Cone peaks	S 420.7 nm,	L 530.3 nm	(Stockman & Sharpe 2000)
+protanope	S cones	8%–12% of cones	(Curcio et al. 1991)
+protanope	Neutral point	468 nm	(model)
+protanope	RNL scale	x0.62 of fixed
+protanope	Acuity	72 c/deg	(Land & Nilsson 2012)
+deuteranope	Colour vision	dichromat, 2 cone types
+deuteranope	Cone peaks	S 420.7 nm,	L 558.9 nm	(Stockman & Sharpe 2000)
+deuteranope	S cones	8%–12% of cones	(Curcio et al. 1991)
+deuteranope	Neutral point	475 nm	(model)
+deuteranope	RNL scale	x0.74 of fixed
+deuteranope	Acuity	72 c/deg	(Land & Nilsson 2012)
+human	Colour vision	trichromat, 3 cone types
+human	Cone peaks	S 420.7 nm,	M 530.3 nm,	L 558.9 nm	(Stockman & Sharpe 2000)
+human	S cones	8%–12% of cones	(Curcio et al. 1991)
+human	L : M cones	1 : 1	(assumed)
+human	RNL scale	x1.00 and x1.00 of fixed
+human	Acuity	72 c/deg	(Land & Nilsson 2012)
+protanomalous	Colour vision	trichromat, 3 cone types
+protanomalous	Cone peaks	S 420.7 nm,	M 530.3 nm,	L 548.9 nm	(L shifted 10 nm,	see text)
+protanomalous	S cones	8%–12% of cones	(Curcio et al. 1991)
+protanomalous	L : M cones	1 : 1	(assumed)
+protanomalous	RNL scale	x0.97 and x0.62 of fixed
+protanomalous	Acuity	72 c/deg	(Land & Nilsson 2012)
+deuteranomalous	Colour vision	trichromat, 3 cone types
+deuteranomalous	Cone peaks	S 420.7 nm,	M 540.3 nm,	L 558.9 nm	(M shifted 10 nm,	see text)
+deuteranomalous	S cones	8%–12% of cones	(Curcio et al. 1991)
+deuteranomalous	L : M cones	1 : 1	(assumed)
+deuteranomalous	RNL scale	x1.01 and x0.73 of fixed
+deuteranomalous	Acuity	72 c/deg	(Land & Nilsson 2012)
+macaque	Colour vision	trichromat, 3 cone types
+macaque	Cone peaks	S 431 nm,	M 536 nm,	L 565 nm	(Bowmaker et al. 1978,	1991)
+macaque	S cones	10% of cones	(assumed)
+macaque	L : M cones	1 : 1	(assumed)
+macaque	RNL scale	x1.11 and x1.02 of fixed
+macaque	Acuity	60 c/deg	(Nature Neuroscience 2024,	about 60)
+howler-monkey	Colour vision	trichromat, 3 cone types
+howler-monkey	Cone peaks	S 430 nm,	M 530 nm,	L 562 nm	(Jacobs et al. 1996,	S assumed)
+howler-monkey	S cones	10% of cones	(assumed)
+howler-monkey	L : M cones	1 : 1	(assumed)
+howler-monkey	RNL scale	x1.12 and x1.00 of fixed
+howler-monkey	Acuity	not found measured;	left sharp
+marmoset-female	Colour vision	trichromat, 3 cone types
+marmoset-female	Cone peaks	S 423 nm,	M 543 nm,	L 563 nm	(Travis 1988,	Williams 1992)
+marmoset-female	S cones	10% of cones	(assumed)
+marmoset-female	L : M cones	1 : 1	(assumed)
+marmoset-female	RNL scale	x1.03 and x0.81 of fixed
+marmoset-female	Acuity	30 c/deg	(Troilo, Howland & Judge 1993)
+harbour-seal	Colour vision	monochromat, 1 cone type
+harbour-seal	Cone peaks	L 510 nm	(Crognale et al. 1998)
+harbour-seal	RNL scale	no colour axis	(sees only grey)
+harbour-seal	Acuity	5.5 c/deg	(Hanke & Dehnhardt 2009,	in air)
+bottlenose-dolphin	Colour vision	monochromat, 1 cone type
+bottlenose-dolphin	Cone peaks	L 524 nm	(Fasick et al. 1998)
+bottlenose-dolphin	RNL scale	no colour axis	(sees only grey)
+bottlenose-dolphin	Acuity	3.66 c/deg	(Herman et al. 1975,	8.2 arcmin stripes)

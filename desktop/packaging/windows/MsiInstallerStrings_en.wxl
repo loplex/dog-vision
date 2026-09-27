@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The MSI's code page: Windows-1250, Central Europe's, in place of jpackage's Windows-1252, which has no ř for the
+  vendor's name, Martin Lopatář. jpackage hands light.exe each localization in its resource directory before its own
+  English strings, which it lets none replace; light.exe takes the code page from the first, and a string defined in
+  both would clash, so this one defines none.
+-->
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization" Codepage="1250"/>

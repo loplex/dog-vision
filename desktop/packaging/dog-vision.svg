@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The desktop packages' icon: the Android app's launcher icon (app/src/main/res/drawable/ic_launcher_foreground.xml on
+  values/ic_launcher_background.xml's colour), cropped to the part a launcher shows and set on a rounded square.
+  dog-vision.png and dog-vision.ico are drawn from it:
+    rsvg-convert -w 256 -h 256 dog-vision.svg -o dog-vision.png
+    for s in 16 24 32 48 64 128 256; do rsvg-convert -w $s -h $s dog-vision.svg -o $s.png; done
+    icotool -c -o dog-vision.ico 16.png 24.png 32.png 48.png 64.png 128.png -r 256.png
+  (-r keeps the largest as a PNG inside the ICO, which Windows has read since Vista.)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="18 18 72 72">
+  <rect x="18" y="18" width="72" height="72" rx="14" fill="#2B2B2B"/>
+  <path fill="#FFFFFF" d="M24,54 C34,38 44,33 54,33 C64,33 74,38 84,54 C74,70 64,75 54,75 C44,75 34,70 24,54 Z"/>
+  <path fill="#3F6FD8" d="M54,40 A14,14 0 0,0 54,68 Z"/>
+  <path fill="#E8C13A" d="M54,40 A14,14 0 0,1 54,68 Z"/>
+  <path fill="#1B1B1B" d="M54,48 A6,6 0 1,1 53.99,48 Z"/>
+</svg>
