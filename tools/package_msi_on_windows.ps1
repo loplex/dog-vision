@@ -80,6 +80,28 @@ Invoke-Checked (Join-Path $jdkBin "jlink.exe") @(
     "--output", $runtime
 )
 
+# The resource directory, less its code page file, which jpackage from JDK 25 on hands light.exe
+# after its own English strings, whose code page, 1252, light.exe then takes: in its place, those
+# strings of this JDK's jpackage with the code page 1250, which replace jpackage's by their name.
+$resources = Join-Path $staging "resources"
+Copy-Item -Recurse (Join-Path $packaging "windows") $resources
+Remove-Item (Join-Path $resources "MsiInstallerCodepage_en.wxl")
+$extracted = Join-Path $staging "jimage"
+Invoke-Checked (Join-Path $jdkBin "jimage.exe") @(
+    "extract", "--dir", $extracted, "--include", "regex:.*/MsiInstallerStrings_en\.wxl",
+    (Join-Path $env:JAVA_HOME "lib\modules")
+)
+$strings = Get-ChildItem -Recurse -File $extracted | Select-Object -First 1
+if (-not $strings) {
+    throw "This JDK's jpackage has no MsiInstallerStrings_en.wxl"
+}
+$text = [System.IO.File]::ReadAllText($strings.FullName)
+if ($text -notmatch 'Codepage="1252"') {
+    throw "jpackage's MsiInstallerStrings_en.wxl names no code page 1252"
+}
+$text = $text -replace 'Codepage="1252"', 'Codepage="1250"'
+[System.IO.File]::WriteAllText((Join-Path $resources "MsiInstallerStrings_en.wxl"), $text)
+
 $output = Join-Path $desktop "build\compose\binaries\main\msi\$AppVersion"
 if (Test-Path $output) {
     Remove-Item -Recurse -Force $output
@@ -102,7 +124,7 @@ $arguments = @(
     "--java-options", "-Dcompose.application.configure.swing.globals=true",
     "--runtime-image", $runtime,
     "--add-launcher", "dog-vision-cli=$(Join-Path $packaging "dog-vision-cli.properties")",
-    "--resource-dir", (Join-Path $packaging "windows"),
+    "--resource-dir", $resources,
     "--win-menu",
     "--win-menu-group", "dog-vision",
     "--win-shortcut",
