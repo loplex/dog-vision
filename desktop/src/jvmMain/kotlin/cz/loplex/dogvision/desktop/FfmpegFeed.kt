@@ -72,8 +72,16 @@ class FfmpegFeed private constructor(
 
     override fun close() {
         closed = true
+        // A launcher in ffmpeg's place, such as Chocolatey's shim on Windows, runs the real ffmpeg as its child, which
+        // ending the launcher leaves running, and holding the file it reads.
+        val children = process.descendants().toList()
         process.destroy()
+        children.forEach(ProcessHandle::destroy)
         if (!process.waitFor(END_WAIT_MILLIS, TimeUnit.MILLISECONDS)) process.destroyForcibly()
+        for (child in children) {
+            runCatching { child.onExit().get(END_WAIT_MILLIS, TimeUnit.MILLISECONDS) }
+                .onFailure { child.destroyForcibly() }
+        }
         reader.join(END_WAIT_MILLIS)
     }
 
