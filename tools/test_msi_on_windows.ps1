@@ -4,6 +4,9 @@
 # -UpgradeVersion. Each check says whether it held, and every check runs, so that one failing does
 # not hide the others; the script fails if any did. msiexec's logs go to -LogDir.
 #
+# -BuiltUnderWine takes MSIs of tools/package_msi_on_linux.sh instead, whose JDK 17's jpackage
+# gives dog-vision-cli shortcuts too: the checks then hold them there.
+#
 # It installs for every user and changes the machine, so it is for one that is thrown away after,
 # such as a CI runner, run as an administrator in PowerShell 7 (pwsh). WIX names WiX Toolset 3,
 # whose smoke.exe validates the MSIs.
@@ -12,7 +15,8 @@ param(
     [Parameter(Mandatory)] [string]$Version,
     [Parameter(Mandatory)] [string]$UpgradeMsi,
     [Parameter(Mandatory)] [string]$UpgradeVersion,
-    [Parameter(Mandatory)] [string]$LogDir
+    [Parameter(Mandatory)] [string]$LogDir,
+    [switch]$BuiltUnderWine
 )
 
 $ErrorActionPreference = "Stop"
@@ -91,13 +95,18 @@ Test-Check "dog-vision-cli.exe converts a photo" (
 )
 
 # The window's launcher has a shortcut in the Start menu and on the desktop; the command line alone,
-# which only prints its usage when started from one, has none.
+# which only prints its usage when started from one, has none, but in an MSI built under Wine.
 Write-Host "Start menu: $(@(Get-ChildItem $startMenu -ErrorAction SilentlyContinue).Name -join ', ')"
 Write-Host "Desktop: $(@(Get-ChildItem $desktop -Filter 'dog-vision*' -ErrorAction SilentlyContinue).Name -join ', ')"
 Test-Check "dog-vision has a Start menu shortcut" (Test-Path (Join-Path $startMenu "dog-vision.lnk"))
 Test-Check "dog-vision has a desktop shortcut" (Test-Path (Join-Path $desktop "dog-vision.lnk"))
-Test-Check "dog-vision-cli has no Start menu shortcut" (-not (Test-Path (Join-Path $startMenu "dog-vision-cli.lnk")))
-Test-Check "dog-vision-cli has no desktop shortcut" (-not (Test-Path (Join-Path $desktop "dog-vision-cli.lnk")))
+$cliShortcuts = if ($BuiltUnderWine) { "has" } else { "has no" }
+Test-Check "dog-vision-cli $cliShortcuts Start menu shortcut" (
+    (Test-Path (Join-Path $startMenu "dog-vision-cli.lnk")) -eq [bool]$BuiltUnderWine
+)
+Test-Check "dog-vision-cli $cliShortcuts desktop shortcut" (
+    (Test-Path (Join-Path $desktop "dog-vision-cli.lnk")) -eq [bool]$BuiltUnderWine
+)
 
 
 # The later version, over it.

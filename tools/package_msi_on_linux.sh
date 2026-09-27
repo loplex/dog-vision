@@ -14,7 +14,7 @@
 #   Linux, is linked by this machine's jlink from the Windows JDK's jmods.
 # - light.exe's validation of the MSI (ICE) fails in Wine's msi.dll with 0x65B, so light.exe runs a
 #   second time without it (-sval), as electron-builder runs it off Windows; jpackage has no way to
-#   pass the switch.
+#   pass the switch. .github/workflows/msi-under-wine.yml validates the MSI on Windows instead.
 # - WiX 3 finds its own version through .NET's FileVersionInfo, which Wine Mono leaves empty, and
 #   jpackage then does not recognise it: the prefix needs Microsoft's .NET Framework 4.8
 #   (`winetricks dotnet48`).
