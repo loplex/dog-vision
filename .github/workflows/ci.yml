@@ -54,8 +54,11 @@ jobs:
           foreach ($dll in "opengl32.dll", "libgallium_wgl.dll", "libglapi.dll") {
             if (Test-Path "mesa/x64/$dll") { Copy-Item "mesa/x64/$dll" (Join-Path $env:JAVA_HOME "bin") }
           }
-      # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU.
+      # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU. Mesa would
+      # take its Direct3D 12 driver, which needs Mesa's dxil.dll, over llvmpipe.
       - run: ./gradlew :desktop:jvmTest
+        env:
+          GALLIUM_DRIVER: llvmpipe
       - if: always()
         uses: actions/upload-artifact@v5
         with:
