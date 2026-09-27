@@ -45,6 +45,10 @@ is_removed() {
 requires_no_xdg_utils() {
     ! rpm -qR dog-vision | grep -q xdg-utils
 }
+# rpm removes a folder of the package's with it, where it is empty.
+owns_no_system_folder() {
+    ! rpm -ql dog-vision | grep -qxE '/|/opt|/usr|/usr/share|/usr/share/applications|/usr/share/licenses'
+}
 
 [ -e /usr/share/applications ] && echo "note: the image has /usr/share/applications already"
 [ -e /etc/xdg/menus ] && echo "note: the image has /etc/xdg/menus already"
@@ -64,6 +68,7 @@ status=$?
 check "the install exits with 0 (it exited with $status)" test "$status" -eq 0
 check "dog-vision is installed" is_installed
 check "it does not require xdg-utils" requires_no_xdg_utils
+check "it owns no folder of the system's" owns_no_system_folder
 check "the window is in the desktop menu folder" test -f /usr/share/applications/cz.loplex.dogvision.desktop
 check "the command line runs" /opt/dog-vision/bin/dog-vision-cli --help
 

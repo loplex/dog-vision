@@ -323,12 +323,16 @@ class DeleteDirectory(private val directory: Provider<Directory>) : Action<Task>
 
 /**
  * Makes the rpm jpackage wrote to [rpms] the one to ship, by running rpmbuild again on the spec and the app image
- * jpackage left in [temp], its --temp, with the spec changed so that the window's desktop entry, [jpackageEntry] in the
- * image, is a file of the package at [entry], as with the deb, and xdg-utils is not required. jpackage's scriptlets
- * install and remove it with xdg-desktop-menu instead, which openSUSE's xdg-utils fails where /etc/xdg/menus does not
- * exist, as on a system with no desktop: the entry is not installed, and %preun fails, so rpm cannot remove the
- * package. jpackage cannot be given a spec of ours: it reads the last --resource-dir, and Compose passes its own after
- * freeArgs.
+ * jpackage left in [temp], its --temp, with the spec changed:
+ * - the window's desktop entry, [jpackageEntry] in the image, is a file of the package at [entry], as with the deb, and
+ *   xdg-utils is not required. jpackage's scriptlets install and remove it with xdg-desktop-menu instead, which
+ *   openSUSE's xdg-utils fails where /etc/xdg/menus does not exist, as on a system with no desktop: the entry is not
+ *   installed, and %preun fails, so rpm cannot remove the package;
+ * - the package owns no folder of the system's, wherever it is built. jpackage's spec leaves out the folders of the
+ *   build machine's filesystem package, or where there is none, as off an rpm-based system, those of a list it prints
+ *   on one line, which leaves out none: the rpm then owned /opt, /usr and /usr/share.
+ *
+ * jpackage cannot be given a spec of ours: it reads the last --resource-dir, and Compose passes its own after freeArgs.
  */
 class RepackRpm(
     private val rpms: Provider<Directory>,
@@ -352,6 +356,10 @@ class RepackRpm(
                 "install -d -m 755 %{buildroot}/${entry.substringBeforeLast('/')}",
                 "mv %{buildroot}/$jpackageEntry %{buildroot}/$entry",
             )
+        }
+        lines = replaceLine(lines, { it.startsWith("{ rpm -ql filesystem ||") }) {
+            val folders = "%{default_filesystem} /usr/share /${entry.substringBeforeLast('/')} %{_defaultlicensedir}"
+            listOf("printf '%s\\n' $folders | sort > %{filesystem_filelist}")
         }
         lines = replaceLine(lines, { it.trim() == "xdg-desktop-menu install /$jpackageEntry" }) { emptyList() }
         lines = replaceLine(
