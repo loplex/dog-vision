@@ -1,0 +1,97 @@
+# The checks on Linux, and on Windows what Linux cannot show: the window's GL contexts, ANGLE's and
+# WGL's, and its MSI, built with jpackage and installed, upgraded and removed.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
+      - run: ./gradlew check
+      - if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: linux-reports
+          path: |
+            **/build/reports/
+            **/hs_err_pid*.log
+
+  windows-gl:
+    name: Windows GL tests
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Install ffmpeg
+        run: choco install ffmpeg --no-progress -y
+      # Windows's own opengl32.dll has OpenGL 1.1 alone, where WglContext asks for 3.3 core: Mesa's
+      # llvmpipe, beside java.exe, which Windows loads a DLL from before its system folder. Its WGL
+      # alone: Mesa's libEGL and libGLESv2 there could be taken for ANGLE's, which have their names.
+      - name: Put Mesa's OpenGL beside java.exe
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo pal1000/mesa-dist-win --pattern "*release-msvc.7z" --output mesa.7z
+          7z x mesa.7z -omesa "x64/*.dll" | Out-Null
+          Write-Host "Mesa's DLLs: $((Get-ChildItem mesa/x64).Name -join ', ')"
+          foreach ($dll in "opengl32.dll", "libgallium_wgl.dll", "libglapi.dll") {
+            if (Test-Path "mesa/x64/$dll") { Copy-Item "mesa/x64/$dll" (Join-Path $env:JAVA_HOME "bin") }
+          }
+      # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU.
+      - run: ./gradlew :desktop:jvmTest
+      - if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-gl-reports
+          path: |
+            desktop/build/reports/
+            desktop/build/test-results/
+            desktop/hs_err_pid*.log
+
+  windows-msi:
+    name: Windows MSI
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      # WiX Toolset 3.14 comes with the runner's image, which names it by WIX.
+      - name: Build the MSI and a later version of it
+        shell: pwsh
+        run: |
+          ./tools/package_msi_on_windows.ps1
+          ./tools/package_msi_on_windows.ps1 -AppVersion 0.1.1
+      - name: Install, upgrade and remove it
+        shell: pwsh
+        run: >-
+          ./tools/test_msi_on_windows.ps1
+          -Msi desktop/build/compose/binaries/main/msi/0.1.0/dog-vision-0.1.0.msi -Version 0.1.0
+          -UpgradeMsi desktop/build/compose/binaries/main/msi/0.1.1/dog-vision-0.1.1.msi -UpgradeVersion 0.1.1
+          -LogDir msi-logs
+      - if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-msi
+          path: |
+            desktop/build/compose/binaries/main/msi/
+            msi-logs/
