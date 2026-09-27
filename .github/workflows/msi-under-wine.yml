@@ -6,8 +6,6 @@
 name: MSI built under Wine
 
 on:
-  # On this branch alone: the workflow can be started by hand only from the default branch.
-  push:
   workflow_dispatch:
 
 jobs:

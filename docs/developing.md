@@ -119,17 +119,17 @@ in [`.editorconfig`](../.editorconfig):
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every push:
 
 - **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner
-  has no GPU; then the debs and the rpms of `dog-vision` and `dog-vision-cli`, each built in two
-  versions and tried by `test_deb.sh --upgrade` in Ubuntu 20.04 and `test_rpm.sh --upgrade` in
-  Fedora 42, `dog-vision`'s window under Xvfb; and the tar.gz, unpacked on the runner, where its
-  command line runs and its window's main converts a photo.
+  has no GPU; then the debs and the rpms of `dog-vision`, `dog-vision-swing` and `dog-vision-cli`,
+  each built in two versions and tried by `test_deb.sh --upgrade` in Ubuntu 20.04 and
+  `test_rpm.sh --upgrade` in Fedora 42, each window under Xvfb; and each window's tar.gz, unpacked
+  on the runner, where its command line runs and its window's main converts a photo.
 - **On Windows Server 2022, `./gradlew :desktop-core:jvmTest`**, over ANGLE on WARP and over WGL on
   Mesa's llvmpipe, which the job puts beside `java.exe`, as Windows's own OpenGL is 1.1.
-- **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions and
-  tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.
+- **On Windows Server 2022, each window's MSI**, built by `package_msi_on_windows.ps1` in two
+  versions and tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.
 
 [`.github/workflows/msi-under-wine.yml`](../.github/workflows/msi-under-wine.yml) runs when started
-by hand, as it installs Wine and .NET Framework 4.8 each time: the MSI that
+by hand, as it installs Wine and .NET Framework 4.8 each time: each window's MSI that
 `package_msi_on_linux.sh` builds under Wine, validated by `smoke.exe` and tried by
 `test_msi_on_windows.ps1` on Windows Server 2022.
 

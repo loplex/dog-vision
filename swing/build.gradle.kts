@@ -277,10 +277,13 @@ tasks.register<RpmPackage>("packageRpm") {
     architecture = "x86_64"
     summary = linuxSummary
     longDescription = linuxDescription
-    // As the Compose window's rpm has them.
+    // As the Compose window's rpm has them, and a font, without which Swing cannot start: openSUSE's JRE brings none,
+    // where Debian's fontconfig does. Fedora's and Rocky's font packages provide font(:lang=en), which openSUSE's do
+    // not, so it names DejaVu there.
     requires = rpmLibraryRequires.flatMap { it.requires }.map { file ->
         file.asFile.readText().split(',') +
-            listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEGL.so.1()(64bit)", "/usr/bin/ffmpeg")
+            listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEGL.so.1()(64bit)", "/usr/bin/ffmpeg") +
+            "(font(:lang=en) or dejavu-fonts)"
     }
     recommends = listOf("dog-vision-cli")
 }

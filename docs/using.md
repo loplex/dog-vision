@@ -6,8 +6,9 @@ What each program shows and how it is driven. Building them is [Building it](bui
   recording, the language, and how it differs from the desktop program.
 - [The web page](#the-web-page) — what a browser needs for the camera, snapshots and recording.
 - [The command line](#the-command-line) — converting a photo, `--species` and the other options.
-- [The desktop window](#the-desktop-window) — its GL on Linux and Windows, ffmpeg for a video or the
-  camera, and what it has not run on yet.
+- [The desktop window](#the-desktop-window) — `dog-vision` in Compose and `dog-vision-swing` in
+  Swing, their GL on Linux and Windows, ffmpeg for a video or the camera, and what they have not run
+  on yet.
 
 ## The Android app
 
@@ -229,6 +230,29 @@ program's.
 - **q or Escape closes it**, as it closes the desktop program's window.
 - **It has no menus, no settings, no snapshots and no recording yet.**
 
+### The same window in Swing: `dog-vision-swing`
+
+```sh
+dog-vision-swing --window photo.jpg   # as dog-vision, with the same options, keys and dialog
+```
+
+- **It shows what the Compose window shows, from the same state**, the `LiveSession` in
+  [`desktop-core`](../desktop-core): the same images, drawn by the same passes, and the same
+  controls, in Swing's own widgets with [FlatLaf](https://www.formdev.com/flatlaf/).
+- **It needs neither Compose nor skiko**, so its packages leave out Compose's JARs and skiko's
+  natives.
+- **On Linux it installs from the deb or the rpm `dog-vision-swing`**, as `dog-vision-swing` on the
+  `PATH` and *Dog vision (Swing)* in the desktop's menu (*Psí vidění (Swing)* in Czech), beside
+  `dog-vision` where both are installed.
+  Its tar.gz runs as `dog-vision-swing/bin/dog-vision-swing`, and on Windows its MSI installs it.
+- **It is light or dark as the desktop asks**: on Linux as the desktop portal's colour scheme says,
+  which GNOME and KDE set, on Windows as `AppsUseLightTheme` says, and light where neither can be
+  read.
+- **It draws the images at the screen's own pixels**, not at Swing's scaled ones, so that they are
+  as sharp on a HiDPI screen as in the Compose window.
+
+The sections below hold for both windows.
+
 ### The GPU it draws on
 
 - **On Linux it needs EGL with Mesa's device platform** (`EGL_EXT_platform_device`) for an OpenGL ES
@@ -259,8 +283,10 @@ program's.
 - **Where winget is missing**, as on a Windows without Microsoft's App Installer, the window opens
   ffmpeg's download page in the browser and names it.
 
-### Caveat: on Windows, the window has run under Wine only
+### Caveat: on Windows, neither window has run on a real machine
 
-The window has not run on a Windows machine yet, only under Wine on Linux.
-Its tests and its MSI run on a Windows server without a GPU, as
-[Developing it](developing.md#caveat-windows-is-tested-without-a-gpu-and-under-wine) says.
+- **The Compose window has run under Wine only**, on Linux.
+- **The Swing window has not run on Windows at all**: its MSI is built, installed and removed there,
+  and its command line runs, but its window has not been opened.
+- **Their tests and their MSIs run on a Windows server without a GPU**, as
+  [Developing it](developing.md#caveat-windows-is-tested-without-a-gpu-and-under-wine) says.
