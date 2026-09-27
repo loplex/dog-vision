@@ -104,3 +104,73 @@ jobs:
           path: |
             desktop/build/compose/binaries/main/msi/
             msi-logs/
+
+  # Trials, on spike alone: what the window's ffmpeg button relies on, which only a Windows with
+  # winget shows, on both images, as neither's list of its software names winget.
+  windows-winget:
+    name: Trial - ffmpeg through winget (${{ matrix.image }})
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - run: winget --version
+      # No ffmpeg is installed first; the trial installs it.
+      - run: ./gradlew :desktop:jvmTest --tests cz.loplex.dogvision.desktop.FfmpegWingetTrial
+        env:
+          DOG_VISION_INSTALL_FFMPEG: 1
+      # winget's own bytes through a pipe, as the window reads them, installed already this time;
+      # its status is not the point, so the step does not fail the job.
+      - if: always()
+        continue-on-error: true
+        shell: cmd
+        run: >-
+          winget install --id Gyan.FFmpeg --exact --source winget --scope user
+          --disable-interactivity --accept-package-agreements --accept-source-agreements
+          > winget-output.bin 2>&1
+      - if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: trial-winget-${{ matrix.image }}
+          path: |
+            winget-output.bin
+            desktop/build/reports/
+            desktop/build/test-results/
+
+  # Trial, on spike alone: what the MSI built on Windows carries of the C and C++ runtimes, which
+  # the window's natives, linked statically, and the runtime's own DLLs take.
+  windows-msi-runtime:
+    name: Trial - the Windows-built MSI's runtime DLLs
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build the MSI and unpack it
+        shell: pwsh
+        run: |
+          ./tools/package_msi_on_windows.ps1
+          $msi = (Resolve-Path desktop/build/compose/binaries/main/msi/0.1.0/dog-vision-0.1.0.msi).Path
+          $target = Join-Path $PWD "msi-unpacked"
+          Start-Process msiexec -Wait -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$target`""
+          $all = Get-ChildItem -Recurse -File $target
+          Write-Host "files: $($all.Count)"
+          $missing = @()
+          foreach ($dll in "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "ucrtbase.dll",
+                           "api-ms-win-crt-runtime-l1-1-0.dll", "jvm.dll") {
+            $found = $all | Where-Object Name -eq $dll
+            if ($found) { Write-Host "ok: $dll at $($found[0].FullName.Substring($target.Length))" }
+            else { Write-Host "MISSING: $dll"; $missing += $dll }
+          }
+          if ($missing) { exit 1 }
