@@ -213,6 +213,8 @@ jobs:
           sudo wget -q -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
           sudo apt-get update -qq
           sudo apt-get install -y -qq --install-recommends winehq-staging xvfb cabextract
+          # The locale package_msi_on_linux.sh runs Wine in, for the vendor's ř.
+          sudo locale-gen cs_CZ.UTF-8
           wine --version
           sudo wget -q -O /usr/local/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks
           sudo chmod +x /usr/local/bin/winetricks
