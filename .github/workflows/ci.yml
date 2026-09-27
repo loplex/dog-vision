@@ -193,6 +193,10 @@ jobs:
       WINEDEBUG: -all
       # Wine's menu builder would write the shortcuts into the runner's home.
       WINEDLLOVERRIDES: winemenubuilder.exe=d
+      # One virtual display for the whole job, which the step below starts: xvfb-run's, ended with each
+      # command, took Wine's processes that were still on it down with it, and wineserver -w then
+      # waited for them for ever.
+      DISPLAY: ":99"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -215,12 +219,15 @@ jobs:
       # wineboot would wait for Wine Mono's and Gecko's installer dialog on the virtual display, and
       # the prefix be left without its DLLs; .NET Framework 4.8 replaces Mono anyway. Only there, as
       # mscoree disabled would keep .NET from running.
+      - name: Start the virtual display
+        run: Xvfb :99 -screen 0 1280x1024x24 &
       - name: Put .NET Framework 4.8 into the prefix
+        timeout-minutes: 40
         run: |
-          WINEDLLOVERRIDES="mscoree,mshtml=;$WINEDLLOVERRIDES" xvfb-run -a wineboot --init
+          WINEDLLOVERRIDES="mscoree,mshtml=;$WINEDLLOVERRIDES" wineboot --init
           wineserver -w
           test -f "$WINEPREFIX/drive_c/windows/system32/kernel32.dll"
-          xvfb-run -a winetricks -q dotnet48
+          winetricks -q dotnet48
           wineserver -w
       # jpackage.exe from a Windows JDK 17, the runtime from the jmods of the Windows JDK of this
       # jlink's version, and WiX 3.14's binaries.
@@ -241,11 +248,11 @@ jobs:
           echo "WIX=$PWD/wix" >> "$GITHUB_ENV"
       - name: Build the MSI and a later version of it
         run: |
-          xvfb-run -a tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
+          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
           mkdir -p wine-msi
           mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.0.msi wine-msi/
           sed -i 's/packageVersion = "0.1.0"/packageVersion = "0.1.1"/' desktop/build.gradle.kts
-          xvfb-run -a tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
+          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
           mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.1.msi wine-msi/
           git checkout desktop/build.gradle.kts
           ls -l wine-msi
