@@ -88,7 +88,7 @@ if (Test-Path $output) {
 
 # jpackage, with package_msi_on_linux.sh's options.
 
-Invoke-Checked (Join-Path $jdkBin "jpackage.exe") @(
+$arguments = @(
     "--type", "msi",
     "--name", "dog-vision",
     "--app-version", $AppVersion,
@@ -111,5 +111,13 @@ Invoke-Checked (Join-Path $jdkBin "jpackage.exe") @(
     "--temp", (Join-Path $staging "temp"),
     "--dest", $output
 )
+
+# From a file in UTF-8, which jpackage reads as its default charset: Java reads its command line in
+# the system's ANSI code page, which on an English Windows, 1252, has no ř for the vendor's name.
+# Each argument in quotes, inside which a backslash escapes the next character.
+$argumentFile = Join-Path $staging "jpackage-arguments"
+$quoted = $arguments | ForEach-Object { '"' + ($_ -replace '\\', '\\' -replace '"', '\"') + '"' }
+[System.IO.File]::WriteAllLines($argumentFile, [string[]]$quoted, [System.Text.UTF8Encoding]::new($false))
+Invoke-Checked (Join-Path $jdkBin "jpackage.exe") @("@$argumentFile")
 
 Join-Path $output "dog-vision-$AppVersion.msi"
