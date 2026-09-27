@@ -26,6 +26,12 @@ jobs:
           sudo apt-get install -y fakeroot
           ./gradlew :desktop:packageDeb
           tools/test_deb.sh desktop/build/compose/binaries/main/deb/dog-vision_0.1.0_amd64.deb ubuntu:20.04
+      # The rpm in a bare Fedora, with no desktop.
+      - name: Build the rpm and try it
+        run: |
+          sudo apt-get install -y rpm
+          ./gradlew :desktop:packageRpm
+          tools/test_rpm.sh desktop/build/compose/binaries/main/rpm/dog-vision-0.1.0-1.x86_64.rpm fedora:42
       - if: failure()
         uses: actions/upload-artifact@v5
         with:
