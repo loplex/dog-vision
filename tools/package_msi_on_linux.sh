@@ -21,6 +21,10 @@
 #
 # Needs:
 # - Wine, with .NET Framework 4.8 in the prefix; WINEPREFIX chooses the prefix, as it does for Wine.
+# - The locale cs_CZ.UTF-8, which Wine runs in: JDK 17's jpackage reads its arguments in Windows's
+#   ANSI code page, which Wine takes from the locale, and the vendor's ř is in Windows-1250, a Czech
+#   locale's, not in Windows-1252, an English locale's or C's, where it becomes "?" and jpackage
+#   fails on it.
 # - --jdk: a Windows JDK 17, unpacked, for its bin/jpackage.exe.
 # - --jmods: the Windows JDK's jmods, unpacked, of the same version as this machine's jlink (Temurin
 #   ships them apart from the JDK, as OpenJDK25U-jmods_x64_windows_*.zip).
@@ -88,6 +92,8 @@ require "jlink" "openjdk-25-jdk-headless" "java-25-openjdk-devel"
 if (( ${#missing[@]} > 0 )); then
     die "$(printf '%s\n' "Missing commands:" "${missing[@]/#/  }")"
 fi
+locale -a | grep -ix 'cs_CZ\.utf-\?8' >/dev/null ||
+    die "Missing locale cs_CZ.UTF-8: locale-gen cs_CZ.UTF-8, or dnf install glibc-langpack-cs"
 
 jpackage="$(realpath "$jdk")/bin/jpackage.exe"
 [[ -f "$jpackage" ]] || die "$jpackage does not exist" 2
@@ -131,6 +137,7 @@ rm -f "$msi"
 WINEPATH="$(windows_path "$wix")"
 export WINEPATH
 export WINEDEBUG="${WINEDEBUG:--all}"
+export LC_ALL="cs_CZ.UTF-8"
 temp="$staging/temp"
 
 # The Java option is Compose's own launchers': its application then gives Swing the system's look. The
