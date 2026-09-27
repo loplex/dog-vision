@@ -1,9 +1,10 @@
-# Builds the desktop window's MSI for Windows on x86-64 on Windows.
+# Builds a desktop window's MSI for Windows on x86-64 on Windows: with -Window compose, the default,
+# dog-vision's, the Compose window's; with -Window swing, dog-vision-swing's.
 #
-# The same MSI as tools/package_msi_on_linux.sh builds through Wine, from the JAR that
-# `:desktop:windowsUberJar` assembles, but with the JDK this runs on: its jlink links the runtime
-# and its jpackage makes the MSI through WiX Toolset 3, whose light.exe validates it (ICE) here.
-# It is written to desktop/build/compose/binaries/main/msi/<version>.
+# The same MSI as tools/package_msi_on_linux.sh builds through Wine, from the JAR that the window's
+# windowsUberJar task assembles, but with the JDK this runs on: its jlink links the runtime and its
+# jpackage makes the MSI through WiX Toolset 3, whose light.exe validates it (ICE) here. It is
+# written to desktop/build/compose/binaries/main/msi/<version> or swing/build/packages/msi/<version>.
 #
 # Needs:
 # - PowerShell 7 (pwsh), which reads this file as UTF-8, as the vendor's name needs.
@@ -13,21 +14,41 @@
 # -AppVersion gives the MSI another version than gradle.properties' appVersion, as a
 # test of an upgrade needs a later one; the application in it stays the same.
 param(
-    [string]$AppVersion
+    [string]$AppVersion,
+    [ValidateSet("compose", "swing")] [string]$Window = "compose"
 )
 
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$desktop = Join-Path $root "desktop"
-$packaging = Join-Path $desktop "packaging"
+# The icons and dog-vision-cli's properties, which both windows' MSIs take.
+$packaging = Join-Path $root "desktop\packaging"
 
-# Every later version's MSI replaces the one installed, as Windows Installer tells versions of one
-# product apart by it: never change it. package_msi_on_linux.sh gives the same.
-$upgradeUuid = "602aa86b-3230-4786-8460-ba08bca42e45"
-
-# The runtime's modules, the tar.gz's too.
-$modules = "java.base,java.desktop,java.logging,jdk.crypto.ec,java.instrument,jdk.unsupported"
+# What each window's MSI is made of, as package_msi_on_linux.sh gives it, which says why the upgrade
+# codes must never change and must differ, and where the modules and the Java option come from.
+if ($Window -eq "compose") {
+    $name = "dog-vision"
+    $module = Join-Path $root "desktop"
+    $jarTask = ":desktop:windowsUberJar"
+    $jarDir = Join-Path $module "build\compose\jars"
+    $outputDir = Join-Path $module "build\compose\binaries\main\msi"
+    $mainClass = "cz.loplex.dogvision.desktop.MainKt"
+    $description = "How a dog or a cat sees a photo, a video or the camera"
+    $upgradeUuid = "602aa86b-3230-4786-8460-ba08bca42e45"
+    $modules = "java.base,java.desktop,java.logging,jdk.crypto.ec,java.instrument,jdk.unsupported"
+    $javaOptions = @("--java-options", "-Dcompose.application.configure.swing.globals=true")
+} else {
+    $name = "dog-vision-swing"
+    $module = Join-Path $root "swing"
+    $jarTask = ":swing:windowsUberJar"
+    $jarDir = Join-Path $module "build\jars"
+    $outputDir = Join-Path $module "build\packages\msi"
+    $mainClass = "cz.loplex.dogvision.swing.MainKt"
+    $description = "How a dog or a cat sees a photo, a video or the camera, in Swing"
+    $upgradeUuid = "acf6164b-f4f9-4430-b4f0-939242f187fb"
+    $modules = "java.base,java.desktop,java.instrument,jdk.unsupported"
+    $javaOptions = @()
+}
 
 # Runs a program and stops the script where it fails, as $ErrorActionPreference does not for them.
 function Invoke-Checked([string]$Program, [string[]]$Arguments) {
@@ -59,10 +80,10 @@ $packageVersion = $Matches[1]
 if (-not $AppVersion) {
     $AppVersion = $packageVersion
 }
-Invoke-Checked (Join-Path $root "gradlew.bat") @("--quiet", ":desktop:windowsUberJar")
-$jar = Join-Path $desktop "build\compose\jars\dog-vision-windows-x64-$packageVersion.jar"
+Invoke-Checked (Join-Path $root "gradlew.bat") @("--quiet", $jarTask)
+$jar = Join-Path $jarDir "$name-windows-x64-$packageVersion.jar"
 
-$staging = Join-Path $desktop "build\windows-msi\$AppVersion"
+$staging = Join-Path $module "build\windows-msi\$AppVersion"
 if (Test-Path $staging) {
     Remove-Item -Recurse -Force $staging
 }
@@ -102,7 +123,7 @@ if ($text -notmatch 'Codepage="1252"') {
 $text = $text -replace 'Codepage="1252"', 'Codepage="1250"'
 [System.IO.File]::WriteAllText((Join-Path $resources "MsiInstallerStrings_en.wxl"), $text)
 
-$output = Join-Path $desktop "build\compose\binaries\main\msi\$AppVersion"
+$output = Join-Path $outputDir $AppVersion
 if (Test-Path $output) {
     Remove-Item -Recurse -Force $output
 }
@@ -112,21 +133,21 @@ if (Test-Path $output) {
 
 $arguments = @(
     "--type", "msi",
-    "--name", "dog-vision",
+    "--name", $name,
     "--app-version", $AppVersion,
     "--vendor", "Martin Lopatář",
-    "--description", "How a dog or a cat sees a photo, a video or the camera",
+    "--description", $description,
     "--license-file", (Join-Path $root "LICENSE"),
     "--icon", (Join-Path $packaging "dog-vision.ico"),
     "--input", $inputDir,
     "--main-jar", (Split-Path -Leaf $jar),
-    "--main-class", "cz.loplex.dogvision.desktop.MainKt",
-    "--java-options", "-Dcompose.application.configure.swing.globals=true",
+    "--main-class", $mainClass
+) + $javaOptions + @(
     "--runtime-image", $runtime,
     "--add-launcher", "dog-vision-cli=$(Join-Path $packaging "dog-vision-cli.properties")",
     "--resource-dir", $resources,
     "--win-menu",
-    "--win-menu-group", "dog-vision",
+    "--win-menu-group", $name,
     "--win-shortcut",
     "--win-dir-chooser",
     "--win-upgrade-uuid", $upgradeUuid,
@@ -144,4 +165,4 @@ $quoted = $arguments | ForEach-Object { '"' + ($_ -replace '\\', '\\' -replace '
 [System.IO.File]::WriteAllLines($argumentFile, [string[]]$quoted, [System.Text.UTF8Encoding]::new($false))
 Invoke-Checked (Join-Path $jdkBin "jpackage.exe") @("@$argumentFile")
 
-Join-Path $output "dog-vision-$AppVersion.msi"
+Join-Path $output "$name-$AppVersion.msi"

@@ -1,5 +1,5 @@
-# The MSI that tools/package_msi_on_linux.sh builds under Wine, in two versions, validated and
-# installed on Windows: WiX 3.14's smoke.exe fails under Wine (SMOK0216, Win32 error 0x65B), so
+# The MSIs that tools/package_msi_on_linux.sh builds under Wine, each window's in two versions,
+# validated and installed on Windows: WiX 3.14's smoke.exe fails under Wine (SMOK0216, Win32 error 0x65B), so
 # only Windows can validate it. It installs Wine and .NET Framework 4.8 each time and depends on
 # WineHQ's packages and winetricks, so it runs when started by hand, not on every push as ci.yml
 # does.
@@ -74,12 +74,16 @@ jobs:
           echo "JDK17=$(echo "$PWD"/jdk17/*)" >> "$GITHUB_ENV"
           echo "JMODS=$(dirname "$(find "$PWD/jmods" -name java.base.jmod)")" >> "$GITHUB_ENV"
           echo "WIX=$PWD/wix" >> "$GITHUB_ENV"
-      - name: Build the MSI and a later version of it
+      - name: Build the MSIs
         run: |
-          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
-          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX" --app-version 0.1.1
+          for window in compose swing; do
+            tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX" --window "$window"
+            tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX" --window "$window" \
+              --app-version 0.1.1
+          done
           mkdir -p wine-msi
           mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.{0,1}.msi wine-msi/
+          mv swing/build/packages/msi/dog-vision-swing-0.1.{0,1}.msi wine-msi/
           ls -l wine-msi
       - uses: actions/upload-artifact@v5
         with:
@@ -108,14 +112,22 @@ jobs:
             if ($LASTEXITCODE -ne 0) { $failed++ }
           }
           exit $failed
-      - name: Install, upgrade and remove it
+      - name: Install, upgrade and remove dog-vision's
         if: always()
         shell: pwsh
         run: >-
           ./tools/test_msi_on_windows.ps1
           -Msi wine-msi/dog-vision-0.1.0.msi -Version 0.1.0
           -UpgradeMsi wine-msi/dog-vision-0.1.1.msi -UpgradeVersion 0.1.1
-          -LogDir msi-logs -BuiltUnderWine
+          -LogDir msi-logs/dog-vision -BuiltUnderWine
+      - name: Install, upgrade and remove dog-vision-swing's
+        if: always()
+        shell: pwsh
+        run: >-
+          ./tools/test_msi_on_windows.ps1 -Name dog-vision-swing
+          -Msi wine-msi/dog-vision-swing-0.1.0.msi -Version 0.1.0
+          -UpgradeMsi wine-msi/dog-vision-swing-0.1.1.msi -UpgradeVersion 0.1.1
+          -LogDir msi-logs/dog-vision-swing -BuiltUnderWine
       - if: always()
         uses: actions/upload-artifact@v5
         with:

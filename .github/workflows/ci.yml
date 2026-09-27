@@ -1,5 +1,5 @@
 # The checks on Linux and the Linux packages, installed, upgraded and removed; on Windows what Linux
-# cannot show: the window's GL contexts, ANGLE's and WGL's, and its MSI, built with jpackage and
+# cannot show: the windows' GL contexts, ANGLE's and WGL's, and their MSIs, built with jpackage and
 # installed, upgraded and removed.
 name: CI
 
@@ -142,23 +142,36 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v5
-      # WiX Toolset 3.14 comes with the runner's image, which names it by WIX.
-      - name: Build the MSI and a later version of it
+      # WiX Toolset 3.14 comes with the runner's image, which names it by WIX. Each window's MSI, and a
+      # later version of each.
+      - name: Build the MSIs
+        id: msis
         shell: pwsh
         run: |
-          ./tools/package_msi_on_windows.ps1
-          ./tools/package_msi_on_windows.ps1 -AppVersion 0.1.1
-      - name: Install, upgrade and remove it
+          foreach ($window in "compose", "swing") {
+            ./tools/package_msi_on_windows.ps1 -Window $window
+            ./tools/package_msi_on_windows.ps1 -Window $window -AppVersion 0.1.1
+          }
+      - name: Install, upgrade and remove dog-vision's
         shell: pwsh
         run: >-
           ./tools/test_msi_on_windows.ps1
           -Msi desktop/build/compose/binaries/main/msi/0.1.0/dog-vision-0.1.0.msi -Version 0.1.0
           -UpgradeMsi desktop/build/compose/binaries/main/msi/0.1.1/dog-vision-0.1.1.msi -UpgradeVersion 0.1.1
-          -LogDir msi-logs
+          -LogDir msi-logs/dog-vision
+      - name: Install, upgrade and remove dog-vision-swing's
+        if: (success() || failure()) && steps.msis.outcome == 'success'
+        shell: pwsh
+        run: >-
+          ./tools/test_msi_on_windows.ps1 -Name dog-vision-swing
+          -Msi swing/build/packages/msi/0.1.0/dog-vision-swing-0.1.0.msi -Version 0.1.0
+          -UpgradeMsi swing/build/packages/msi/0.1.1/dog-vision-swing-0.1.1.msi -UpgradeVersion 0.1.1
+          -LogDir msi-logs/dog-vision-swing
       - if: always()
         uses: actions/upload-artifact@v5
         with:
           name: windows-msi
           path: |
             desktop/build/compose/binaries/main/msi/
+            swing/build/packages/msi/
             msi-logs/

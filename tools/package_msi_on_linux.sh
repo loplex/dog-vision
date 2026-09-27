@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Builds the desktop window's MSI for Windows on x86-64 on Linux, through Wine.
+# Builds a desktop window's MSI for Windows on x86-64 on Linux, through Wine: with --window compose,
+# the default, dog-vision's, the Compose window's; with --window swing, dog-vision-swing's.
 #
 # jpackage makes an installer only on the system the installer is for, so this runs a Windows JDK's
-# jpackage.exe under Wine, over the JAR that `:desktop:windowsUberJar` assembles, with WiX Toolset 3
-# making the MSI. As the tar.gz has, it has a runtime of its own, the window's launcher
-# dog-vision.exe, and dog-vision-cli.exe, the command line alone, which runs in a console. It is
-# written to desktop/build/compose/binaries/main/msi.
+# jpackage.exe under Wine, over the JAR that the window's windowsUberJar task assembles, with WiX
+# Toolset 3 making the MSI. As the tar.gz has, it has a runtime of its own, the window's launcher,
+# dog-vision.exe or dog-vision-swing.exe, and dog-vision-cli.exe, the command line alone, which
+# runs in a console. It is written to desktop/build/compose/binaries/main/msi or
+# swing/build/packages/msi.
 #
 # Three steps go round Wine 11.18, where they fail:
 # - Wine's TransmitFile, handed a file where Windows expects a socket, fails with another error than
@@ -40,17 +42,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-desktop="$root/desktop"
-packaging="$desktop/packaging"
-output="$desktop/build/compose/binaries/main/msi"
-
-# Every later version's MSI replaces the one installed, as Windows Installer tells versions of one
-# product apart by it: never change it.
-upgrade_uuid="602aa86b-3230-4786-8460-ba08bca42e45"
-
-# The runtime's modules, the tar.gz's too: those Compose always takes, and the ones
-# desktop/build.gradle.kts adds.
-modules="java.base,java.desktop,java.logging,jdk.crypto.ec,java.instrument,jdk.unsupported"
+# The icons and dog-vision-cli's properties, which both windows' MSIs take.
+packaging="$root/desktop/packaging"
 
 # Says why on the standard error and exits, with 1 or the status given.
 die() {
@@ -60,7 +53,7 @@ die() {
 
 usage() {
     die "usage: $0 --jdk <Windows JDK 17> --jmods <the Windows JDK's jmods> --wix <WiX 3.14's binaries>
-       [--app-version <version>]" 2
+       [--app-version <version>] [--window compose|swing]" 2
 }
 
 # The path as Windows programs under Wine see it: through the drive Wine maps to the root, Z:.
@@ -79,17 +72,52 @@ require() {
 
 # The arguments.
 
-jdk="" jmods="" wix="" app_version=""
+jdk="" jmods="" wix="" app_version="" window=compose
 while (( $# > 0 )); do
     case "$1" in
                 --jdk) jdk="${2:-}";         shift 2 || usage ;;
               --jmods) jmods="${2:-}";       shift 2 || usage ;;
                 --wix) wix="${2:-}";         shift 2 || usage ;;
         --app-version) app_version="${2:-}"; shift 2 || usage ;;
+             --window) window="${2:-}";      shift 2 || usage ;;
         *) usage ;;
     esac
 done
 [[ -n "$jdk" && -n "$jmods" && -n "$wix" ]] || usage
+
+# What each window's MSI is made of. Every later version's MSI replaces the one installed with the
+# same upgrade code, as Windows Installer tells versions of one product apart by it: never change
+# either, nor give both windows one, as installing the one would then remove the other. The
+# runtime's modules are the tar.gz's: for Compose those it always takes and the ones
+# desktop/build.gradle.kts adds, for Swing those swing/build.gradle.kts names. Compose's launchers
+# pass the Java option, with which its application gives Swing the system's look.
+case "$window" in
+    compose)
+        name="dog-vision"
+        module="desktop"
+        jar_task=":desktop:windowsUberJar"
+        jar_dir="$root/desktop/build/compose/jars"
+        output="$root/desktop/build/compose/binaries/main/msi"
+        main_class="cz.loplex.dogvision.desktop.MainKt"
+        description="How a dog or a cat sees a photo, a video or the camera"
+        upgrade_uuid="602aa86b-3230-4786-8460-ba08bca42e45"
+        modules="java.base,java.desktop,java.logging,jdk.crypto.ec,java.instrument,jdk.unsupported"
+        java_options=(--java-options "-Dcompose.application.configure.swing.globals=true")
+        ;;
+    swing)
+        name="dog-vision-swing"
+        module="swing"
+        jar_task=":swing:windowsUberJar"
+        jar_dir="$root/swing/build/jars"
+        output="$root/swing/build/packages/msi"
+        main_class="cz.loplex.dogvision.swing.MainKt"
+        description="How a dog or a cat sees a photo, a video or the camera, in Swing"
+        upgrade_uuid="acf6164b-f4f9-4430-b4f0-939242f187fb"
+        modules="java.base,java.desktop,java.instrument,jdk.unsupported"
+        java_options=()
+        ;;
+    *) usage ;;
+esac
 
 require "wine" "wine" "wine"
 require "winepath" "wine" "wine"
@@ -116,10 +144,10 @@ version_pattern=$'(^|\n)appVersion=([^\n]+)'
 [[ "$(<"$root/gradle.properties")" =~ $version_pattern ]] || die "gradle.properties has no appVersion"
 gradle_version="${BASH_REMATCH[2]}"
 version="${app_version:-$gradle_version}"
-"$root/gradlew" --quiet ":desktop:windowsUberJar"
-jar="$desktop/build/compose/jars/dog-vision-windows-x64-$gradle_version.jar"
+"$root/gradlew" --quiet "$jar_task"
+jar="$jar_dir/$name-windows-x64-$gradle_version.jar"
 
-staging="$desktop/build/windows-msi"
+staging="$root/$module/build/windows-msi"
 rm -rf "${staging:?}"
 
 # jpackage takes every file in --input into the application, so the JAR goes there alone.
@@ -134,7 +162,7 @@ jlink \
     --output "$staging/runtime"
 
 mkdir -p "$output"
-msi="$output/dog-vision-$version.msi"
+msi="$output/$name-$version.msi"
 rm -f "$msi"
 
 
@@ -147,26 +175,25 @@ export WINEDEBUG="${WINEDEBUG:--all}"
 export LC_ALL="cs_CZ.UTF-8"
 temp="$staging/temp"
 
-# The Java option is Compose's own launchers': its application then gives Swing the system's look. The
-# resource directory holds MsiInstallerCodepage_en.wxl, for the code page the vendor's name needs. The
-# menu group is not jpackage's "Unknown".
+# The resource directory holds MsiInstallerCodepage_en.wxl, for the code page the vendor's name needs.
+# The menu group, the package's name, is not jpackage's "Unknown".
 if log="$(wine "$jpackage" \
     --type "msi" \
-    --name "dog-vision" \
+    --name "$name" \
     --app-version "$version" \
     --vendor "Martin Lopatář" \
-    --description "How a dog or a cat sees a photo, a video or the camera" \
+    --description "$description" \
     --license-file "$(windows_path "$root/LICENSE")" \
     --icon "$(windows_path "$packaging/dog-vision.ico")" \
     --input "$(windows_path "$staging/input")" \
     --main-jar "$(basename "$jar")" \
-    --main-class "cz.loplex.dogvision.desktop.MainKt" \
-    --java-options "-Dcompose.application.configure.swing.globals=true" \
+    --main-class "$main_class" \
+    "${java_options[@]}" \
     --runtime-image "$(windows_path "$staging/runtime")" \
     --add-launcher "dog-vision-cli=$(windows_path "$packaging/dog-vision-cli.properties")" \
     --resource-dir "$(windows_path "$packaging/windows")" \
     --win-menu \
-    --win-menu-group "dog-vision" \
+    --win-menu-group "$name" \
     --win-shortcut \
     --win-dir-chooser \
     --win-upgrade-uuid "$upgrade_uuid" \
@@ -203,7 +230,7 @@ if (( status != 0 )); then
 
     # As jpackage ran it, but without the MSI's validation, and where jpackage runs it: the files the
     # objects name are relative to the application's image.
-    cd "$temp/images/win-msi.image/dog-vision"
+    cd "$temp/images/win-msi.image/$name"
     wine "$wix/light.exe" \
         -nologo -spdb -sval \
         -ext "WixUtilExtension" \
