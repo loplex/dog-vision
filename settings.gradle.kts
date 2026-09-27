@@ -1,4 +1,6 @@
 pluginManagement {
+    // The packaging tasks the desktop modules share.
+    includeBuild("build-logic")
     repositories {
         google {
             content {

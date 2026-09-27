@@ -7,7 +7,6 @@ name: MSI built under Wine
 
 on:
   workflow_dispatch:
-  push:
 
 jobs:
   build:
@@ -78,12 +77,9 @@ jobs:
       - name: Build the MSI and a later version of it
         run: |
           tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
+          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX" --app-version 0.1.1
           mkdir -p wine-msi
-          mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.0.msi wine-msi/
-          sed -i 's/packageVersion = "0.1.0"/packageVersion = "0.1.1"/' desktop/build.gradle.kts
-          tools/package_msi_on_linux.sh --jdk "$JDK17" --jmods "$JMODS" --wix "$WIX"
-          mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.1.msi wine-msi/
-          git checkout desktop/build.gradle.kts
+          mv desktop/build/compose/binaries/main/msi/dog-vision-0.1.{0,1}.msi wine-msi/
           ls -l wine-msi
       - uses: actions/upload-artifact@v5
         with:

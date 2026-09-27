@@ -1,5 +1,6 @@
-# The checks on Linux, and on Windows what Linux cannot show: the window's GL contexts, ANGLE's and
-# WGL's, and its MSI, built with jpackage and installed, upgraded and removed.
+# The checks on Linux and the Linux packages, installed, upgraded and removed; on Windows what Linux
+# cannot show: the window's GL contexts, ANGLE's and WGL's, and its MSI, built with jpackage and
+# installed, upgraded and removed.
 name: CI
 
 on:
@@ -20,18 +21,47 @@ jobs:
       # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
       - run: ./gradlew check
-      # The deb in a bare Ubuntu 20.04, the oldest release its dependencies are named for.
-      - name: Build the deb and try it
-        run: |
-          sudo apt-get install -y fakeroot
-          ./gradlew :desktop:packageDeb
-          tools/test_deb.sh desktop/build/compose/binaries/main/deb/dog-vision_0.1.0_amd64.deb ubuntu:20.04
-      # The rpm in a bare Fedora, with no desktop.
-      - name: Build the rpm and try it
+      # The Linux packages, dog-vision and dog-vision-cli, and a later version of each, which the
+      # build writes beside the first.
+      - name: Build the debs and the rpms
+        id: packages
         run: |
           sudo apt-get install -y rpm
-          ./gradlew :desktop:packageRpm
-          tools/test_rpm.sh desktop/build/compose/binaries/main/rpm/dog-vision-0.1.0-1.x86_64.rpm fedora:42
+          ./gradlew :desktop:packageDeb :desktop:packageRpm :cli:packageDeb :cli:packageRpm
+          ./gradlew :desktop:packageDeb :desktop:packageRpm :cli:packageDeb :cli:packageRpm -PappVersion=0.1.1
+      # Each in a bare Ubuntu 20.04, the oldest release their dependencies are named for, upgraded to
+      # the later version; dog-vision's window opens under Xvfb there.
+      - name: Try the dog-vision deb
+        run: >-
+          tools/test_deb.sh --upgrade desktop/build/packages/deb/dog-vision_0.1.1_amd64.deb
+          desktop/build/packages/deb/dog-vision_0.1.0_amd64.deb ubuntu:20.04
+      - name: Try the dog-vision-cli deb
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_deb.sh --upgrade cli/build/packages/deb/dog-vision-cli_0.1.1_all.deb
+          cli/build/packages/deb/dog-vision-cli_0.1.0_all.deb ubuntu:20.04
+      # Each in a bare Fedora, with no desktop, upgraded the same way.
+      - name: Try the dog-vision rpm
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_rpm.sh --upgrade desktop/build/packages/rpm/dog-vision-0.1.1-1.x86_64.rpm
+          desktop/build/packages/rpm/dog-vision-0.1.0-1.x86_64.rpm fedora:42
+      - name: Try the dog-vision-cli rpm
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_rpm.sh --upgrade cli/build/packages/rpm/dog-vision-cli-0.1.1-1.noarch.rpm
+          cli/build/packages/rpm/dog-vision-cli-0.1.0-1.noarch.rpm fedora:42
+      # The tar.gz, unpacked and run where it is, on its own runtime: the command line, and the
+      # window's main converting a photo given alone.
+      - name: Build the tar.gz and try it
+        if: success() || failure()
+        run: |
+          ./gradlew :desktop:packageTarGz
+          tar -xzf desktop/build/compose/binaries/main/tar/dog-vision-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/dog-vision/bin/dog-vision-cli" --help
+          cp tools/test_photo.jpg "$RUNNER_TEMP"
+          "$RUNNER_TEMP/dog-vision/bin/dog-vision" "$RUNNER_TEMP/test_photo.jpg"
+          test -s "$RUNNER_TEMP/test_photo.dog.png"
       - if: failure()
         uses: actions/upload-artifact@v5
         with:
@@ -110,74 +140,3 @@ jobs:
           path: |
             desktop/build/compose/binaries/main/msi/
             msi-logs/
-
-  # Trials, on spike alone: what the window's ffmpeg button relies on, which only a Windows with
-  # winget shows, on both images, as neither's list of its software names winget.
-  windows-winget:
-    name: Trial - ffmpeg through winget (${{ matrix.image }})
-    strategy:
-      fail-fast: false
-      matrix:
-        image: [windows-2022, windows-2025]
-    runs-on: ${{ matrix.image }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 25
-      - uses: gradle/actions/setup-gradle@v5
-      - run: winget --version
-      # No ffmpeg is installed first; the trial installs it.
-      - run: ./gradlew :desktop:jvmTest --tests cz.loplex.dogvision.desktop.FfmpegWingetTrial
-        env:
-          DOG_VISION_INSTALL_FFMPEG: 1
-      # winget's own bytes through a pipe, as the window reads them, installed already this time;
-      # its status is not the point, so the step does not fail the job.
-      - if: always()
-        continue-on-error: true
-        shell: cmd
-        run: >-
-          winget install --id Gyan.FFmpeg --exact --source winget --scope user
-          --disable-interactivity --accept-package-agreements --accept-source-agreements
-          > winget-output.bin 2>&1
-      - if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: trial-winget-${{ matrix.image }}
-          path: |
-            winget-output.bin
-            desktop/build/reports/
-            desktop/build/test-results/
-
-  # Trial, on spike alone: what the MSI built on Windows carries of the C and C++ runtimes, which
-  # the window's natives, linked statically, and the runtime's own DLLs take.
-  windows-msi-runtime:
-    name: Trial - the Windows-built MSI's runtime DLLs
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 25
-      - uses: gradle/actions/setup-gradle@v5
-      - name: Build the MSI and unpack it
-        shell: pwsh
-        run: |
-          ./tools/package_msi_on_windows.ps1
-          $msi = (Resolve-Path desktop/build/compose/binaries/main/msi/0.1.0/dog-vision-0.1.0.msi).Path
-          $target = Join-Path $PWD "msi-unpacked"
-          Start-Process msiexec -Wait -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$target`""
-          $all = Get-ChildItem -Recurse -File $target
-          Write-Host "files: $($all.Count)"
-          $missing = @()
-          foreach ($dll in "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "ucrtbase.dll",
-                           "api-ms-win-crt-runtime-l1-1-0.dll", "jvm.dll") {
-            $found = $all | Where-Object Name -eq $dll
-            if ($found) { Write-Host "ok: $dll at $($found[0].FullName.Substring($target.Length))" }
-            else { Write-Host "MISSING: $dll"; $missing += $dll }
-          }
-          if ($missing) { exit 1 }
-

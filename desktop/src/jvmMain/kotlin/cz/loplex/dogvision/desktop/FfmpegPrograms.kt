@@ -60,7 +60,7 @@ object FfmpegPrograms {
     fun install(): FfmpegInstall = if (locate()) FfmpegInstall.Found else installThroughWinget()
 
     /** Installs ffmpeg through winget, and finds it where winget put it. */
-    internal fun installThroughWinget(): FfmpegInstall {
+    private fun installThroughWinget(): FfmpegInstall {
         val process = try {
             ProcessBuilder(WINGET).redirectErrorStream(true).start()
         } catch (_: IOException) {
@@ -93,7 +93,7 @@ object FfmpegPrograms {
      * The machine's and the user's PATH as the registry holds them now, their variables expanded, as Windows joins them
      * for a program it starts; empty where PowerShell cannot say.
      */
-    internal fun registryPath(): Pair<String, String> {
+    private fun registryPath(): Pair<String, String> {
         val script = "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding \$false; " +
             "[Environment]::GetEnvironmentVariable('Path', 'Machine'); " +
             "[Environment]::GetEnvironmentVariable('Path', 'User')"

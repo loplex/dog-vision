@@ -10,7 +10,7 @@
 # - A JDK 25 as JAVA_HOME, as the Linux packages' runtime is.
 # - WiX Toolset 3.14's candle.exe and light.exe on the PATH, or its installation's WIX variable.
 #
-# -AppVersion gives the MSI another version than desktop/build.gradle.kts's packageVersion, as a
+# -AppVersion gives the MSI another version than gradle.properties' appVersion, as a
 # test of an upgrade needs a later one; the application in it stays the same.
 param(
     [string]$AppVersion
@@ -51,9 +51,9 @@ $jdkBin = Join-Path $env:JAVA_HOME "bin"
 
 # What jpackage takes in: the JAR and a runtime.
 
-$gradle = Get-Content (Join-Path $desktop "build.gradle.kts") -Raw
-if ($gradle -notmatch 'packageVersion = "([^"]+)"') {
-    throw "desktop/build.gradle.kts has no packageVersion"
+$properties = Get-Content (Join-Path $root "gradle.properties") -Raw
+if ($properties -notmatch '(?m)^appVersion=(.+?)\r?$') {
+    throw "gradle.properties has no appVersion"
 }
 $packageVersion = $Matches[1]
 if (-not $AppVersion) {

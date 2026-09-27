@@ -33,6 +33,9 @@
 #   from WiX 6 on, the binaries come under the Open Source Maintenance Fee's EULA, and JDK 17's
 #   jpackage takes WiX 3 alone.
 #
+# --app-version gives the MSI another version than gradle.properties' appVersion, as a test of an
+# upgrade needs a later one; the application in it stays the same.
+#
 # Run it from anywhere.
 set -euo pipefail
 
@@ -56,7 +59,8 @@ die() {
 }
 
 usage() {
-    die "usage: $0 --jdk <Windows JDK 17> --jmods <the Windows JDK's jmods> --wix <WiX 3.14's binaries>" 2
+    die "usage: $0 --jdk <Windows JDK 17> --jmods <the Windows JDK's jmods> --wix <WiX 3.14's binaries>
+       [--app-version <version>]" 2
 }
 
 # The path as Windows programs under Wine see it: through the drive Wine maps to the root, Z:.
@@ -75,12 +79,13 @@ require() {
 
 # The arguments.
 
-jdk="" jmods="" wix=""
+jdk="" jmods="" wix="" app_version=""
 while (( $# > 0 )); do
     case "$1" in
-          --jdk) jdk="${2:-}";   shift 2 || usage ;;
-        --jmods) jmods="${2:-}"; shift 2 || usage ;;
-          --wix) wix="${2:-}";   shift 2 || usage ;;
+                --jdk) jdk="${2:-}";         shift 2 || usage ;;
+              --jmods) jmods="${2:-}";       shift 2 || usage ;;
+                --wix) wix="${2:-}";         shift 2 || usage ;;
+        --app-version) app_version="${2:-}"; shift 2 || usage ;;
         *) usage ;;
     esac
 done
@@ -104,13 +109,15 @@ wix="$(realpath "$wix")"
 
 # What jpackage takes in: the JAR and a runtime.
 
-# The packages' version, as desktop/build.gradle.kts gives it to the Linux ones. The pattern stays
-# unquoted after =~, where quotes would make it a plain string.
-version_pattern='packageVersion = "([^"]+)"'
-[[ "$(<"$desktop/build.gradle.kts")" =~ $version_pattern ]] || die "desktop/build.gradle.kts has no packageVersion"
-version="${BASH_REMATCH[1]}"
+# The app's version, as gradle.properties gives it to the Linux packages and the JAR's name, unless
+# --app-version gives another. The pattern stays unquoted after =~, where quotes would make it a
+# plain string.
+version_pattern=$'(^|\n)appVersion=([^\n]+)'
+[[ "$(<"$root/gradle.properties")" =~ $version_pattern ]] || die "gradle.properties has no appVersion"
+gradle_version="${BASH_REMATCH[2]}"
+version="${app_version:-$gradle_version}"
 "$root/gradlew" --quiet ":desktop:windowsUberJar"
-jar="$desktop/build/compose/jars/dog-vision-windows-x64-$version.jar"
+jar="$desktop/build/compose/jars/dog-vision-windows-x64-$gradle_version.jar"
 
 staging="$desktop/build/windows-msi"
 rm -rf "${staging:?}"
