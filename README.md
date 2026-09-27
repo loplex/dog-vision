@@ -343,6 +343,10 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     and on Windows runs in a console.
 - **The deb and the rpm install into `/opt/dog-vision`**, with the launchers in its `bin`, and add
   the window to the desktop's menu under Graphics.
+  - **The deb ships the window's desktop entry as a file of the package**,
+    `/usr/share/applications/cz.loplex.dogvision.desktop`, which dpkg adds and removes with it, as
+    Debian's packages do. `packageDeb` moves it there from jpackage's scripts, whose
+    `xdg-desktop-menu` fails where that folder does not exist, as on a system with no desktop.
 - **The tar.gz is the same application unpacked**, to run as `dog-vision/bin/dog-vision` without
   installing it.
 - **The deb and the rpm depend on libEGL and ffmpeg** as well as on the libraries the image links
@@ -354,19 +358,14 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     [`desktop/build.gradle.kts`](desktop/build.gradle.kts), failing on one the table lacks;
     `packageDeb` then puts that Depends into jpackage's deb in place of the build machine's names
     and packs it again with xz, which every dpkg reads.
-  - **The deb was tried on Ubuntu 20.04**, installed and its command line run, **and on Debian 11,
-    Debian 12, Ubuntu 22.04 and 24.04**, where `apt-get install --simulate` resolved every
-    dependency.
+  - **[`tools/test_deb.sh`](tools/test_deb.sh) installs the deb in a bare container**, runs its
+    command line and removes it; it holds on Ubuntu 20.04, 22.04 and 24.04 and on Debian 12. On
+    Debian 11, `apt-get install --simulate` resolved every dependency.
   - **The rpm names libraries and a file** (`libX11.so.6()(64bit)`, `libEGL.so.1()(64bit)`,
     `/usr/bin/ffmpeg` and the like), as Fedora and openSUSE name their packages differently. rpm's
     `elfdeps` lists the libraries from the image, in the task `rpmLibraryRequires`, as jpackage
     finds their packages only on an rpm-based build machine.
 
-### Caveat: the deb does not install where the system has no desktop menu
-
-jpackage's script adds the window to the desktop's menu with `xdg-desktop-menu`, which fails where
-`/usr/share/applications` does not exist, as in a bare container, and dpkg then leaves the package
-unconfigured.
 - **The MSI is built under Wine on Linux, or on Windows**, as jpackage builds an installer only on
   the system it is for.
   It installs into `Program Files\dog-vision` and adds the window to the Start menu, in a dog-vision

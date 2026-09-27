@@ -2,6 +2,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermissions
 
 // The desktop window in Compose Multiplatform, for Linux and Windows: a photo, a video or the camera through ffmpeg,
 // rendered by gl's passes in an offscreen GL context, with ui's controls beside it. Its main is the command line's as
@@ -247,18 +248,27 @@ abstract class DebDepends : DefaultTask() {
 val debDepends = tasks.register<DebDepends>("debDepends") {
     image = tasks.named<AbstractJPackageTask>("createDistributable").flatMap { it.destinationDir }
     packages = debianPackages
-    // What the image's ELF files do not name: LWJGL opens libEGL once it runs, ffmpeg runs apart for a video or the
-    // camera, and the deb's scripts add the window to the desktop's menu through xdg-utils.
-    others = listOf("libegl1", "ffmpeg", "xdg-utils")
+    // What the image's ELF files do not name: LWJGL opens libEGL once it runs, and ffmpeg runs apart for a video or
+    // the camera.
+    others = listOf("libegl1", "ffmpeg")
     depends = layout.buildDirectory.file("compose/tmp/debDepends.txt")
 }
 
 /**
- * Puts [depends]' Depends into each deb jpackage wrote to [debs], and packs it again with xz, which every dpkg reads,
- * where the build machine's dpkg-deb may choose zstd, which Debian 11's cannot.
+ * Makes each deb jpackage wrote to [debs] the one to ship, and packs it again with xz, which every dpkg reads, where
+ * the build machine's dpkg-deb may choose zstd, which Debian 11's cannot:
+ * - its Depends is [depends]';
+ * - the window's desktop entry, [jpackageEntry] in the package's tree, is a file of the package at [entry], as Debian's
+ *   packages ship theirs: dpkg makes its folder where it is missing and removes it with the package. jpackage's scripts
+ *   install it and remove it with xdg-desktop-menu instead, which fails where the folder does not exist, as on a system
+ *   with no desktop, and dpkg then leaves the package half-installed or half-removed.
  */
-class ReplaceDebDepends(private val debs: Provider<Directory>, private val depends: Provider<RegularFile>) :
-    Action<Task> {
+class RepackDeb(
+    private val debs: Provider<Directory>,
+    private val depends: Provider<RegularFile>,
+    private val jpackageEntry: String,
+    private val entry: String,
+) : Action<Task> {
     override fun execute(task: Task) {
         for (deb in debs.get().asFile.listFiles { file -> file.extension == "deb" }.orEmpty()) {
             val tree = Files.createTempDirectory("deb").toFile()
@@ -269,11 +279,33 @@ class ReplaceDebDepends(private val debs: Provider<Directory>, private val depen
                 val lines = control.readLines()
                     .map { if (it.startsWith("Depends:")) "Depends: ${depends.get().asFile.readText()}" else it }
                 control.writeText(lines.joinToString("\n", postfix = "\n"))
+                val desktopFile = tree.resolve(jpackageEntry)
+                check(desktopFile.isFile) { "jpackage's deb has no $jpackageEntry" }
+                val installed = tree.resolve(entry)
+                // Each folder made here as Debian's are, rwxr-xr-x, whatever the build's umask.
+                generateSequence(installed.parentFile) { it.parentFile }.takeWhile { it != tree }.toList().reversed()
+                    .forEach { folder ->
+                        folder.mkdir()
+                        Files.setPosixFilePermissions(folder.toPath(), PosixFilePermissions.fromString("rwxr-xr-x"))
+                    }
+                check(desktopFile.renameTo(installed)) { "Cannot move $jpackageEntry to $entry" }
+                removeLine(tree.resolve("DEBIAN/postinst"), "xdg-desktop-menu install /$jpackageEntry")
+                removeLine(
+                    tree.resolve("DEBIAN/prerm"),
+                    "do_if_file_belongs_to_single_package /$jpackageEntry xdg-desktop-menu uninstall /$jpackageEntry",
+                )
                 dpkgDeb("--root-owner-group", "-Zxz", "-b", tree.path, deb.path)
             } finally {
                 tree.deleteRecursively()
             }
         }
+    }
+
+    /** Removes the one line of [script] that is [line], and fails where jpackage's script has none. */
+    private fun removeLine(script: File, line: String) {
+        val lines = script.readLines()
+        check(lines.count { it.trim() == line } == 1) { "${script.name} has no line $line" }
+        script.writeText(lines.filterNot { it.trim() == line }.joinToString("\n", postfix = "\n"))
     }
 
     private fun dpkgDeb(vararg arguments: String) {
@@ -297,7 +329,15 @@ tasks.withType<AbstractJPackageTask>().configureEach {
     when {
         name.endsWith("Deb") -> {
             inputs.files(debDepends)
-            doLast(ReplaceDebDepends(destinationDir, debDepends.flatMap { it.depends }))
+            val packageName = compose.desktop.application.nativeDistributions.packageName
+            doLast(
+                RepackDeb(
+                    destinationDir,
+                    debDepends.flatMap { it.depends },
+                    jpackageEntry = "opt/$packageName/lib/$packageName-$packageName.desktop",
+                    entry = "usr/share/applications/cz.loplex.dogvision.desktop",
+                ),
+            )
         }
 
         name.endsWith("Rpm") -> {
