@@ -109,7 +109,9 @@ $arguments = @(
     "--win-dir-chooser",
     "--win-upgrade-uuid", $upgradeUuid,
     "--temp", (Join-Path $staging "temp"),
-    "--dest", $output
+    "--dest", $output,
+    # What light.exe says where it fails, which jpackage prints only then.
+    "--verbose"
 )
 
 # From a file in UTF-8, which jpackage reads as its default charset: Java reads its command line in

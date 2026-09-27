@@ -134,7 +134,7 @@ export WINEDEBUG="${WINEDEBUG:--all}"
 temp="$staging/temp"
 
 # The Java option is Compose's own launchers': its application then gives Swing the system's look. The
-# resource directory holds MsiInstallerStrings_en.wxl, for the code page the vendor's name needs. The
+# resource directory holds MsiInstallerCodepage_en.wxl, for the code page the vendor's name needs. The
 # menu group is not jpackage's "Unknown".
 if log="$(wine "$jpackage" \
     --type "msi" \
