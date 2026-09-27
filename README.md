@@ -312,6 +312,8 @@ program's.
 ./gradlew :desktop:packageTarGz  # desktop/build/compose/binaries/main/tar/dog-vision-0.1.0-linux-x64.tar.gz
 tools/package_msi_on_linux.sh --jdk <Windows JDK 17> --jmods <Windows JDK 25's jmods> --wix <WiX 3.14>
                                  # desktop/build/compose/binaries/main/msi/dog-vision-0.1.0.msi
+pwsh tools/package_msi_on_windows.ps1
+                                 # on Windows: desktop/build/compose/binaries/main/msi/0.1.0/dog-vision-0.1.0.msi
 ```
 
 Besides the build's own needs, making them takes these tools, on Ubuntu from the packages named:
@@ -331,7 +333,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   window uses.
   - **Gradle downloads Temurin for the Linux packages** as a toolchain where the machine has none,
     through the Foojay resolver in `settings.gradle.kts`; the MSI's comes from the jmods given to
-    its script.
+    `package_msi_on_linux.sh`, or from the JDK that `package_msi_on_windows.ps1` runs on.
   - **Temurin brings its own libjpeg, giflib, libpng, lcms2, HarfBuzz and FreeType**, which a
     distribution's OpenJDK, Ubuntu's among them, takes from the system; so the Linux packages need
     little more than glibc 2.17 or later, X11, ALSA, fontconfig and the C++ runtime.
@@ -365,25 +367,38 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 jpackage's script adds the window to the desktop's menu with `xdg-desktop-menu`, which fails where
 `/usr/share/applications` does not exist, as in a bare container, and dpkg then leaves the package
 unconfigured.
-- **The MSI is built on Linux under Wine**, as jpackage builds an installer only on the system it
-  is for. It installs into `Program Files\dog-vision` and adds both launchers to the Start menu, in
-  a dog-vision group, and to the desktop. It carries a fixed upgrade code, so that a later version's
-  MSI replaces it; no second version has tried that yet.
+- **The MSI is built under Wine on Linux, or on Windows**, as jpackage builds an installer only on
+  the system it is for.
+  It installs into `Program Files\dog-vision` and adds the window to the Start menu, in a dog-vision
+  group, and to the desktop.
+  It carries a fixed upgrade code, so that a later version's MSI replaces it.
+  - **On Windows, [`tools/package_msi_on_windows.ps1`](tools/package_msi_on_windows.ps1) builds
+    it** with the JDK 25 it runs on and WiX 3.14, without Wine's detours, and light.exe validates
+    it.
+  - **[`tools/test_msi_on_windows.ps1`](tools/test_msi_on_windows.ps1) tries it on a Windows
+    machine to throw away**: it installs the MSI, runs the command line, looks at the shortcuts,
+    installs a later version over it and removes that.
   - **Wine needs three detours**, which
     [`tools/package_msi_on_linux.sh`](tools/package_msi_on_linux.sh) describes and takes: jpackage from a
     JDK 17 with the runtime linked on Linux, WiX's light run a second time without validating the
     MSI, and Microsoft's .NET Framework 4.8 in the prefix.
   - **The MSI's code page is Windows-1250**, from
     [`desktop/packaging/windows`](desktop/packaging/windows/MsiInstallerCodepage_en.wxl), as the
-    vendor's name has a ř that jpackage's Windows-1252 lacks.
-  - **The Start menu and the desktop get `dog-vision-cli` as well**, which started from there only
-    prints its usage: JDK 17's jpackage cannot leave one launcher out.
+    vendor's name has a ř that jpackage's Windows-1252 lacks; on Windows, JDK 25's jpackage takes
+    it from a copy of its own English strings, which the script gives that code page.
+  - **The MSI built under Wine gives `dog-vision-cli` a Start menu entry and a desktop shortcut as
+    well**, which started from there only prints its usage: JDK 17's jpackage cannot leave one
+    launcher out, where JDK 25's, on Windows, does.
 
-### Caveat: the Windows window is tried under Wine only
+### Caveat: the Windows window has run under Wine only, its tests on Windows without a GPU
 
-It has not run on a Windows machine yet, only under Wine 11.18 on Linux, with a Windows JDK 21 and
-the Windows build of ffmpeg: a photo, a video, the camera through DirectShow, WGL chosen and WGL
-taken where Direct3D 11 is switched off, and the command line.
+The window has not run on a Windows machine yet, only under Wine 11.18 on Linux, with a Windows JDK
+21 and the Windows build of ffmpeg: a photo, a video, the camera through DirectShow, WGL chosen and
+WGL taken where Direct3D 11 is switched off, and the command line.
+
+- **Its tests and its MSI run on GitHub's Windows Server 2022**, as
+  [GitHub Actions runs them](#github-actions-runs-them-on-linux-and-windows), which has no GPU:
+  ANGLE draws there on Direct3D 11's software rasteriser, WARP, and WGL on Mesa's llvmpipe.
 
 - **Wine's own `d3dcompiler_47` never finishes linking one of the passes' shaders**, the count of
   differing pixels, so ANGLE hangs there under Wine; Microsoft's, which Windows ships and
@@ -523,12 +538,15 @@ Android Lint says so in its only warnings.
   a recording locks, the language choice and an info button's dialog.
 - `./gradlew :cli:jvmTest` runs the command line's tests: its options, the EXIF orientation in
   either byte order and each turn it asks for, and a photo converted exactly as `core` composes it.
-- `./gradlew :desktop:jvmTest` runs the window's tests, on the machine's GPU through EGL and with
-  its `ffmpeg`:
+- `./gradlew :desktop:jvmTest` runs the window's tests with the machine's `ffmpeg`, on its GPU
+  through EGL, and on Windows through ANGLE and WGL, as the window draws there:
   - [`PassesTest`](desktop/src/jvmTest/kotlin/cz/loplex/dogvision/desktop/PassesTest.kt) holds
     the passes to `core`'s CPU pipeline, as the page's and the app's tests do, and the area read
-    back to its top row first, over OpenGL ES 3.0 and over desktop OpenGL 3.3, as WGL draws, each
-    in a JVM of its own.
+    back to its top row first, over OpenGL ES 3.0 and over desktop OpenGL 3.3, as WGL draws.
+  - [`GlContextTest`](desktop/src/jvmTest/kotlin/cz/loplex/dogvision/desktop/GlContextTest.kt)
+    holds contexts of the two APIs to opening one after the other in one JVM, a context that
+    cannot compile the passes to falling back to the other, as ANGLE falls back to WGL, and the
+    window's own choice to OpenGL ES.
   - [`FfmpegFeedTest`](desktop/src/jvmTest/kotlin/cz/loplex/dogvision/desktop/FfmpegFeedTest.kt)
     plays a video it makes, turned by its file, upright and over and over; reads ffmpeg's list of
     DirectShow cameras as ffmpeg words it now and as it did before 4.4; and holds a program that
@@ -579,6 +597,17 @@ Android Lint says so in its only warnings.
     not measure a line that is a comment and nothing else.
 - `python3 tools/check_links.py` checks that every relative link in the Markdown resolves, down to
   its anchor.
+
+### GitHub Actions runs them on Linux and Windows
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push:
+
+- **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner
+  has no GPU.
+- **On Windows Server 2022, `./gradlew :desktop:jvmTest`**, over ANGLE on WARP and over WGL on
+  Mesa's llvmpipe, which the job puts beside `java.exe`, as Windows's own OpenGL is 1.1.
+- **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions and
+  tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.
 
 ### Caveat: the emulator fails the video tests' colour checks
 
