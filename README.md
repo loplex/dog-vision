@@ -289,6 +289,14 @@ program's.
   pixels, and hands them over as raw RGBA through a pipe.
   - **Windows has no ffmpeg of its own**, so it has to be installed; where `ffmpeg` or `ffprobe`
     cannot run, the window says so in place of the video or the camera.
+  - **On Windows the window offers to install it through winget**, as Gyan's build
+    (`winget install --id Gyan.FFmpeg`) for this user alone, and shows the video or the camera
+    once it is found, without starting again.
+  - **ffmpeg installed while the window runs is looked for on the PATH the registry holds**, the
+    machine's and the user's, as winget puts it on the user's PATH there and the window's own PATH
+    is the one it started with. It is found there before winget is run at all.
+  - **Where winget is missing**, as on a Windows without Microsoft's App Installer, the window opens
+    ffmpeg's download page in the browser and names it.
   - **`--camera N` is `/dev/videoN` on Linux**, through Video4Linux, and on Windows the Nth camera
     ffmpeg lists through DirectShow, counted from 0.
   - **The camera is asked for Motion-JPEG at 1280 x 720**, which a USB webcam gives at 30 frames a
@@ -410,6 +418,8 @@ WGL taken where Direct3D 11 is switched off, and the command line.
   shortcuts into the Linux desktop's (`~/.local/share/applications/wine`, `~/Desktop`) unless
   `WINEDLLOVERRIDES=winemenubuilder.exe=d` is set, and the prefix's Desktop, Documents and other
   folders link into the home unless `winetricks sandbox` removed the links.
+- **The window's offer to install ffmpeg has not run anywhere**, as Wine has no winget: only
+  `FfmpegProgramsTest`'s reading of a PATH and of winget's words has.
 
 ### Caveat: the libraries wait for a stable SDK 37
 
@@ -491,6 +501,8 @@ Android Lint says so in its only warnings.
     desktop OpenGL bindings.
   - [`FfmpegFeed`](desktop/src/jvmMain/kotlin/cz/loplex/dogvision/desktop/FfmpegFeed.kt) reads a
     video's or the camera's frames from `ffmpeg`.
+  - [`FfmpegPrograms`](desktop/src/jvmMain/kotlin/cz/loplex/dogvision/desktop/FfmpegPrograms.kt)
+    says where `ffmpeg` and `ffprobe` are run from, and installs them through winget on Windows.
 
 - **[`testing`](testing)** is what the renderers' tests hold them to, for `core`'s tests, the app's
   instrumented ones, the web page's and the desktop window's alike:
@@ -550,6 +562,9 @@ Android Lint says so in its only warnings.
     plays a video it makes, turned by its file, upright and over and over; reads ffmpeg's list of
     DirectShow cameras as ffmpeg words it now and as it did before 4.4; and holds a program that
     cannot run to being said to be missing, and one that runs to reading nothing.
+  - [`FfmpegProgramsTest`](desktop/src/jvmTest/kotlin/cz/loplex/dogvision/desktop/FfmpegProgramsTest.kt)
+    reads a Windows PATH past its quotes and empty entries, takes each program from the first
+    folder that has it, and reads winget's last words past its progress bars.
 - `./gradlew :web:jsTest` runs the page's tests in headless Chrome:
   - [`PassesTest`](web/src/jsTest/kotlin/cz/loplex/dogvision/web/PassesTest.kt) holds the page's
     WebGL 2 passes to `core`'s CPU pipeline, as `ViewRendererTest` below holds the app's; the share

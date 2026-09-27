@@ -241,11 +241,12 @@ class FfmpegFeed private constructor(
         }
 
         /**
-         * [command] started, with nothing to read on its standard input, which is closed. Throws [FfmpegMissing] if the
-         * program cannot be run.
+         * [command] started, its program from where [FfmpegPrograms] runs it, with nothing to read on its standard
+         * input, which is closed. Throws [FfmpegMissing] if the program cannot be run.
          */
         internal fun start(command: List<String>): Process = try {
-            ProcessBuilder(command).start().apply { outputStream.close() }
+            val program = FfmpegPrograms.command(command.first())
+            ProcessBuilder(listOf(program) + command.drop(1)).start().apply { outputStream.close() }
         } catch (error: IOException) {
             throw FfmpegMissing(command.first(), error)
         }

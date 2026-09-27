@@ -56,6 +56,7 @@ import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.ui.Controls
 import cz.loplex.dogvision.ui.LocalTexts
+import java.awt.Desktop
 import java.awt.EventQueue
 import java.awt.FileDialog
 import java.awt.Frame
@@ -72,8 +73,11 @@ sealed interface Source {
     class Camera(val index: Int) : Source
 }
 
-/** Why nothing is shown, worded when it is shown, in the language chosen then. */
-private typealias Failure = (Texts) -> String
+/**
+ * Why nothing is shown, worded when it is shown, in the language chosen then; [ffmpegMissing] if it is that ffmpeg
+ * cannot be run, which the window offers to install on Windows.
+ */
+private class Failure(val ffmpegMissing: Boolean = false, val words: (Texts) -> String)
 
 /** The height of a caption under each image, and the gap between images, as in the Android app. */
 private val CAPTION_HEIGHT = 40.dp
@@ -163,14 +167,18 @@ private fun Screen(
         Renderer(
             arguments.windowsGl,
             onPicture = { EventQueue.invokeLater { picture = it } },
-            onFailure = { message -> EventQueue.invokeLater { drawFailure = { it.get(Str.DRAW_FAILED, message) } } },
+            onFailure = { message ->
+                EventQueue.invokeLater { drawFailure = Failure { it.get(Str.DRAW_FAILED, message) } }
+            },
         )
     }
     DisposableEffect(renderer) {
         onDispose { renderer.close() }
     }
+    // Counted up once ffmpeg is installed, which starts the source again.
+    var ffmpegInstalls by remember { mutableStateOf(0) }
     // Disposed before the renderer, and the source shown before is closed before another starts.
-    DisposableEffect(source) {
+    DisposableEffect(source, ffmpegInstalls) {
         sourceFailure = null
         val feed = startFeed(source, renderer) { failed -> EventQueue.invokeLater { sourceFailure = failed } }
         onDispose { feed.close() }
@@ -187,7 +195,13 @@ private fun Screen(
         }
     }
     Row(Modifier.dragAndDropTarget(shouldStartDragAndDrop = { droppedFiles(it).isNotEmpty() }, target = drop)) {
-        Preview(picture, drawFailure ?: sourceFailure, Modifier.weight(1f).fillMaxHeight(), renderer::setArea)
+        Preview(
+            picture,
+            drawFailure ?: sourceFailure,
+            Modifier.weight(1f).fillMaxHeight(),
+            renderer::setArea,
+            onFfmpegInstalled = { ffmpegInstalls++ },
+        )
         Column(Modifier.width(380.dp).fillMaxHeight()) {
             Row(
                 Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -216,16 +230,32 @@ private fun Screen(
 private fun droppedFiles(event: DragAndDropEvent): List<File> =
     (event.dragData() as? DragData.FilesList)?.readFiles().orEmpty().map { File(URI(it)) }
 
-/** The images laid out as [picture] has them, with their captions, or why there are none. */
+/**
+ * The images laid out as [picture] has them, with their captions, or why there are none, and on Windows an offer to
+ * install ffmpeg where it is missing, whose [onFfmpegInstalled] is told once it is.
+ */
 @Composable
-private fun Preview(picture: Picture?, failure: Failure?, modifier: Modifier, onArea: (Area) -> Unit) {
+private fun Preview(
+    picture: Picture?,
+    failure: Failure?,
+    modifier: Modifier,
+    onArea: (Area) -> Unit,
+    onFfmpegInstalled: () -> Unit,
+) {
     val density = LocalDensity.current
     val texts = LocalTexts.current
     val captionHeight = with(density) { CAPTION_HEIGHT.roundToPx() }
     val gap = with(density) { GAP.roundToPx() }
     Box(modifier.onSizeChanged { onArea(Area(it.width, it.height, captionHeight, gap)) }) {
         if (failure != null) {
-            Text(failure(texts), Modifier.align(Alignment.Center).padding(24.dp), textAlign = TextAlign.Center)
+            Column(
+                Modifier.align(Alignment.Center).padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(failure.words(texts), textAlign = TextAlign.Center)
+                if (failure.ffmpegMissing && onWindows) FfmpegOffer(onFfmpegInstalled)
+            }
             return@Box
         }
         if (picture == null) return@Box
@@ -248,6 +278,48 @@ private fun Preview(picture: Picture?, failure: Failure?, modifier: Modifier, on
 }
 
 /**
+ * A button that installs ffmpeg through winget, and what came of it; [onInstalled] is told once ffmpeg is found. Where
+ * winget is missing, ffmpeg's download page is opened in the browser, where the system has one.
+ */
+@Composable
+private fun FfmpegOffer(onInstalled: () -> Unit) {
+    val texts = LocalTexts.current
+    var installing by remember { mutableStateOf(false) }
+    var failure by remember { mutableStateOf<Failure?>(null) }
+    val currentOnInstalled by rememberUpdatedState(onInstalled)
+    OutlinedButton(
+        enabled = !installing,
+        onClick = {
+            installing = true
+            failure = null
+            thread(name = "dog-vision-ffmpeg-install", isDaemon = true) {
+                val installed = FfmpegPrograms.install()
+                if (installed == FfmpegInstall.NoWinget) openDownloadPage()
+                EventQueue.invokeLater {
+                    installing = false
+                    failure = when (installed) {
+                        FfmpegInstall.Found -> null
+                        FfmpegInstall.NoWinget -> Failure { it.get(Str.NO_WINGET, FfmpegPrograms.DOWNLOAD_PAGE) }
+                        is FfmpegInstall.Failed -> Failure { it.get(Str.FFMPEG_NOT_INSTALLED, installed.reason) }
+                    }
+                    if (installed == FfmpegInstall.Found) currentOnInstalled()
+                }
+            }
+        },
+    ) {
+        Text(texts.get(if (installing) Str.INSTALLING_FFMPEG else Str.INSTALL_FFMPEG))
+    }
+    failure?.let { Text(it.words(texts), textAlign = TextAlign.Center) }
+}
+
+/** ffmpeg's download page, in the system's browser, where it has one. */
+private fun openDownloadPage() {
+    runCatching {
+        if (Desktop.isDesktopSupported()) Desktop.getDesktop().browse(URI(FfmpegPrograms.DOWNLOAD_PAGE))
+    }
+}
+
+/**
  * Starts showing [source] through [renderer], on a thread of its own, since a large photo takes a moment to read and
  * ffmpeg to open a camera; [onFailure] is told why it cannot be shown. The feed it returns stops what it started, and a
  * photo read after it is closed is not shown.
@@ -265,7 +337,7 @@ private fun startFeed(source: Source, renderer: Renderer, onFailure: (Failure) -
                         FfmpegFeed.video(
                             source.file,
                             { renderer.show(it, live = true) },
-                            { reason -> onFailure { it.get(Str.VIDEO_FAILED, source.file.name, reason) } },
+                            { reason -> onFailure(Failure { it.get(Str.VIDEO_FAILED, source.file.name, reason) }) },
                         )
                     } else {
                         val frame = frameOf(preview(photo))
@@ -277,20 +349,22 @@ private fun startFeed(source: Source, renderer: Renderer, onFailure: (Failure) -
                 is Source.Camera -> FfmpegFeed.camera(
                     source.index,
                     { renderer.show(it, live = true) },
-                    { reason -> onFailure { it.get(Str.CAMERA_FAILED, reason) } },
+                    { reason -> onFailure(Failure { it.get(Str.CAMERA_FAILED, reason) }) },
                 )
             }
         } catch (error: FfmpegMissing) {
-            onFailure { it.get(Str.FFMPEG_MISSING, error.program) }
+            onFailure(Failure(ffmpegMissing = true) { it.get(Str.FFMPEG_MISSING, error.program) })
             null
         } catch (error: IOException) {
             val reason = error.message.orEmpty()
-            onFailure { texts ->
-                when (source) {
-                    is Source.Camera -> texts.get(Str.CAMERA_FAILED, reason)
-                    is Source.Media -> texts.get(Str.MEDIA_FAILED, source.file.name) + ": $reason"
-                }
-            }
+            onFailure(
+                Failure { texts ->
+                    when (source) {
+                        is Source.Camera -> texts.get(Str.CAMERA_FAILED, reason)
+                        is Source.Media -> texts.get(Str.MEDIA_FAILED, source.file.name) + ": $reason"
+                    }
+                },
+            )
             null
         }
         synchronized(lock) {
