@@ -1,0 +1,28 @@
+# A trial on this branch alone: dog-vision's deb and rpm on Adoptium's Temurin, from Adoptium's
+# repository, rather than on the distribution's OpenJDK.
+name: Temurin trial
+
+on:
+  push:
+
+jobs:
+  temurin:
+    name: dog-vision on Temurin
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build the deb and the rpm
+        id: packages
+        run: |
+          sudo apt-get update && sudo apt-get install -y rpm
+          ./gradlew :desktop:packageDeb :desktop:packageRpm
+      - name: Try the deb on Temurin
+        run: tools/test_deb.sh --temurin desktop/build/packages/deb/dog-vision_0.1.0_amd64.deb ubuntu:24.04
+      - name: Try the rpm on Temurin
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: tools/test_rpm.sh --temurin desktop/build/packages/rpm/dog-vision-0.1.0-1.x86_64.rpm fedora:42
