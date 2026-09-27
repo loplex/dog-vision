@@ -451,9 +451,18 @@ tasks.register<Jar>("windowsUberJar") {
     from(tasks.named<Jar>("jvmJar").map { zipTree(it.archiveFile) })
     from(configurations.named("windowsRuntime").map { classpath -> classpath.map { zipTree(it) } })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "**/module-info.class")
-    // ANGLE for Windows on ARM, which LWJGL's and skiko's natives here are not for.
-    exclude("nucleus/native/win32-aarch64/**")
+    val excludes = listOf(
+        "META-INF/*.SF",
+        "META-INF/*.DSA",
+        "META-INF/*.RSA",
+        "**/module-info.class",
+        // ANGLE for Windows on ARM, which LWJGL's and skiko's natives here are not for.
+        "nucleus/native/win32-aarch64/**",
+    )
+    exclude(excludes)
+    // Gradle fingerprints the zip files, not what the patterns leave of them, and would otherwise keep the JAR as it is
+    // when a pattern changes.
+    inputs.property("excludes", excludes)
 }
 
 tasks.named<Test>("jvmTest") {
