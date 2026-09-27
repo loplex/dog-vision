@@ -315,6 +315,71 @@ class RepackDeb(
     }
 }
 
+class DeleteDirectory(private val directory: Provider<Directory>) : Action<Task> {
+    override fun execute(task: Task) {
+        directory.get().asFile.deleteRecursively()
+    }
+}
+
+/**
+ * Makes the rpm jpackage wrote to [rpms] the one to ship, by running rpmbuild again on the spec and the app image
+ * jpackage left in [temp], its --temp, with the spec changed so that the window's desktop entry, [jpackageEntry] in the
+ * image, is a file of the package at [entry], as with the deb, and xdg-utils is not required. jpackage's scriptlets
+ * install and remove it with xdg-desktop-menu instead, which openSUSE's xdg-utils fails where /etc/xdg/menus does not
+ * exist, as on a system with no desktop: the entry is not installed, and %preun fails, so rpm cannot remove the
+ * package. jpackage cannot be given a spec of ours: it reads the last --resource-dir, and Compose passes its own after
+ * freeArgs.
+ */
+class RepackRpm(
+    private val rpms: Provider<Directory>,
+    private val temp: Provider<Directory>,
+    private val jpackageEntry: String,
+    private val entry: String,
+) : Action<Task> {
+    override fun execute(task: Task) {
+        val temp = temp.get().asFile
+        val spec = temp.resolve("SPECS").listFiles { file -> file.extension == "spec" }.orEmpty().singleOrNull()
+            ?: error("jpackage left no single spec in ${temp.resolve("SPECS")}")
+        val rpm = rpms.get().asFile.listFiles { file -> file.extension == "rpm" }.orEmpty().singleOrNull()
+            ?: error("jpackage wrote no single rpm to ${rpms.get()}")
+        var lines = spec.readLines()
+        lines = replaceLine(lines, { it.startsWith("Requires: xdg-utils ,") }) {
+            listOf("Requires: " + it.substringAfter(',').trim())
+        }
+        lines = replaceLine(lines, { it.startsWith("cp -r %{_sourcedir}/") }) {
+            listOf(
+                it,
+                "install -d -m 755 %{buildroot}/${entry.substringBeforeLast('/')}",
+                "mv %{buildroot}/$jpackageEntry %{buildroot}/$entry",
+            )
+        }
+        lines = replaceLine(lines, { it.trim() == "xdg-desktop-menu install /$jpackageEntry" }) { emptyList() }
+        lines = replaceLine(
+            lines,
+            {
+                it.trim() ==
+                    "do_if_file_belongs_to_single_package /$jpackageEntry xdg-desktop-menu uninstall /$jpackageEntry"
+            },
+        ) { emptyList() }
+        spec.writeText(lines.joinToString("\n", postfix = "\n"))
+        // As jpackage runs it.
+        val process = ProcessBuilder(
+            "rpmbuild", "-bb", spec.path,
+            "--define", "%_sourcedir ${temp.resolve("image")}",
+            "--define", "%_rpmdir ${rpm.parent}",
+            "--define", "%_topdir $temp",
+            "--define", "%_rpmfilename ${rpm.name}",
+        ).redirectErrorStream(true).start()
+        val output = process.inputReader().readText()
+        check(process.waitFor() == 0) { "rpmbuild failed: $output" }
+    }
+
+    /** Replaces the one line of [lines] that [matches] by [by]'s, and fails where jpackage's spec has none. */
+    private fun replaceLine(lines: List<String>, matches: (String) -> Boolean, by: (String) -> List<String>) =
+        lines.singleOrNull(matches)?.let { line -> lines.flatMap { if (it === line) by(it) else listOf(it) } }
+            ?: error("jpackage's spec has no single line to replace")
+}
+
 // dog-vision-cli beside dog-vision, in the app image and in each package: Compose runs jpackage for each of them from
 // the JARs, not the packages from the app image.
 tasks.withType<AbstractJPackageTask>().configureEach {
@@ -344,6 +409,20 @@ tasks.withType<AbstractJPackageTask>().configureEach {
             freeArgs.add("--linux-package-deps")
             val libraries = rpmLibraryRequires.flatMap { it.requires }.map { it.asFile.readText() }
             freeArgs.add(libraries.map { "$it,libEGL.so.1()(64bit),/usr/bin/ffmpeg" })
+            // jpackage's --temp, which it wants empty, for RepackRpm to build the rpm again from.
+            val temp = layout.buildDirectory.dir("compose/tmp/$name-jpackage")
+            freeArgs.add("--temp")
+            freeArgs.add(temp.map { it.asFile.path })
+            doFirst(DeleteDirectory(temp))
+            val packageName = compose.desktop.application.nativeDistributions.packageName
+            doLast(
+                RepackRpm(
+                    destinationDir,
+                    temp,
+                    jpackageEntry = "opt/$packageName/lib/$packageName-$packageName.desktop",
+                    entry = "usr/share/applications/cz.loplex.dogvision.desktop",
+                ),
+            )
         }
     }
 }

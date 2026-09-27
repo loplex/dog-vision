@@ -330,7 +330,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 |---------|--------------------------------------------|-------------------|--------------------------------------------------|
 | deb     | `dpkg-deb`, `dpkg`, `fakeroot`             | dpkg, fakeroot    | jpackage, and `packageDeb` to pack it again      |
 | deb     | `readelf`                                  | binutils          | `debDepends`                                     |
-| rpm     | `rpmbuild` 4.10 or later, `rpm`, `elfdeps` | rpm               | jpackage and `rpmLibraryRequires`                |
+| rpm     | `rpmbuild` 4.10 or later, `rpm`, `elfdeps` | rpm               | jpackage, `rpmLibraryRequires`, `packageRpm`     |
 | MSI     | Wine, a Windows JDK 17, jmods, WiX 3.14    | wine, winetricks  | `tools/package_msi_on_linux.sh`, which says more |
 
 - **Gradle downloads Temurin 25 on the first build** that needs it, where it finds none installed,
@@ -351,10 +351,15 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     and on Windows runs in a console.
 - **The deb and the rpm install into `/opt/dog-vision`**, with the launchers in its `bin`, and add
   the window to the desktop's menu under Graphics.
-  - **The deb ships the window's desktop entry as a file of the package**,
-    `/usr/share/applications/cz.loplex.dogvision.desktop`, which dpkg adds and removes with it, as
-    Debian's packages do. `packageDeb` moves it there from jpackage's scripts, whose
-    `xdg-desktop-menu` fails where that folder does not exist, as on a system with no desktop.
+  - **Each ships the window's desktop entry as a file of the package**,
+    `/usr/share/applications/cz.loplex.dogvision.desktop`, which dpkg or rpm adds and removes with
+    it, as the distributions' own packages do. `packageDeb` and `packageRpm` move it there from
+    jpackage's scripts, whose `xdg-desktop-menu` fails on a system with no desktop: in Ubuntu where
+    that folder does not exist, in openSUSE where `/etc/xdg/menus` does not, and rpm then cannot
+    remove the package.
+  - **`packageRpm` builds jpackage's rpm a second time** with `rpmbuild`, from the spec jpackage
+    wrote, changed, as jpackage takes a spec of our own only from a `--resource-dir`, and Compose
+    passes its own after ours.
 - **The tar.gz is the same application unpacked**, to run as `dog-vision/bin/dog-vision` without
   installing it.
 - **The deb and the rpm depend on libEGL and ffmpeg** as well as on the libraries the image links
@@ -373,6 +378,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     `/usr/bin/ffmpeg` and the like), as Fedora and openSUSE name their packages differently. rpm's
     `elfdeps` lists the libraries from the image, in the task `rpmLibraryRequires`, as jpackage
     finds their packages only on an rpm-based build machine.
+  - **[`tools/test_rpm.sh`](tools/test_rpm.sh) does for the rpm what `test_deb.sh` does**, with dnf
+    or zypper; it holds on Fedora 42, its minimal image, openSUSE Leap 15.6 and Tumbleweed.
 
 - **The MSI is built under Wine on Linux, or on Windows**, as jpackage builds an installer only on
   the system it is for.
