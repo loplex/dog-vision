@@ -20,6 +20,12 @@ jobs:
       # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
       - run: ./gradlew check
+      # The deb in a bare Ubuntu 20.04, the oldest release its dependencies are named for.
+      - name: Build the deb and try it
+        run: |
+          sudo apt-get install -y fakeroot
+          ./gradlew :desktop:packageDeb
+          tools/test_deb.sh desktop/build/compose/binaries/main/deb/dog-vision_0.1.0_amd64.deb ubuntu:20.04
       - if: failure()
         uses: actions/upload-artifact@v5
         with:
