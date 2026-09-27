@@ -212,9 +212,14 @@ jobs:
           wine --version
           sudo wget -q -O /usr/local/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks
           sudo chmod +x /usr/local/bin/winetricks
+      # wineboot would wait for Wine Mono's and Gecko's installer dialog on the virtual display, and
+      # the prefix be left without its DLLs; .NET Framework 4.8 replaces Mono anyway. Only there, as
+      # mscoree disabled would keep .NET from running.
       - name: Put .NET Framework 4.8 into the prefix
         run: |
-          xvfb-run -a wineboot --init
+          WINEDLLOVERRIDES="mscoree,mshtml=;$WINEDLLOVERRIDES" xvfb-run -a wineboot --init
+          wineserver -w
+          test -f "$WINEPREFIX/drive_c/windows/system32/kernel32.dll"
           xvfb-run -a winetricks -q dotnet48
           wineserver -w
       # jpackage.exe from a Windows JDK 17, the runtime from the jmods of the Windows JDK of this
