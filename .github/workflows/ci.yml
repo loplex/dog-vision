@@ -21,20 +21,27 @@ jobs:
       # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
       - run: ./gradlew check
-      # The Linux packages, dog-vision and dog-vision-cli, and a later version of each, which the
-      # build writes beside the first.
+      # The Linux packages, dog-vision, dog-vision-swing and dog-vision-cli, and a later version of
+      # each, which the build writes beside the first.
       - name: Build the debs and the rpms
         id: packages
         run: |
           sudo apt-get install -y rpm
-          ./gradlew :desktop:packageDeb :desktop:packageRpm :cli:packageDeb :cli:packageRpm
-          ./gradlew :desktop:packageDeb :desktop:packageRpm :cli:packageDeb :cli:packageRpm -PappVersion=0.1.1
+          tasks=(:desktop:packageDeb :desktop:packageRpm :swing:packageDeb :swing:packageRpm)
+          tasks+=(:cli:packageDeb :cli:packageRpm)
+          ./gradlew "${tasks[@]}"
+          ./gradlew "${tasks[@]}" -PappVersion=0.1.1
       # Each in a bare Ubuntu 20.04, the oldest release their dependencies are named for, upgraded to
-      # the later version; dog-vision's window opens under Xvfb there.
+      # the later version; each window opens under Xvfb there.
       - name: Try the dog-vision deb
         run: >-
           tools/test_deb.sh --upgrade desktop/build/packages/deb/dog-vision_0.1.1_amd64.deb
           desktop/build/packages/deb/dog-vision_0.1.0_amd64.deb ubuntu:20.04
+      - name: Try the dog-vision-swing deb
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_deb.sh --upgrade swing/build/packages/deb/dog-vision-swing_0.1.1_amd64.deb
+          swing/build/packages/deb/dog-vision-swing_0.1.0_amd64.deb ubuntu:20.04
       - name: Try the dog-vision-cli deb
         if: (success() || failure()) && steps.packages.outcome == 'success'
         run: >-
@@ -46,6 +53,11 @@ jobs:
         run: >-
           tools/test_rpm.sh --upgrade desktop/build/packages/rpm/dog-vision-0.1.1-1.x86_64.rpm
           desktop/build/packages/rpm/dog-vision-0.1.0-1.x86_64.rpm fedora:42
+      - name: Try the dog-vision-swing rpm
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_rpm.sh --upgrade swing/build/packages/rpm/dog-vision-swing-0.1.1-1.x86_64.rpm
+          swing/build/packages/rpm/dog-vision-swing-0.1.0-1.x86_64.rpm fedora:42
       - name: Try the dog-vision-cli rpm
         if: (success() || failure()) && steps.packages.outcome == 'success'
         run: >-
@@ -62,6 +74,16 @@ jobs:
           cp tools/test_photo.jpg "$RUNNER_TEMP"
           "$RUNNER_TEMP/dog-vision/bin/dog-vision" "$RUNNER_TEMP/test_photo.jpg"
           test -s "$RUNNER_TEMP/test_photo.dog.png"
+      # The Swing window's, the same way.
+      - name: Build the dog-vision-swing tar.gz and try it
+        if: success() || failure()
+        run: |
+          ./gradlew :swing:packageTarGz
+          tar -xzf swing/build/packages/tar/dog-vision-swing-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/dog-vision-swing/bin/dog-vision-cli" --help
+          mkdir "$RUNNER_TEMP/swing" && cp tools/test_photo.jpg "$RUNNER_TEMP/swing"
+          "$RUNNER_TEMP/dog-vision-swing/bin/dog-vision-swing" "$RUNNER_TEMP/swing/test_photo.jpg"
+          test -s "$RUNNER_TEMP/swing/test_photo.dog.png"
       - if: failure()
         uses: actions/upload-artifact@v5
         with:
@@ -98,7 +120,7 @@ jobs:
           }
       # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU. Mesa would
       # take its Direct3D 12 driver, which needs Mesa's dxil.dll, over llvmpipe.
-      - run: ./gradlew :desktop:jvmTest
+      - run: ./gradlew :desktop-core:jvmTest
         env:
           GALLIUM_DRIVER: llvmpipe
       - if: always()
@@ -106,9 +128,9 @@ jobs:
         with:
           name: windows-gl-reports
           path: |
-            desktop/build/reports/
-            desktop/build/test-results/
-            desktop/hs_err_pid*.log
+            desktop-core/build/reports/
+            desktop-core/build/test-results/
+            desktop-core/hs_err_pid*.log
 
   windows-msi:
     name: Windows MSI

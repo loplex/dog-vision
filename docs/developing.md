@@ -15,20 +15,22 @@ Building the programs is [Building it](building.md)'s.
 
 ## How the code is laid out
 
-| Module                   | Holds                                          | Built for             |
-|--------------------------|------------------------------------------------|-----------------------|
-| [`core`](../core)        | the species, the model, the image pipeline     | the JVM, JavaScript   |
-| [`gl`](../gl)            | the GLSL ES 3.00 passes that render a view     | the JVM, JavaScript   |
-| [`texts`](../texts)      | the wording, in English and Czech              | the JVM, JavaScript   |
-| [`ui`](../ui)            | the controls, in Compose Multiplatform         | Android, the JVM      |
-| [`app`](../app)          | the Android app                                | Android               |
-| [`web`](../web)          | the web page                                   | JavaScript            |
-| [`cli`](../cli)          | the command line                               | the JVM               |
-| [`desktop`](../desktop)  | the desktop window                             | the JVM               |
-| [`testing`](../testing)  | what the renderers' tests hold them to         | the JVM, JavaScript   |
+| Module                            | Holds                                      | Built for           |
+|-----------------------------------|--------------------------------------------|---------------------|
+| [`core`](../core)                 | the species, the model, the image pipeline | the JVM, JavaScript |
+| [`gl`](../gl)                     | the GLSL ES 3.00 passes that render a view | the JVM, JavaScript |
+| [`texts`](../texts)               | the wording, in English and Czech          | the JVM, JavaScript |
+| [`ui`](../ui)                     | the controls, in Compose Multiplatform     | Android, the JVM    |
+| [`app`](../app)                   | the Android app                            | Android             |
+| [`web`](../web)                   | the web page                               | JavaScript          |
+| [`cli`](../cli)                   | the command line                           | the JVM             |
+| [`desktop-core`](../desktop-core) | what the desktop windows share             | the JVM             |
+| [`desktop`](../desktop)           | the desktop window, in Compose             | the JVM             |
+| [`swing`](../swing)               | the desktop window, in Swing               | the JVM             |
+| [`testing`](../testing)           | what the renderers' tests hold them to     | the JVM, JavaScript |
 
 [`build-logic`](../build-logic) is no module but a Gradle build of its own, included in this one:
-the tasks the desktop's Linux packages are made with, which a module takes by applying the plugin
+the tasks the Linux packages are made with, which a module takes by applying the plugin
 `cz.loplex.dogvision.packaging`.
 
 - **`core` has no platform in it**: it holds what the desktop program's `dog_vision.core` holds,
@@ -51,6 +53,11 @@ the tasks the desktop's Linux packages are made with, which a module takes by ap
 - **`cli`'s `main` is the window's too**:
   [`runCommandLine`](../cli/src/jvmMain/kotlin/cz/loplex/dogvision/cli/Main.kt) hands whatever is
   no conversion to a window given to it.
+- **`desktop-core` has no toolkit in it**, neither Compose nor skiko: the GL contexts, the passes'
+  renderer, ffmpeg's feeds, and the pixels read back handed to a function that makes the window's
+  image of them.
+  Its `LiveSession` holds what a window shows, as the Python program's does, so that the Compose
+  window and the Swing one only lay it out.
 
 ### The view is rendered on the GPU, and a photo at full size on the CPU
 
@@ -78,14 +85,15 @@ The test classes' comments say what each of them holds.
 | `./gradlew :texts:allTests`                 | every language having every string, and plurals      |
 | `./gradlew :ui:jvmTest`                     | the shared controls, in Compose's test scene         |
 | `./gradlew :cli:jvmTest`                    | the options, the EXIF orientation, a conversion      |
-| `./gradlew :desktop:jvmTest`                | the window's passes, GL contexts and ffmpeg          |
+| `./gradlew :desktop-core:jvmTest`           | the window's passes, GL contexts, ffmpeg, session    |
+| `./gradlew :swing:jvmTest`                  | the Swing window's image, theme and a dropped file   |
 | `./gradlew :web:jsTest`                     | the page's passes, snapshot and recording            |
 | `./gradlew :app:connectedDebugAndroidTest`  | the renderer, recording and conversion, on a device  |
 | `./gradlew :app:lintDebug`                  | Android Lint alone                                   |
 
 - **The renderers' tests hold each GPU renderer to `core`'s CPU pipeline**: the app's, the web
   page's and the window's alike, through [`testing`](../testing)'s reference pattern.
-- **`:desktop:jvmTest` draws on this machine's GPU**, through EGL on Linux and through ANGLE and WGL
+- **`:desktop-core:jvmTest` draws on this machine's GPU**, through EGL on Linux and through ANGLE and WGL
   on Windows, and runs the machine's `ffmpeg`.
 - **`:web:jsTest` runs in headless Chrome, which renders WebGL 2 in software**, with SwiftShader, as
   [`karma.config.d/webgl.js`](../web/karma.config.d/webgl.js) tells it to.
@@ -111,9 +119,11 @@ in [`.editorconfig`](../.editorconfig):
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every push:
 
 - **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner
-  has no GPU; then the deb, built in two versions and tried by `test_deb.sh --upgrade` in Ubuntu
-  20.04, and the rpm, by `test_rpm.sh --upgrade` in Fedora 42.
-- **On Windows Server 2022, `./gradlew :desktop:jvmTest`**, over ANGLE on WARP and over WGL on
+  has no GPU; then the debs and the rpms of `dog-vision` and `dog-vision-cli`, each built in two
+  versions and tried by `test_deb.sh --upgrade` in Ubuntu 20.04 and `test_rpm.sh --upgrade` in
+  Fedora 42, `dog-vision`'s window under Xvfb; and the tar.gz, unpacked on the runner, where its
+  command line runs and its window's main converts a photo.
+- **On Windows Server 2022, `./gradlew :desktop-core:jvmTest`**, over ANGLE on WARP and over WGL on
   Mesa's llvmpipe, which the job puts beside `java.exe`, as Windows's own OpenGL is 1.1.
 - **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions and
   tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.

@@ -180,9 +180,15 @@ The camera and a photo record there.
 ## The command line
 
 ```sh
+dog-vision-cli --species cat --compare dog photo.jpg            # from the deb or the rpm
 java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
 ```
 
+- **On Linux it installs as a package of its own, `dog-vision-cli`**, from its deb or its rpm, and
+  runs as `dog-vision-cli` from the `PATH` on the system's Java 17 or newer, which the package
+  manager installs with it where there is none; a headless Java is enough, as it opens no window.
+- **Anywhere else, the JAR runs on a Java 17 or newer**: `./gradlew :cli:uberJar` builds it, with
+  everything it needs.
 - **It converts a photo at full size**, as the desktop program's `dog-vision photo.jpg` does: it
   writes `photo.dog.png` next to the photo, or into `--output-dir`, and says what share of the
   pixels differ when `--difference` asks for the map.
@@ -205,6 +211,14 @@ dog-vision --species cat photo.jpg  # converts it, as the command line does
 It is a first version, for Linux and Windows on x86-64, of a window to replace the desktop
 program's.
 
+- **On Linux it installs from the deb or the rpm `dog-vision`**, as `dog-vision` on the `PATH` and
+  *Dog vision* in the desktop's menu (*Psí vidění* in Czech), on the system's Java 17 or newer,
+  which the package manager installs with it where there is none.
+  It recommends `dog-vision-cli`, the command line alone, which is a package of its own.
+- **The tar.gz runs without installing**, unpacked anywhere, as `dog-vision/bin/dog-vision`, on a
+  Java of its own; on Windows, the MSI installs it with one as well.
+- **Its launcher takes the Java in `JAVA_HOME`**, else the one on the `PATH`, else the newest in
+  `/usr/lib/jvm` or `/usr/lib64/jvm`, whichever is first 17 or newer.
 - **It takes the command line's options**, and converts a photo given without `--window` as the
   command line does.
 - **A photo is scaled down to 1280 pixels** for the view, as the app's is.

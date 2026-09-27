@@ -17,7 +17,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 /**
  * Writes an application's desktop entry, which puts it in the desktop's menu, named in each language [strings] has:
  * Name= from values/strings.xml, and Name[cs]= and the like from values-cs/strings.xml, so that the menu names the
- * application in the system's language, as the window's title does.
+ * application in the system's language, as the window's title does, each with [nameSuffix] after it.
  */
 abstract class DesktopEntry : DefaultTask() {
     /** Android's strings.xml files, as texts has them: values/ in English, values-<language>/ in each other one. */
@@ -28,6 +28,10 @@ abstract class DesktopEntry : DefaultTask() {
     /** The string the name is, such as app_name. */
     @get:Input
     abstract val nameString: Property<String>
+
+    /** What follows the name in every language, such as " (Swing)", where two packages share one; none by default. */
+    @get:Input
+    abstract val nameSuffix: Property<String>
 
     @get:Input
     abstract val comment: Property<String>
@@ -46,12 +50,17 @@ abstract class DesktopEntry : DefaultTask() {
     @get:OutputFile
     abstract val entry: RegularFileProperty
 
+    init {
+        nameSuffix.convention("")
+    }
+
     @TaskAction
     fun write() {
         val folders = strings.get().asFile.listFiles { file -> file.isDirectory && file.name.startsWith("values") }
             .orEmpty().sortedBy { it.name }
         val names = folders.mapNotNull { folder ->
-            val name = androidString(folder.resolve("strings.xml"), nameString.get()) ?: return@mapNotNull null
+            val name = androidString(folder.resolve("strings.xml"), nameString.get())?.plus(nameSuffix.get())
+                ?: return@mapNotNull null
             // values-pt-rBR is pt_BR in a desktop entry's key.
             val language = folder.name.removePrefix("values").removePrefix("-").replace("-r", "_")
             if (language.isEmpty()) "Name=$name" else "Name[$language]=$name"

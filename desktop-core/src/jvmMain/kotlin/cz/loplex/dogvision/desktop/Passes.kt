@@ -101,7 +101,7 @@ internal class Passes(private val gl: DesktopGl) {
     val reading: Int get() = reads.size
 
     /**
-     * The area drawn first of those being read back, RGBA with the top row first as Skia takes it, once the GPU has
+     * The area drawn first of those being read back, RGBA with the top row first as images take it, once the GPU has
      * read it, else null; with [wait], it waits for the GPU instead. GL reads the bottom row first.
      */
     fun takeArea(wait: Boolean = false): ByteArray? {

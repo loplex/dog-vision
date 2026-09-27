@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Installs an rpm of the project's, dog-vision or dog-vision-cli, in a bare container, runs it and
-# removes it, checking each step. With --upgrade, it installs a later rpm over the first before
-# removing it, as an update does. With --temurin, it installs Adoptium's Temurin JRE first, from
-# Adoptium's repository, and checks that the rpm takes it rather than an OpenJDK.
+# Installs an rpm of the project's, dog-vision, dog-vision-swing or dog-vision-cli, in a bare
+# container, runs it and removes it, checking each step. With --upgrade, it installs a later rpm
+# over the first before removing it, as an update does. With --temurin, it installs Adoptium's
+# Temurin JRE first, from Adoptium's repository, and checks that the rpm takes it rather than an
+# OpenJDK.
 #
 # A bare image has no desktop, and openSUSE's has no /etc/xdg/menus, which is what a headless
 # install for the command line alone meets. dnf or zypper installs the rpm there with its
@@ -14,7 +15,7 @@
 # Both convert test_photo.jpg, beside this script, as tools/test_deb.sh says.
 #
 # A later rpm is the same build with another version, `-PappVersion=0.1.1`, which
-# `:desktop:packageRpm` and `:cli:packageRpm` write beside the first.
+# `:desktop:packageRpm`, `:swing:packageRpm` and `:cli:packageRpm` write beside the first.
 #
 # Needs docker, or podman installed as docker. Usage:
 #   tools/test_rpm.sh [--temurin] [--upgrade <a later rpm>] <the rpm> [image with dnf, zypper or
@@ -94,13 +95,14 @@ converts() {
         "$1" /tmp/photo/test_photo.jpg &&
         [ "$(od -An -tx1 -N8 /tmp/photo/test_photo.dog.png | tr -d ' \n')" = 89504e470d0a1a0a ]
 }
-# dog-vision shows the photo in a window called Dog vision on the display :99, which Xvfb draws in
-# memory; the window's output is in /tmp/window.log, and its home is /tmp/home.
+# The package's window, dog-vision's or dog-vision-swing's, shows the photo in a window called Dog
+# vision on the display :99, which Xvfb draws in memory; the window's output is in /tmp/window.log,
+# and its home is /tmp/home.
 window_opens() {
     [ -e /tmp/.X11-unix/X99 ] || { Xvfb :99 -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 & }
     for _ in 1 2 3 4 5 6 7 8 9 10; do [ -e /tmp/.X11-unix/X99 ] && break; sleep 1; done
     rm -rf /tmp/home && mkdir /tmp/home
-    DISPLAY=:99 HOME=/tmp/home dog-vision --window /photo/test_photo.jpg >/tmp/window.log 2>&1 &
+    DISPLAY=:99 HOME=/tmp/home "$package" --window /photo/test_photo.jpg >/tmp/window.log 2>&1 &
     window=$!
     shown=""
     for _ in $(seq 60); do
@@ -117,9 +119,11 @@ window_opens() {
     [ -n "$shown" ]
 }
 # skiko and LWJGL loaded the libraries the rpm installs rather than unpack their own copies, into
-# the home or /tmp, as they do where no library path names them.
+# the home or /tmp, as they do where no library path names them; FlatLaf, in dog-vision-swing,
+# unpacked none of its own either.
 unpacks_no_natives() {
-    ! ls -d /tmp/home/.skiko /tmp/home/.lwjgl* /tmp/lwjgl* 2>/dev/null | grep -q .
+    ! ls -d /tmp/home/.skiko /tmp/home/.lwjgl* /tmp/lwjgl* /tmp/home/.flatlaf* /tmp/flatlaf* 2>/dev/null |
+        grep -q .
 }
 # Installs the packages $@ with the image's own tool.
 install_packages() {
@@ -178,6 +182,15 @@ check_installed() {
             check "its window opens under Xvfb$1" window_opens
             check "skiko and LWJGL load the rpm's natives$1" unpacks_no_natives
             ;;
+        dog-vision-swing)
+            check "the window is in the desktop menu folder$1" \
+                test -f /usr/share/applications/cz.loplex.dogvision.swing.desktop
+            check "dog-vision-swing runs from PATH$1" dog-vision-swing --help
+            check "it converts a JPEG to a PNG$1" converts dog-vision-swing
+            command -v Xvfb >/dev/null || install_display
+            check "its window opens under Xvfb$1" window_opens
+            check "LWJGL and FlatLaf unpack no natives$1" unpacks_no_natives
+            ;;
         dog-vision-cli)
             check "dog-vision-cli runs from PATH$1" dog-vision-cli --help
             check "it converts a JPEG to a PNG$1" converts dog-vision-cli
@@ -198,6 +211,13 @@ check_removed() {
             check "/usr/share/dog-vision is gone" test ! -e /usr/share/dog-vision
             check "/usr/lib/dog-vision is gone" test ! -e /usr/lib/dog-vision
             check "/opt/dog-vision is gone" test ! -e /opt/dog-vision
+            ;;
+        dog-vision-swing)
+            check "its menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.swing.desktop
+            check "its icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.swing.png
+            check "/usr/bin/dog-vision-swing is gone" test ! -e /usr/bin/dog-vision-swing
+            check "/usr/share/dog-vision-swing is gone" test ! -e /usr/share/dog-vision-swing
+            check "/usr/lib/dog-vision-swing is gone" test ! -e /usr/lib/dog-vision-swing
             ;;
         dog-vision-cli)
             check "/usr/bin/dog-vision-cli is gone" test ! -e /usr/bin/dog-vision-cli

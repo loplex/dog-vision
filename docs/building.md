@@ -83,7 +83,9 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 | MSI     | Wine, a Windows JDK 17, jmods, WiX 3.14    | wine, winetricks  | `tools/package_msi_on_linux.sh`, which says more |
 
 - **Gradle downloads Temurin 25 on the first build** that needs it, where it finds none installed,
-  so that build needs the network.
+  so that build needs the network: jpackage runs from it, and it is the tar.gz's runtime, where the
+  MSI scripts link the MSI's from a Windows JDK 25.
+  The deb and the rpm take none, as they run on the system's Java.
 - **The tar.gz needs nothing more**, and neither do the JARs.
 - **The version, 0.1.0 in the names above, is `appVersion` in
   [`gradle.properties`](../gradle.properties)**, the Android app's `versionName` too.

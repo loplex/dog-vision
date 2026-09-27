@@ -36,4 +36,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "dog-vision"
 
-include(":app", ":cli", ":core", ":desktop", ":gl", ":testing", ":texts", ":ui", ":web")
+include(":app", ":cli", ":core", ":desktop", ":desktop-core", ":gl", ":swing", ":testing", ":texts", ":ui", ":web")

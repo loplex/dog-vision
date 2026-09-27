@@ -7,7 +7,7 @@
 #
 # Needs:
 # - PowerShell 7 (pwsh), which reads this file as UTF-8, as the vendor's name needs.
-# - A JDK 25 as JAVA_HOME, as the Linux packages' runtime is.
+# - A JDK 25 as JAVA_HOME, as the tar.gz's runtime is.
 # - WiX Toolset 3.14's candle.exe and light.exe on the PATH, or its installation's WIX variable.
 #
 # -AppVersion gives the MSI another version than gradle.properties' appVersion, as a
@@ -26,7 +26,7 @@ $packaging = Join-Path $desktop "packaging"
 # product apart by it: never change it. package_msi_on_linux.sh gives the same.
 $upgradeUuid = "602aa86b-3230-4786-8460-ba08bca42e45"
 
-# The runtime's modules, the Linux packages' too.
+# The runtime's modules, the tar.gz's too.
 $modules = "java.base,java.desktop,java.logging,jdk.crypto.ec,java.instrument,jdk.unsupported"
 
 # Runs a program and stops the script where it fails, as $ErrorActionPreference does not for them.

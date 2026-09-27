@@ -10,9 +10,9 @@ import cz.loplex.dogvision.packaging.debianPackages
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// The desktop window in Compose Multiplatform, for Linux and Windows: a photo, a video or the camera through ffmpeg,
-// rendered by gl's passes in an offscreen GL context, with ui's controls beside it. Its main is the command line's as
-// well, so that a photo given alone is converted as cli converts it.
+// The desktop window in Compose Multiplatform, for Linux and Windows: desktop-core's picture of a photo, a video or
+// the camera, with ui's controls beside it. Its main is the command line's as well, so that a photo given alone is
+// converted as cli converts it.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
@@ -23,13 +23,13 @@ plugins {
 /** The class whose main the window and its JARs start with. */
 val mainClassName = "cz.loplex.dogvision.desktop.MainKt"
 
-/** Whether this machine is Windows, where the run and the tests draw through ANGLE and WGL, as the window does. */
+/** Whether this machine is Windows, where the run draws through ANGLE and WGL, as the window does. */
 val onWindows = System.getProperty("os.name").startsWith("Windows")
 
 /** LWJGL's native part for this machine: Linux's or Windows's, on x86-64. */
 val lwjglNatives = if (onWindows) "natives-windows" else "natives-linux"
 
-/** The LWJGL modules with a native part on Linux: desktop GL's is for the tests of LwjglGl through EGL. */
+/** The LWJGL modules with a native part on Linux: desktop GL's is for LwjglGl through EGL. */
 val lwjglWithLinuxNatives = listOf(libs.lwjgl.asProvider(), libs.lwjgl.opengles, libs.lwjgl.opengl)
 
 /** The LWJGL modules with a native part on Windows, where GLFW makes the WGL context. */
@@ -47,29 +47,16 @@ kotlin {
 
     sourceSets {
         jvmMain.dependencies {
-            implementation(project(":cli"))
-            implementation(project(":gl"))
+            implementation(project(":desktop-core"))
             implementation(project(":ui"))
             implementation(libs.compose.multiplatform.desktop)
             implementation(libs.compose.multiplatform.material3)
-            implementation(libs.lwjgl.asProvider())
-            implementation(libs.lwjgl.egl)
-            implementation(libs.lwjgl.glfw)
-            implementation(libs.lwjgl.opengl)
-            implementation(libs.lwjgl.opengles)
-            // This machine's natives, which the run, the tests and packageUberJarForCurrentOS take.
+            // This machine's natives, which the run and packageUberJarForCurrentOS take.
             runtimeOnly(compose.desktop.currentOs)
             for (library in lwjglWithNatives) {
                 runtimeOnly("${library.get().module}:${libs.versions.lwjgl.get()}:$lwjglNatives")
             }
             if (onWindows) runtimeOnly(libs.nucleus.angle.natives)
-        }
-        jvmTest.dependencies {
-            implementation(project(":testing"))
-            implementation(kotlin("test"))
-            implementation(project.dependencies.platform(libs.junit.bom))
-            implementation(libs.junit.jupiter)
-            runtimeOnly(libs.junit.platform.launcher)
         }
     }
 }
@@ -296,8 +283,4 @@ tasks.register<Jar>("windowsUberJar") {
     // Gradle fingerprints the zip files, not what the patterns leave of them, and would otherwise keep the JAR as it is
     // when a pattern changes.
     inputs.property("excludes", excludes)
-}
-
-tasks.named<Test>("jvmTest") {
-    useJUnitPlatform()
 }
