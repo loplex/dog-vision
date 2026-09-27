@@ -83,11 +83,15 @@ class FfmpegFeedTest {
         assertEquals("dog-vision-no-such-ffmpeg", error.program)
     }
 
-    /** cat copies its standard input until it ends, so it ends at once with nothing to copy. */
+    /**
+     * cat copies its standard input until it ends, so it ends at once with nothing to copy; Windows's sort, which
+     * Windows finds in its system folder before the PATH, reads it to its end as well.
+     */
     @Test
     fun aProgramStartedReadsNothing() {
-        val process = FfmpegFeed.start(listOf("cat"))
-        assertTrue(process.waitFor(5, TimeUnit.SECONDS), "cat still waits for its input")
+        val program = if (onWindows) "sort" else "cat"
+        val process = FfmpegFeed.start(listOf(program))
+        assertTrue(process.waitFor(5, TimeUnit.SECONDS), "$program still waits for its input")
         assertEquals("", process.inputStream.bufferedReader().readText())
     }
 
