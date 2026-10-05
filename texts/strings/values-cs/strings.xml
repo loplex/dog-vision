@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Psí vidění</string>
-    <string name="desktop_comment">Jak vidí pes nebo jiné zvíře fotku, video nebo obraz z kamery</string>
+    <string name="app_name">Jak vidí pes</string>
+    <string name="desktop_comment">Simuluje, jak zvíře vidí fotku, video nebo obraz z kamery</string>
     <string name="original">originál</string>
     <string name="species_label">%1$s (%2$s)</string>
     <string name="difference_caption">červeně: znatelně odlišné (%1$s pixelů)</string>

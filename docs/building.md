@@ -214,14 +214,14 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     skiko's and LWJGL's for `dog-vision-compose`, LWJGL's alone for `dog-vision-swing`;
   - the launchers, `dog-vision-compose`, `dog-vision-swing` and `dog-vision-cli`, in `/usr/bin`, on `PATH`;
   - each window's menu entry, named in the system's language, and its icons in the hicolor theme:
-    `cz.loplex.dogvision.compose.desktop` ("Dog Vision (Kotlin Compose)", "Psí vidění (Kotlin Compose)")
-    and `cz.loplex.dogvision.swing.desktop` ("Dog Vision (Java Swing)", "Psí vidění (Java Swing)"),
+    `cz.loplex.dogvision.compose.desktop` ("Dog Vision (Kotlin Compose)", "Jak vidí pes (Kotlin Compose)")
+    and `cz.loplex.dogvision.swing.desktop` ("Dog Vision (Java Swing)", "Jak vidí pes (Java Swing)"),
     in `/usr/share/applications`.
 - **The web page's deb and rpm, `dog-vision-web`, need no Java**, and have no natives,
   so one package serves every architecture:
   - the page in `/usr/share/dog-vision-web`,
     `index.html`, `dog-vision.js` and `styles.css`, without the script's source map;
-  - its menu entry, `cz.loplex.dogvision.web.desktop` ("Dog Vision (web)", "Psí vidění (web)"),
+  - its menu entry, `cz.loplex.dogvision.web.desktop` ("Dog Vision (web)", "Jak vidí pes (web)"),
     which opens that `index.html` in the system's browser through `xdg-open`, and its icons;
   - no command in `/usr/bin`, as the menu entry is what opens the page.
 - **The script's source map is a package of its own, `dog-vision-web-sourcemap`**:
