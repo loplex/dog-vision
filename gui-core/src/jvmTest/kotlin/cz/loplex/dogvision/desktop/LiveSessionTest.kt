@@ -378,6 +378,39 @@ class LiveSessionTest {
     }
 
     @Test
+    fun aCameraPluggedInIsOfferedOnceTheCamerasAreListedAgain() {
+        val session = session(arguments = WindowArguments())
+        val plugged = CameraOption("4", "Another Camera", Facing.FRONT)
+        cameras = cameras + plugged
+        assertEquals(listOf(null) + cameras.dropLast(1), session.state.value.camera.offered)
+        session.listCamerasAgain()
+        assertEquals(listOf(null) + cameras, session.state.value.camera.offered)
+    }
+
+    @Test
+    fun aListingOfTheCamerasOvertakenByALaterOneOffersNothing() {
+        val listings = mutableListOf<() -> Unit>()
+        val session = LiveSession<Unit>(
+            WindowArguments(),
+            { _, _ -> renderer },
+            feed,
+            cameraLister = { cameras },
+            inBackground = { listings += it },
+            post = { it() },
+            systemLanguage = { "en" },
+        )
+        listings.removeAt(0)()
+        val first = cameras
+        session.listCamerasAgain()
+        cameras = cameras.take(1)
+        session.listCamerasAgain()
+        listings.removeAt(listings.lastIndex)()
+        cameras = first
+        listings.removeAt(listings.lastIndex)()
+        assertEquals(listOf(null) + first.take(1), session.state.value.camera.offered)
+    }
+
+    @Test
     fun aCameraNotListedIsShownAsTheCommandLineNamesIt() {
         cameras = emptyList()
         val camera = session(arguments = WindowArguments(camera = 4)).state.value.camera

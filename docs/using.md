@@ -258,6 +258,8 @@ It runs on Linux and Windows on x86-64.
   and Java's own where neither is: Java's comes up behind the window on KDE from its second opening on.
 - **Camera goes back to the camera** shown last, or else the one the command line names;
   the panel's [*Camera*](#the-camera-and-its-mirroring) picks another, or *Off*.
+- **The cameras are listed again as the panel's list drops down**, so that one plugged in since shows;
+  on Windows, where ffmpeg lists them, they come a moment after it opens.
 - **F9 or the arrow at the images' edge hides the controls**, and the images take their room; the same again shows them.
 - **q or Escape closes it**, but for while a list is dropped down, which then takes the key.
 - **It has no menus, no settings, no snapshots and no recording yet.**

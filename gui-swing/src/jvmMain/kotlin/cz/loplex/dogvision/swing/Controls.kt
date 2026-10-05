@@ -38,6 +38,8 @@ import javax.swing.JTextArea
 import javax.swing.Scrollable
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
+import javax.swing.event.PopupMenuEvent
+import javax.swing.event.PopupMenuListener
 import kotlin.math.roundToInt
 
 /**
@@ -310,12 +312,22 @@ internal class Controls(private val session: LiveSession<*>) :
         return withInfo(column, { it.get(label) }, { it.get(about) })
     }
 
-    /** The camera the state's choice offers, Off first, named as the texts name them. */
+    /**
+     * The camera the state's choice offers, Off first, named as the texts name them;
+     * the cameras are listed again as the list drops down.
+     */
     private fun cameraChoice(): JComponent {
         var choice = CameraChoice()
         val box = JComboBox<CameraOption?>().apply {
             renderer = worded { camera -> texts.cameraNames(choice).getOrElse(choice.offered.indexOf(camera)) { "" } }
             addActionListener { reported { session.chooseCamera(selectedItem as CameraOption?) } }
+            addPopupMenuListener(object : PopupMenuListener {
+                override fun popupMenuWillBecomeVisible(event: PopupMenuEvent) = session.listCamerasAgain()
+
+                override fun popupMenuWillBecomeInvisible(event: PopupMenuEvent) = Unit
+
+                override fun popupMenuCanceled(event: PopupMenuEvent) = Unit
+            })
         }
         on { state ->
             if (choice.offered != state.camera.offered) {

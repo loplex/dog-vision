@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
  * set to the session's state as the window sets them whenever it changes.
  */
 class ControlsTest {
-    private val cameras = listOf(
+    private var cameras = listOf(
         CameraOption("0", "Integrated Camera", Facing.UNKNOWN),
         CameraOption("2", null, Facing.BACK),
     )
@@ -80,6 +80,15 @@ class ControlsTest {
         assertEquals(cameras[1], session.state.value.camera.shown)
         box.selectedItem = null
         assertEquals(Source.None, session.state.value.source)
+    }
+
+    @Test
+    fun theCamerasAreListedAgainAsTheListDropsDown() {
+        val box = shown().all<JComboBox<CameraOption?>>().first()
+        cameras = cameras.take(1)
+        box.firePopupMenuWillBecomeVisible()
+        shown()
+        assertEquals(listOf(null) + cameras, (0 until box.itemCount).map(box::getItemAt))
     }
 
     @Test

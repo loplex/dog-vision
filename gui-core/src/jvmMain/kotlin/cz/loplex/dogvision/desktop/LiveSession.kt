@@ -114,6 +114,9 @@ class LiveSession<I>(
     /** The feed of the source shown, and how many were started, so that a failure of one closed since is not shown. */
     private var running: AutoCloseable? = null
     private var started = 0
+
+    /** Counts the listings of the cameras, so that one overtaken by a later one offers nothing. */
+    private var listings = 0
     private var closed = false
 
     private val renderer = makeRenderer(
@@ -269,16 +272,23 @@ class LiveSession<I>(
     /**
      * Lists the cameras in the background,
      * and offers them once they are listed, the one shown with what the list says of it;
-     * none where they cannot be listed, as where Windows has no ffmpeg yet.
+     * none where they cannot be listed, as where Windows has no ffmpeg yet.\
+     * The windows ask for it as their list of cameras drops down, as one may have been plugged in or out since.
      */
-    private fun listCamerasAgain() = inBackground {
+    fun listCamerasAgain() {
+        val listing = ++listings
+        inBackground { offerCameras(listing) }
+    }
+
+    /** Lists the cameras, and offers them unless a listing after the [listing]th has begun meanwhile. */
+    private fun offerCameras(listing: Int) {
         val cameras = try {
             cameraLister()
         } catch (_: IOException) {
             emptyList()
         }
         post {
-            if (!closed) {
+            if (!closed && listing == listings) {
                 changeCamera {
                     val listed = shown?.let { shown -> cameras.firstOrNull { it.id == shown.id } ?: shown }
                     copy(cameras = cameras, shown = listed)

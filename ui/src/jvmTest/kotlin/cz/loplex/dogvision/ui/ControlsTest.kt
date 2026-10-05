@@ -51,6 +51,7 @@ class ControlsTest {
         var camera by mutableStateOf(camera)
         var language by mutableStateOf("")
         var resets = 0
+        var camerasOpened = 0
     }
 
     private val back = CameraOption("0", null, Facing.BACK)
@@ -78,6 +79,7 @@ class ControlsTest {
                         language = held.language,
                         onLanguage = { held.language = it },
                         modifier = width?.let { Modifier.width(it) } ?: Modifier,
+                        onCamerasOpened = { held.camerasOpened++ },
                     )
                 }
             }
@@ -194,6 +196,18 @@ class ControlsTest {
         onNodeWithText("Integrated Camera").performClick()
         node(Str.CAMERA_OFF).performClick()
         assertEquals(null, held.camera.shown)
+    }
+
+    @Test
+    fun theCameraListDroppingDownIsHandedOn() = runComposeUiTest {
+        val held = show()
+        node(Str.CAMERA).performClick()
+        node(Str.BACK_CAMERA).performClick()
+        assertEquals(1, held.camerasOpened)
+        node(Str.CAMERA_OFF).performClick()
+        assertEquals(1, held.camerasOpened, "a choice closes the list")
+        node(Str.CAMERA_OFF).performClick()
+        assertEquals(2, held.camerasOpened)
     }
 
     @Test

@@ -185,6 +185,7 @@ private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, 
                     language = state.language,
                     onLanguage = session::setLanguage,
                     modifier = Modifier.weight(1f),
+                    onCamerasOpened = session::listCamerasAgain,
                 )
             }
         }

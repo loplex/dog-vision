@@ -68,7 +68,7 @@ import kotlin.math.roundToInt
  * a video cannot change its size; so is the choice of camera, as the source's size would change.
  *
  * The camera section at the top shows [camera], and hands a camera chosen, or null for Off, to [onCamera],
- * and a mirroring chosen to [onMirroring].\
+ * and a mirroring chosen to [onMirroring]; [onCamerasOpened] is called as its list drops down.\
  * The language choice at the end shows [language], a language tag or "" for the system's,
  * and hands a choice to [onLanguage].
  */
@@ -84,12 +84,13 @@ fun Controls(
     language: String,
     onLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCamerasOpened: () -> Unit = {},
 ) {
     val params = view.params
     fun setParams(change: Params.() -> Params) = onChange { it.copy(params = it.params.change()) }
     ScrollingColumn(modifier, PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
         Section(Str.CAMERA, startsOpen = false) {
-            CameraSection(camera, enabled = !recording, onCamera, onMirroring)
+            CameraSection(camera, enabled = !recording, onCamera, onMirroring, onCamerasOpened)
         }
         Section(Str.SPECIES, startsOpen = true) {
             SpeciesChoice(
@@ -203,7 +204,8 @@ private fun LanguageChoice(current: String, onChoose: (String) -> Unit) {
 /**
  * The camera [choice] offers, Off first, which a choice hands to [onCamera] while [enabled],
  * and the mirroring of its image, which a choice hands to [onMirroring]:
- * Automatic, worded with where the camera faces, only where that is known.
+ * Automatic, worded with where the camera faces, only where that is known.\
+ * [onOpened] is called as the list of cameras drops down.
  */
 @Composable
 private fun CameraSection(
@@ -211,6 +213,7 @@ private fun CameraSection(
     enabled: Boolean,
     onCamera: (CameraOption?) -> Unit,
     onMirroring: (Mirroring) -> Unit,
+    onOpened: () -> Unit,
 ) {
     val texts = LocalTexts.current
     val offered = choice.offered
@@ -221,6 +224,7 @@ private fun CameraSection(
         selected = offered.indexOf(choice.shown),
         enabled = enabled,
         onSelect = { onCamera(offered[it]) },
+        onOpened = onOpened,
     )
     Text(text(Str.MIRRORING), style = MaterialTheme.typography.labelLarge)
     val choices = listOf(
@@ -284,7 +288,10 @@ private fun SpeciesChoice(
     )
 }
 
-/** One of [names], the [selected]th shown, in a list that drops down under its [label]; [onSelect] takes the index. */
+/**
+ * One of [names], the [selected]th shown, in a list that drops down under its [label];
+ * [onSelect] takes the index, and [onOpened] is called as the list drops down.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ListChoice(
@@ -294,13 +301,17 @@ private fun ListChoice(
     selected: Int,
     enabled: Boolean,
     onSelect: (Int) -> Unit,
+    onOpened: () -> Unit = {},
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     CountedWhileOpen(expanded && enabled)
     Row(verticalAlignment = Alignment.CenterVertically) {
         ExposedDropdownMenuBox(
             expanded = expanded && enabled,
-            onExpandedChange = { expanded = it },
+            onExpandedChange = { open ->
+                if (open && !expanded) onOpened()
+                expanded = open
+            },
             modifier = Modifier.weight(1f),
         ) {
             OutlinedTextField(
