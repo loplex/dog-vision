@@ -150,6 +150,7 @@ class GlRenderer<I>(
     private class Drawn(val layout: ScreenLayout, val view: View, var share: Double?, val area: Area, val clears: Int)
 
     /** The loop that renders until [close]. */
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
     private fun render(passes: Passes) {
         var uploading: ByteBuffer = ByteBuffer.allocateDirect(0)
         var live = false

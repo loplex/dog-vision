@@ -254,6 +254,7 @@ class FfmpegFeed private constructor(
          * a size turned a quarter by the stream's rotation is swapped, as ffmpeg turns its frames.\
          * Throws IOException with what ffprobe says if it cannot read one.
          */
+        @Suppress("MagicNumber")
         internal fun probe(options: List<String>, input: String): Pair<Int, Int> {
             @Suppress("ktlint:standard:argument-list-wrapping")
             val command = listOf("ffprobe", "-v", "error") + options + listOf(
@@ -269,9 +270,9 @@ class FfmpegFeed private constructor(
             val values = output.lines().mapNotNull { line ->
                 line.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() }
             }.toMap()
-            val width = values["width"]?.toIntOrNull()
-            val height = values["height"]?.toIntOrNull()
-            if (status != 0 || width == null || height == null || width <= 0 || height <= 0) {
+            val width = values["width"]?.toIntOrNull()?.takeIf { it > 0 }
+            val height = values["height"]?.toIntOrNull()?.takeIf { it > 0 }
+            if (status != 0 || width == null || height == null) {
                 throw IOException(errors.lineSequence().lastOrNull(String::isNotBlank) ?: "$input has no video")
             }
             val rotation = values["rotation"]?.toDoubleOrNull()?.let { abs(it.toInt()) % 180 } ?: 0

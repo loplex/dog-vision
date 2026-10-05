@@ -68,6 +68,7 @@ import java.nio.ByteOrder
  * LWJGL takes pixels only in direct buffers, so they are copied through one kept for the purpose;
  * [readPixels] and [texImage2D] take a direct buffer as well, for a frame that is one already.
  */
+@Suppress("TooManyFunctions")
 class LwjglGles : DesktopGl {
     private var scratch: ByteBuffer = ByteBuffer.allocateDirect(0)
 

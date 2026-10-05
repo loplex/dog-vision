@@ -28,6 +28,7 @@ import kotlin.math.roundToInt
  * and a mirroring chosen to [onMirroring].\
  * The language chooser at the end shows [language], null for the browser's, and hands a choice to [onLanguage].
  */
+@Suppress("TooManyFunctions")
 class Controls(
     private val container: HTMLElement,
     private val texts: Texts,
@@ -155,6 +156,7 @@ class Controls(
      * Sets every control to what [view] and [camera] hold, and enables those that apply to them;
      * while [recording], not those that change how many images the view has, nor the camera, as in the Android app.
      */
+    @Suppress("MagicNumber")
     fun show(view: View, recording: Boolean = false, camera: CameraChoice = CameraChoice()) {
         showCamera(camera, recording)
         val params = view.params

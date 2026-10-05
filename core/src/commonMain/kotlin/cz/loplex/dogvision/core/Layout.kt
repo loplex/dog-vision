@@ -15,6 +15,7 @@ data class ScreenLayout(val arrangement: Arrangement, val images: List<Box>, val
  * side by side or one above another, whichever shows them larger, and centred.\
  * An image is scaled, never cropped.
  */
+@Suppress("LongParameterList")
 fun layOut(
     areaWidth: Int,
     areaHeight: Int,

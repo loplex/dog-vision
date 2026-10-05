@@ -12,6 +12,7 @@ class OrientationTest {
     private enum class Corner { TOP_LEFT, TOP_RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT }
 
     /** The corner that the pixel at ([x], [y]) of a [width] x [height] image lands in, turned and then mirrored. */
+    @Suppress("LongParameterList")
     private fun turn(x: Int, y: Int, width: Int, height: Int, rotation: Int, mirrored: Boolean): Corner {
         val (turnedX, turnedY, turnedWidth) = when (rotation) {
             90 -> Triple(height - 1 - y, x, height)

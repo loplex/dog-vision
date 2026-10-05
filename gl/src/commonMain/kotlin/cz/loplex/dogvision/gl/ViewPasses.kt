@@ -1,3 +1,6 @@
+// Texture sizes, vertex counts and quarter turns of the passes.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.gl
 
 import cz.loplex.dogvision.core.Box
@@ -25,6 +28,7 @@ import kotlin.math.exp
  * The passes bind a vertex array of their own while they draw and unbind it after,
  * so that a context they share with code drawing from client-side vertex arrays, as Media3's does, is left as it was.
  */
+@Suppress("TooManyFunctions")
 class ViewPasses(private val gl: Gl) {
     private lateinit var upright: Program
     private lateinit var copy: Program

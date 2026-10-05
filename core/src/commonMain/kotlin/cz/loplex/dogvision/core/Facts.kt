@@ -97,6 +97,7 @@ fun sourcePieces(source: Source, texts: FactTexts): List<String> =
     pieces("(" + listOfNotNull(source.citation, source.note?.let(texts::note)).joinToString(", ") + ")")
 
 /** What the simulation knows about a species, as rows for a table. */
+@Suppress("MagicNumber")
 fun speciesFacts(species: Species, texts: FactTexts): List<Fact> {
     val decimal = texts.decimalSeparator
     val peaks = species.peaks

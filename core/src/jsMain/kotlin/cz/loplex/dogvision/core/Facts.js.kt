@@ -19,6 +19,7 @@ actual fun formatSignificant(value: Double, digits: Int, decimalSeparator: Char)
     return stripFraction(plain(rounded)).replace('.', decimalSeparator)
 }
 
+@Suppress("MagicNumber")
 actual fun formatFixed(value: Double, decimals: Int, decimalSeparator: Char): String {
     require(decimals in 0 until MAX_DIGITS) { "Cannot round to $decimals decimals" }
     require(abs(value) < 1e21) { "toFixed writes $value with an exponent" }
@@ -51,6 +52,7 @@ private fun isTie(digits: String, decimal: String, value: Double): Boolean {
  * Whether the plain decimal [text] has a finite binary expansion, and so can be a double's exact value,
  * rather than only the decimal a double is nearest to: N / 10^k is one exactly when 5^k divides N.
  */
+@Suppress("MagicNumber")
 private fun isDyadic(text: String): Boolean {
     val fraction = text.substringAfter('.', "")
     if (fraction.length > MAX_DIGITS + 1) return false

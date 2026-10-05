@@ -1,3 +1,6 @@
+// Named after what it is for, saving's names, rather than after its one class.
+@file:Suppress("MatchingDeclarationName")
+
 package cz.loplex.dogvision.core
 
 /** A time on the local clock, to the second, as the name of what is saved records it. */

@@ -63,6 +63,7 @@ private fun windowsPrefersDark(): Boolean = registryPrefersDark(
 )
 
 /** Whether what `reg query` prints of AppsUseLightTheme says dark: "AppsUseLightTheme    REG_DWORD    0x0". */
+@Suppress("MagicNumber")
 internal fun registryPrefersDark(printed: String): Boolean =
     Regex("""AppsUseLightTheme\s+REG_DWORD\s+0x(\p{XDigit}+)""").find(printed)?.groupValues?.get(1)?.toInt(16) == 0
 

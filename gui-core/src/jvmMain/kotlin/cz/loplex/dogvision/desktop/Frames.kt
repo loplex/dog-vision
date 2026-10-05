@@ -13,6 +13,7 @@ import kotlin.math.roundToInt
 const val PREVIEW_LONGEST_SIDE = 1280
 
 /** A frame to render: tightly packed RGBA of [width] x [height], the top row first, in a direct buffer. */
+@Suppress("MagicNumber")
 class Frame(val width: Int, val height: Int, val pixels: ByteBuffer) {
     init {
         require(pixels.isDirect && pixels.remaining() == width * height * 4) { "Not $width x $height of RGBA" }
@@ -20,6 +21,7 @@ class Frame(val width: Int, val height: Int, val pixels: ByteBuffer) {
 }
 
 /** [image]'s pixels as a [Frame]. */
+@Suppress("MagicNumber")
 fun frameOf(image: Image): Frame {
     val pixels = ByteBuffer.allocateDirect(image.width * image.height * 4).order(ByteOrder.BIG_ENDIAN)
     // 0xAARRGGBB turned once to the left is 0xRRGGBBAA, whose bytes, big end first, are RGBA.
@@ -48,6 +50,7 @@ fun preview(image: Image, longest: Int = PREVIEW_LONGEST_SIDE): Image {
     return if (current.width == width && current.height == height) current else scaled(current, width, height)
 }
 
+@Suppress("MagicNumber")
 private fun scaled(image: Image, width: Int, height: Int): Image {
     val source = buffered(image)
     val target = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)

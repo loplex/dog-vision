@@ -61,6 +61,7 @@ data class ViewOptions(val params: Params = Params(), val compare: Species? = nu
 /** A command line that cannot be read, with the string [key] and the [args] that say what is wrong with it. */
 class UsageException(val key: Str, vararg val args: Any?) : Exception(Texts.of("en").get(key, *args)) {
     /** What is wrong, worded by [texts]. */
+    @Suppress("SpreadOperator")
     fun message(texts: Texts): String = texts.get(key, *args)
 }
 
@@ -159,5 +160,6 @@ private fun number(option: String, value: String): Double =
 private fun share(option: String, value: String): Double =
     number(option, value).takeIf { it in 0.0..1.0 } ?: throw UsageException(Str.USAGE_NOT_SHARE, option, value)
 
+@Suppress("MagicNumber")
 private fun fieldOfView(option: String, value: String): Double =
     number(option, value).takeIf { it > 0 && it < 360 } ?: throw UsageException(Str.USAGE_NOT_ANGLE, option, value)

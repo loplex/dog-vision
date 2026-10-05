@@ -27,6 +27,9 @@
  * Without adaptation its rank equals the number of cone types,
  * and the animal's cone excitation of every output pixel equals that of the input.
  */
+// The model's constants and exponents, from the formulas of the papers named above.
+@file:Suppress("MagicNumber", "TooManyFunctions")
+
 package cz.loplex.dogvision.core
 
 import kotlin.math.atan2
@@ -97,6 +100,7 @@ fun planck(temperature: Double, wl: DoubleArray = WAVELENGTHS): DoubleArray {
     }
 }
 
+@Suppress("SpreadOperator")
 private fun sensitivities(conePeaks: List<Double>): Matrix =
     Matrix.of(*conePeaks.map { govardovskiiA1(it) }.toTypedArray())
 
@@ -106,6 +110,7 @@ fun coneMatrix(conePeaks: List<Double>, primaries: Matrix): Matrix = sensitiviti
 private val HUMAN_PEAKS = listOf(HumanCones.S, HumanCones.M, HumanCones.L)
 
 private val displayPrimaries: Matrix by lazy {
+    @Suppress("SpreadOperator")
     val raw = Matrix.of(
         *DISPLAY_PRIMARIES.map { (peak, sigma) ->
             DoubleArray(WAVELENGTHS.size) { exp(-0.5 * ((WAVELENGTHS[it] - peak) / sigma).pow(2)) }
@@ -221,6 +226,7 @@ fun rnlForms(species: Species): Pair<Matrix, Matrix> {
     return animal to human
 }
 
+@Suppress("ReturnCount")
 private fun computeRnlChromaMatrix(species: Species): Matrix {
     val mAnimal = animalConeMatrix(species)
     val n = mAnimal.rows

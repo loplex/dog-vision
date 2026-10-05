@@ -94,6 +94,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     frame.contentPane.add(preview, BorderLayout.CENTER)
     frame.contentPane.add(east, BorderLayout.EAST)
 
+    @Suppress("MagicNumber")
     fun show(state: LiveSession.State) {
         frame.title = state.texts.get(Str.APP_NAME)
         open.text = state.texts.get(Str.OPEN_MEDIA)
@@ -170,6 +171,7 @@ private fun listDroppedDown(): Boolean =
 internal class FileDrop(private val open: (File) -> Unit) : TransferHandler() {
     override fun canImport(support: TransferSupport) = support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
 
+    @Suppress("ReturnCount")
     override fun importData(support: TransferSupport): Boolean {
         if (!canImport(support)) return false
         val files = support.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
@@ -183,6 +185,7 @@ internal class FileDrop(private val open: (File) -> Unit) : TransferHandler() {
  * An area's pixels as Swing draws them fastest, premultiplied ARGB in ints:
  * RGBA read big end first is 0xRRGGBBAA, which turned once to the right is 0xAARRGGBB.
  */
+@Suppress("MagicNumber")
 internal fun swingImage(pixels: ByteArray, width: Int, height: Int): BufferedImage {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB_PRE)
     val data = (image.raster.dataBuffer as DataBufferInt).data

@@ -195,6 +195,7 @@ private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, 
 /** The button at the images' edge that hides the controls if [shown], else shows them, through [onToggle]. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+@Suppress("MagicNumber")
 private fun PanelToggle(shown: Boolean, onToggle: () -> Unit) {
     val words = LocalTexts.current.get(if (shown) Str.HIDE_PANEL else Str.SHOW_PANEL)
     TooltipArea(
@@ -303,6 +304,7 @@ private fun linkedWords(failure: Failure, texts: Texts): AnnotatedString {
 }
 
 /** An area's pixels as Compose draws them, through Skia. */
+@Suppress("MagicNumber")
 private fun composeImage(pixels: ByteArray, width: Int, height: Int): ImageBitmap {
     val info = ImageInfo(width, height, ColorType.RGBA_8888, ColorAlphaType.PREMUL)
     return SkiaImage.makeRaster(info, pixels, width * 4).toComposeImageBitmap()

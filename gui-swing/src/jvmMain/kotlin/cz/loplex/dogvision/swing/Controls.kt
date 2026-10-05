@@ -1,3 +1,6 @@
+// Gaps and widths in unscaled pixels, as FlatLaf's UIScale takes them, and percentages.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.swing
 
 import com.formdev.flatlaf.FlatClientProperties
@@ -48,6 +51,7 @@ import kotlin.math.roundToInt
  * then reset and the language.\
  * Each shows what [session]'s state says and hands a change to [session]; it keeps only which sections are open.
  */
+@Suppress("SpreadOperator", "TooManyFunctions")
 internal class Controls(private val session: LiveSession<*>) :
     Column(),
     Scrollable {
@@ -286,6 +290,7 @@ internal class Controls(private val session: LiveSession<*>) :
         }
 
     /** A species out of [choices], null standing for the original image, under its [label]. */
+    @Suppress("LongParameterList")
     private fun speciesChoice(
         label: Str,
         about: Str,
@@ -356,6 +361,7 @@ internal class Controls(private val session: LiveSession<*>) :
     }
 
     /** A whole number in [range], shown beside [label], set by a slider under it. */
+    @Suppress("LongParameterList")
     private fun slider(
         label: Str,
         about: Str,
@@ -394,6 +400,7 @@ internal class Controls(private val session: LiveSession<*>) :
      * One of [group]'s choices, chosen where [selected] says and enabled where [enabled] does,
      * worded as [text], or as [words] says where it says anything.
      */
+    @Suppress("LongParameterList")
     private fun choice(
         text: Str,
         about: Str,

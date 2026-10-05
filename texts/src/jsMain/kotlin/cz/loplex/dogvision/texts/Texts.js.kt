@@ -2,6 +2,7 @@ package cz.loplex.dogvision.texts
 
 internal actual fun pluralCategory(language: String, count: Int): String = Intl.PluralRules(language).select(count)
 
+@Suppress("MagicNumber")
 internal actual fun decimalSeparator(language: String): Char =
     Intl.NumberFormat(language).formatToParts(1.5).first { it.type == "decimal" }.value.single()
 
@@ -9,10 +10,12 @@ internal actual fun decimalSeparator(language: String): Char =
 private external object Intl {
     /** The plural rules of a language: which quantity, such as "one" or "few", a number takes. */
     class PluralRules(locales: String) {
+        @Suppress("UnusedParameter", "RedundantSuppression") // detekt reports it, IDEA does not
         fun select(number: Int): String
     }
 
     class NumberFormat(locales: String) {
+        @Suppress("UnusedParameter", "RedundantSuppression") // detekt reports it, IDEA does not
         fun formatToParts(number: Double): Array<Part>
     }
 

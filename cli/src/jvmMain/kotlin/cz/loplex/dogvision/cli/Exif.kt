@@ -1,3 +1,6 @@
+// The markers, offsets and tags of JPEG's and TIFF's formats, as EXIF lays them out.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.cli
 
 /**
@@ -5,6 +8,7 @@ package cz.loplex.dogvision.cli
  * 1 to 8 as TIFF numbers them, or 1, upright, where [bytes] are no JPEG, have no EXIF or give none.\
  * The JDK's ImageIO reads no EXIF, while image viewers turn a photo as it says; this is the one tag that needs.
  */
+@Suppress("ReturnCount")
 fun exifOrientation(bytes: ByteArray): Int {
     if (bytes.u8(0) != 0xFF || bytes.u8(1) != 0xD8) return 1
     var position = 2
@@ -39,6 +43,7 @@ private const val ORIENTATION_TAG = 0x0112
 private const val SHORT_TYPE = 3
 
 /** The orientation tag of the first IFD of the TIFF structure in [bytes] from [start] to [end], or 1. */
+@Suppress("CyclomaticComplexMethod", "ReturnCount")
 private fun tiffOrientation(bytes: ByteArray, start: Int, end: Int): Int {
     if (end > bytes.size || start + 8 > end) return 1
     val bigEndian = when {

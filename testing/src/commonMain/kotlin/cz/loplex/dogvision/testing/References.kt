@@ -18,6 +18,7 @@ import kotlin.math.abs
  * neighbouring pixels differ in every channel,
  * so that a pixel read from the wrong place, or a channel from the wrong one, shows.
  */
+@Suppress("MagicNumber")
 fun pattern(width: Int = 40, height: Int = 30) = Image(
     width,
     height,

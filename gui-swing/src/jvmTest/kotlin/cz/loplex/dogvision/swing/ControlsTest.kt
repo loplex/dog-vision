@@ -62,7 +62,7 @@ class ControlsTest {
 
     /** Every component in this one, at any depth. */
     private fun Container.descendants(): List<Component> =
-        components.flatMap { listOf(it) + ((it as? Container)?.descendants() ?: emptyList()) }
+        components.flatMap { listOf(it) + (it as? Container)?.descendants().orEmpty() }
 
     private inline fun <reified T : Component> Container.all(): List<T> = descendants().filterIsInstance<T>()
 

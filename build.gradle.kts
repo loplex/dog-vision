@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.compose.multiplatform) apply false
+    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kover)
@@ -47,6 +48,25 @@ subprojects {
     apply(plugin = ktlintPlugin)
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         version = ktlintVersion
+    }
+}
+
+// detekt, in each module that applies it, in `check`: its default rules, as detekt.yml changes them,
+// over every source set, with the types of the JVM and Android compilations where it has them.
+// Code the build generates is not checked.
+subprojects {
+    plugins.withId("dev.detekt") {
+        configure<dev.detekt.gradle.extensions.DetektExtension> {
+            buildUponDefaultConfig = true
+            config.from(rootProject.file("detekt.yml"))
+        }
+        tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+            exclude { it.file.invariantSeparatorsPath.contains("/build/") }
+        }
+        // The typed tasks cover commonMain, jvmMain and androidMain through their compilations;
+        // the JS source sets, which no JVM compilation takes, are checked alone.
+        val checked = Regex("detekt(Main|Test|Dev)(Jvm|Android)|detekt(Js|Web)(Main|Test)SourceSet")
+        tasks.named("check") { dependsOn(tasks.matching { checked.matches(it.name) }) }
     }
 }
 

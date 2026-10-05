@@ -4,8 +4,8 @@ How the code is laid out, and how a change is checked.\
 Building the programs is [Building it](building.md)'s.
 
 - [How the code is laid out](#how-the-code-is-laid-out) — the modules, their layers and which uses which, and the GPU renderer they share.
-- [Checking it](#checking-it) — what each Gradle task tests,
-  the documents held to `core`, the Kotlin style, the tests' coverage, and what GitHub Actions runs.
+- [Checking it](#checking-it) — what each Gradle task tests, the documents held to `core`,
+  the Kotlin style, detekt, the tests' coverage, and what GitHub Actions runs.
 - The caveats: [the emulator's colours](#caveat-the-emulator-fails-the-video-tests-colour-checks), and [Windows without a GPU and under Wine](#caveat-windows-is-tested-without-a-gpu-and-under-wine).
 - [Where the test data comes from](#where-the-test-data-comes-from) — the test videos and the reference values.
 
@@ -217,7 +217,7 @@ graph TD
 
 ## Checking it
 
-`./gradlew check` runs every test task below that needs no phone, Android Lint, the Kotlin style,
+`./gradlew check` runs every test task below that needs no phone, Android Lint, the Kotlin style, [detekt](#detekt-looks-for-likely-bugs-and-code-smells),
 the check of [the modules' graphs](#which-module-uses-which), and that of [the artifacts' folders](building.md#every-artifact-at-once).\
 The test classes' comments say what each of them holds.
 
@@ -268,6 +268,24 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
   and each module's `check` runs `build-logic`'s;
 - `./gradlew checkLineLength` holds every line to 120 characters, comments included:
   ktlint does not measure a line that is a comment and nothing else.
+
+### detekt looks for likely bugs and code smells
+
+[detekt](https://detekt.dev/) checks every module's Kotlin but the app's, which Android Lint checks:
+
+- **`check` runs it over every source set**,
+  with the types of the JVM and Android compilations where a module has them, and alone over the JS ones;
+  `./gradlew detekt` alone checks nothing in these modules, as their code is not in `src/main`.
+- **Its rules are detekt's defaults**, but where [`detekt.yml`](../detekt.yml) says otherwise:
+  a composable function is left out of the naming, length and parameter rules,
+  as Compose names and lays out its own that way,
+  and a class of tests out of LargeClass, as it holds every test of its subject.
+- **A finding that stays is suppressed where it stands**, with `@Suppress` on its declaration,
+  or on its file where the file's numbers are data, with a comment saying so;
+  no rule is switched off for the whole build.
+- **It analyses an `expect` and its `actual` as two declarations in one module**,
+  and reports them as compiler errors in `core`, `texts` and `ui`, the modules that have both;
+  it goes on, less accurate there.
 
 ### The JVM tests' coverage is measured, not required
 

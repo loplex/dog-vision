@@ -68,6 +68,7 @@ fun windowUsage(texts: Texts, command: String): String = usage(
  * hands the usage or the mistake, worded by [texts], to [say] with whether it is a mistake.\
  * Returns the exit status: 2 for a mistake, as the command line has it.
  */
+@Suppress("ReturnCount")
 fun runWindow(
     command: String,
     args: List<String>,

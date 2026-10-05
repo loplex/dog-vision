@@ -55,6 +55,7 @@ object FfmpegDownload {
      * Downloads ffmpeg into [folder], unless it is there already,
      * telling [onPercent] how much of the zip has come as it comes; blocks until it is unpacked, or says why it is not.
      */
+    @Suppress("ReturnCount")
     fun download(onPercent: (Int) -> Unit): FfmpegInstall {
         if (PROGRAMS.all { File(File(folder, "bin"), it).isFile }) return FfmpegInstall.Found
         return try {
@@ -97,7 +98,8 @@ object FfmpegDownload {
                     val parts = entry.name.split('/')
                     // The zip holds one folder, the build's, with bin in it; a name is taken alone, never a path.
                     val name = parts.last()
-                    if (entry.isDirectory || parts.size != 3 || parts[1] != "bin" || name == "ffplay.exe") continue
+                    val program = !entry.isDirectory && parts.size == 3 && parts[1] == "bin"
+                    if (!program || name == "ffplay.exe") continue
                     archive.getInputStream(entry).use { Files.copy(it, bin.resolve(name)) }
                 }
             }

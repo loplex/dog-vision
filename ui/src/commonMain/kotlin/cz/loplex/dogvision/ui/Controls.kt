@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package cz.loplex.dogvision.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -98,7 +100,7 @@ fun Controls(
                 about = Str.ABOUT_SPECIES,
                 choices = Species.entries,
                 selected = params.species,
-                onSelect = { species -> setParams { copy(species = species!!) } },
+                onSelect = { species -> species?.let { setParams { copy(species = it) } } },
             )
         }
         Section(Str.SELECTED_SPECIES, startsOpen = true) {
@@ -245,6 +247,7 @@ private fun CameraSection(
 
 /** A section: its title, which opens or closes it, and what it holds. */
 @Composable
+@Suppress("MagicNumber")
 private fun Section(title: Str, startsOpen: Boolean, content: @Composable () -> Unit) {
     var open by rememberSaveable { mutableStateOf(startsOpen) }
     Column {
@@ -371,6 +374,7 @@ private fun CountedWhileOpen(open: Boolean) {
 
 /** A share from 0 to 1, shown and set in whole percent. */
 @Composable
+@Suppress("MagicNumber")
 private fun PercentSlider(label: Str, about: Str, value: Double, onChange: (Double) -> Unit) =
     LabelledSlider(text(label), about, (value * 100).roundToInt(), 0..100) { onChange(it / 100.0) }
 

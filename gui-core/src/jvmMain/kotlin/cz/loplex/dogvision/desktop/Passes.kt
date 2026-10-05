@@ -26,7 +26,7 @@ import java.nio.ByteBuffer
  * and mirrored if it is to be, as the app mirrors its front camera's.
  */
 internal class Passes(private val gl: DesktopGl) {
-    private val passes = ViewPasses(gl).apply { create() }
+    private val viewPasses = ViewPasses(gl).apply { create() }
 
     /** The frame as uploaded, before it is turned upright. */
     private val raw = texture(gl)
@@ -58,11 +58,11 @@ internal class Passes(private val gl: DesktopGl) {
     }
 
     /** Makes the frame uploaded last the frame to render again, mirrored if [mirrored]; it is composed anew then. */
-    fun mirror(mirrored: Boolean) = passes.turnUpright(raw, rawWidth, rawHeight, rotation = 0, mirrored = mirrored)
+    fun mirror(mirrored: Boolean) = viewPasses.turnUpright(raw, rawWidth, rawHeight, rotation = 0, mirrored = mirrored)
 
     /** The size of the frame uploaded last. */
-    val frameWidth: Int get() = passes.frame.width
-    val frameHeight: Int get() = passes.frame.height
+    val frameWidth: Int get() = viewPasses.frame.width
+    val frameHeight: Int get() = viewPasses.frame.height
 
     /**
      * Renders every image of [view] of a photo,
@@ -70,8 +70,8 @@ internal class Passes(private val gl: DesktopGl) {
      * counted at once as a photo that does not change can wait for.
      */
     fun compose(view: View): Double? {
-        passes.compose(view)
-        return if (view.sideBySide && view.difference) passes.differenceShare() else null
+        viewPasses.compose(view)
+        return if (view.sideBySide && view.difference) viewPasses.differenceShare() else null
     }
 
     /**
@@ -80,29 +80,30 @@ internal class Passes(private val gl: DesktopGl) {
      * which [takeDifferenceShare] hands over.
      */
     fun composeLive(view: View) {
-        passes.compose(view)
-        if (view.sideBySide && view.difference) passes.countDifferences()
+        viewPasses.compose(view)
+        if (view.sideBySide && view.difference) viewPasses.countDifferences()
     }
 
     /** Whether a share asked for by [composeLive] has not been handed over yet. */
-    val counting: Boolean get() = passes.counting
+    val counting: Boolean get() = viewPasses.counting
 
     /** The share asked for by [composeLive] once the GPU has counted it, else null; call it once a frame. */
-    fun takeDifferenceShare(): Double? = passes.takeDifferenceShare()
+    fun takeDifferenceShare(): Double? = viewPasses.takeDifferenceShare()
 
     /** The first [count] images composed, read back from the GPU, left to right or top to bottom. */
-    fun readImages(count: Int): List<Image> = passes.readImages(count)
+    fun readImages(count: Int): List<Image> = viewPasses.readImages(count)
 
     /**
      * Draws the first images composed into [boxes] of an area of [width] x [height], transparent elsewhere,
      * and starts reading it back without waiting for the GPU, which [takeArea] hands over.
      */
+    @Suppress("MagicNumber")
     fun draw(boxes: List<Box>, width: Int, height: Int) {
         area.ensure(width, height)
         gl.bindFramebuffer(GL_FRAMEBUFFER, area.framebuffer)
         gl.viewport(0, 0, width, height)
         gl.clear()
-        passes.draw(boxes, width, height)
+        viewPasses.draw(boxes, width, height)
         val buffer = spareBuffers.removeFirstOrNull() ?: gl.createBuffer()
         gl.bindBuffer(GL_PIXEL_PACK_BUFFER, buffer)
         gl.bufferData(GL_PIXEL_PACK_BUFFER, width * height * 4, GL_STREAM_READ)
@@ -120,6 +121,7 @@ internal class Passes(private val gl: DesktopGl) {
      * once the GPU has read it, else null; with [wait], it waits for the GPU instead.
      * GL reads the bottom row first.
      */
+    @Suppress("ReturnCount")
     fun takeArea(wait: Boolean = false): ByteArray? {
         val read = reads.firstOrNull() ?: return null
         if (!wait && !gl.signalled(read.fence)) return null
@@ -138,7 +140,7 @@ internal class Passes(private val gl: DesktopGl) {
 
     /** Deletes the GL objects, in the context they were made in. */
     fun release() {
-        passes.release()
+        viewPasses.release()
         area.release()
         gl.deleteTexture(raw)
         for (read in reads) {

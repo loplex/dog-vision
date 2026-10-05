@@ -30,6 +30,7 @@ fun convertedFile(file: File, view: View, outputDir: File?): File {
  * Converts the photo [Arguments.file] at full size to the view the arguments ask for,
  * and reports on [out] what it wrote, or on [err] why it could not, worded by [texts]; returns the exit status.
  */
+@Suppress("MagicNumber", "ReturnCount")
 fun convertPhoto(arguments: Arguments, texts: Texts, out: PrintStream, err: PrintStream): Int {
     val file = checkNotNull(arguments.file) { "No file to convert" }
     val photo = try {

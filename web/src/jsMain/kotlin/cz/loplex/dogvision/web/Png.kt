@@ -1,3 +1,6 @@
+// The offsets and values of the PNG format's header and chunks, as its specification lays them out.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.web
 
 import cz.loplex.dogvision.core.Image
@@ -36,6 +39,7 @@ fun encodePng(image: Image, onEncoded: (Blob) -> Unit, onFailure: () -> Unit) =
     encodePng(image.width, image.height, filteredRows(image), onEncoded, onFailure)
 
 /** Encodes as [encodePng] does an image [width] by [height] whose rows are [filteredRows] already. */
+@Suppress("SwallowedException", "TooGenericExceptionCaught")
 internal fun encodePng(
     width: Int,
     height: Int,

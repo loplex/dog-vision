@@ -39,6 +39,7 @@ private const val OPAQUE = 0xFF shl 24
 private fun isImage(file: File): Boolean = FileImageInputStream(file).use { ImageIO.getImageReaders(it).hasNext() }
 
 /** [image] turned [rotation] degrees clockwise, a multiple of 90, then mirrored left to right if [mirrored]. */
+@Suppress("MagicNumber")
 fun turned(image: Image, rotation: Int, mirrored: Boolean): Image {
     if (rotation % 360 == 0 && !mirrored) return image
     val w = image.width

@@ -1,3 +1,6 @@
+// EXIF's orientation values and the quarter turns they stand for.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.core
 
 /**

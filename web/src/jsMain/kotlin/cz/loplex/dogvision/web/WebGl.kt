@@ -23,6 +23,7 @@ import org.khronos.webgl.WebGLUniformLocation
  * A Kotlin ByteArray is an Int8Array and a FloatArray a Float32Array in JavaScript,
  * so pixels cross without a copy, through an Uint8Array over the same memory where WebGL wants one.
  */
+@Suppress("TooManyFunctions")
 internal class WebGl(private val gl: WebGL2RenderingContext) : Gl {
     private val objects = mutableListOf<Any?>(null)
 

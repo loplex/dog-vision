@@ -5,6 +5,9 @@
  * read from a [PixelSource] and written to a [PixelSink] a strip of rows at a time,
  * so that a large photo never has to be held as floats in full.
  */
+// A pixel's channels as bit shifts and masks of its ARGB int, and the channels' 8-bit range.
+@file:Suppress("MagicNumber", "TooManyFunctions")
+
 package cz.loplex.dogvision.core
 
 import kotlin.math.PI
@@ -121,6 +124,7 @@ private const val STRIP_ROWS = 64
  * Applies a linear-RGB 3x3 matrix, and optionally a Gaussian blur in linear light like the optics it stands for,
  * to [source], writing the result to [sink] with its left edge at column [x].
  */
+@Suppress("LongParameterList")
 fun applyMatrix(
     source: PixelSource,
     t: Matrix,

@@ -40,6 +40,7 @@ class Texts private constructor(
         get(Str.SPECIES_LABEL, speciesName(species), colourVision(species.colourVision))
 
     /** What each image of [view] shows, left to right or top to bottom. */
+    @Suppress("ReturnCount")
     fun captions(view: View, differenceShare: Double?): List<String> {
         val right = speciesLabel(view.params.species)
         if (!view.sideBySide) return listOf(right)
@@ -112,8 +113,8 @@ class Texts private constructor(
             val chain = listOf(LANGUAGES.first(), language).distinct()
             return Texts(
                 language,
-                chain.fold(emptyMap()) { all, it -> all + STRINGS[it].orEmpty() },
-                chain.fold(emptyMap()) { all, it -> all + PLURALS[it].orEmpty() },
+                chain.fold(emptyMap()) { all, tag -> all + STRINGS[tag].orEmpty() },
+                chain.fold(emptyMap()) { all, tag -> all + PLURALS[tag].orEmpty() },
             )
         }
 

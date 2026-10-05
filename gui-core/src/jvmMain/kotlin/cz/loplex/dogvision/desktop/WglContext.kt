@@ -24,6 +24,10 @@ import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil.NULL
 import org.lwjgl.system.MemoryUtil.memUTF8Safe
 
+/** The version of desktop OpenGL's core profile the context is made for, 3.3. */
+private const val CORE_MAJOR = 3
+private const val CORE_MINOR = 3
+
 /**
  * A desktop OpenGL 3.3 core context of the graphics driver's own, through WGL on Windows, where ANGLE cannot start:
  * GLFW makes it on a window that is never shown, since WGL makes a context only for a window's device context,
@@ -44,24 +48,25 @@ class WglContext : GlContext {
         glfwDefaultWindowHints()
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE)
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API)
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3)
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, CORE_MAJOR)
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, CORE_MINOR)
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE)
         window = glfwCreateWindow(1, 1, "dog-vision-gl", NULL, NULL)
         if (window == NULL) {
             val error = glfwError()
             glfwTerminate()
-            throw IllegalStateException("Cannot make an OpenGL 3.3 core context: $error")
+            error("Cannot make an OpenGL 3.3 core context: $error")
         }
         glfwMakeContextCurrent(window)
+        var made = false
         try {
             loadApi(GL::create)
             GL.createCapabilities()
             renderer = glGetString(GL_RENDERER).orEmpty()
             version = glGetString(GL_VERSION).orEmpty()
-        } catch (error: Throwable) {
-            close()
-            throw error
+            made = true
+        } finally {
+            if (!made) close()
         }
     }
 
@@ -82,6 +87,7 @@ class WglContext : GlContext {
     }
 
     /** What GLFW said of the last error, or that it said nothing. */
+    @Suppress("MagicNumber")
     private fun glfwError(): String = MemoryStack.stackPush().use { stack ->
         val description = stack.mallocPointer(1)
         val code = glfwGetError(description)

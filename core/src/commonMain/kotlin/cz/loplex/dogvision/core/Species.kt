@@ -1,3 +1,6 @@
+// Each species' figures are data, from the source named beside them.
+@file:Suppress("MagicNumber")
+
 package cz.loplex.dogvision.core
 
 /** Photopigment peak wavelengths of human cones in nm (Stockman & Sharpe 2000). */

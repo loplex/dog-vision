@@ -111,9 +111,9 @@ class FactsTest {
     fun `a trichromat has an assumed L to M ratio and two RNL factors`() {
         val facts = facts(Species.MACAQUE)
         assertEquals(listOf("trichromat, 3 cone types"), facts[FactLabel.COLOUR_VISION])
-        assertEquals(listOf("S 431 nm,", "M 536 nm,", "L 565 nm"), facts[FactLabel.CONE_PEAKS]!!.take(3))
+        assertEquals(listOf("S 431 nm,", "M 536 nm,", "L 565 nm"), facts.getValue(FactLabel.CONE_PEAKS).take(3))
         assertEquals(listOf("1 : 1", "(assumed)"), facts[FactLabel.L_TO_M])
-        assertTrue(" and " in facts[FactLabel.RNL_SCALE]!!.single())
+        assertTrue(" and " in facts.getValue(FactLabel.RNL_SCALE).single())
         assertTrue(FactLabel.NEUTRAL_POINT !in facts)
     }
 
@@ -135,7 +135,7 @@ class FactsTest {
         assertEquals(listOf("(Sumita et al. 2013,", "11.7 to 14)"), acuityValue(Species.SHEEP, EnglishTexts).drop(1))
         assertEquals(
             listOf("(L shifted 10 nm,", "see text)"),
-            facts(Species.PROTANOMALOUS)[FactLabel.CONE_PEAKS]!!.drop(3),
+            facts(Species.PROTANOMALOUS).getValue(FactLabel.CONE_PEAKS).drop(3),
         )
     }
 
@@ -158,7 +158,7 @@ class FactsTest {
     @Test
     fun `numbers in facts take the language's decimal separator`() {
         assertEquals(listOf("11,6 c/deg", "(Odom et al. 1983)"), acuityValue(Species.DOG, CommaTexts))
-        assertEquals("S 420,7 nm,", facts(Species.HUMAN, CommaTexts)[FactLabel.CONE_PEAKS]!!.first())
+        assertEquals("S 420,7 nm,", facts(Species.HUMAN, CommaTexts).getValue(FactLabel.CONE_PEAKS).first())
     }
 
     @Test

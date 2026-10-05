@@ -94,6 +94,7 @@ class LiveSessionTest {
         CameraOption("2", "USB Camera", Facing.BACK),
     )
 
+    @Suppress("LongParameterList")
     private fun session(
         arguments: WindowArguments = WindowArguments(file = File("a.jpg")),
         feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = this.feed,

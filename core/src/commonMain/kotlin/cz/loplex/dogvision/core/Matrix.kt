@@ -7,6 +7,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 /** A small dense matrix of doubles, row by row: all the linear algebra the colour model needs. */
+@Suppress("TooManyFunctions")
 class Matrix(val rows: Int, val cols: Int, private val values: DoubleArray = DoubleArray(rows * cols)) {
     init {
         require(values.size == rows * cols) { "$rows x $cols needs ${rows * cols} values, not ${values.size}" }
@@ -88,6 +89,7 @@ class Matrix(val rows: Int, val cols: Int, private val values: DoubleArray = Dou
     fun inverse(): Matrix = solve(identity(rows))
 
     /** The number of linearly independent rows, pivots below tolerance counting as zero. */
+    @Suppress("LoopWithTooManyJumpStatements")
     fun rank(tolerance: Double): Int {
         val a = Array(rows) { row(it) }
         var rank = 0
@@ -109,12 +111,13 @@ class Matrix(val rows: Int, val cols: Int, private val values: DoubleArray = Dou
      * Eigenvalues and eigenvectors (as columns) of this symmetric matrix,
      * by Jacobi rotations, the way numpy.linalg.eigh gives them but in no particular order.
      */
+    @Suppress("MagicNumber")
     fun symmetricEigen(): Pair<DoubleArray, Matrix> {
         require(rows == cols) { "Only a square matrix has eigenvalues" }
         val n = rows
         val a = Array(n) { row(it) }
         val v = Array(n) { i -> DoubleArray(n) { j -> if (i == j) 1.0 else 0.0 } }
-        repeat(100) {
+        repeat(100) { _ ->
             var offDiagonal = 0.0
             for (p in 0 until n) for (q in p + 1 until n) offDiagonal += a[p][q] * a[p][q]
             if (offDiagonal <= 1e-30 * (0 until n).sumOf { a[it][it] * a[it][it] }.coerceAtLeast(1e-300)) {
@@ -158,6 +161,7 @@ class Matrix(val rows: Int, val cols: Int, private val values: DoubleArray = Dou
         return scaled * vectors.transpose()
     }
 
+    @Suppress("MagicNumber")
     override fun toString(): String =
         (0 until rows).joinToString("\n") { r -> row(r).joinToString(" ") { formatSignificant(it, 6, '.') } }
 

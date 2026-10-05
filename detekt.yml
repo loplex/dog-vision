@@ -1,0 +1,17 @@
+# detekt's default rules, but where this file says otherwise;
+# the build applies it to every module but the app, which Android Lint checks.
+
+naming:
+  # A composable function is named as a class is, as Compose names its own.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  # A composable takes its state and its callbacks as parameters, and lays out its content in one function.
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  # A class of tests holds every test of its subject, however many that takes.
+  LargeClass:
+    excludes: ['**/*Test/**', '**/test/**']

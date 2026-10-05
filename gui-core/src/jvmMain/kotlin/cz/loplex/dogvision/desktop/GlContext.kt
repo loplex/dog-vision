@@ -10,6 +10,7 @@ import java.nio.ByteBuffer
  */
 interface DesktopGl : Gl {
     /** Allocates the texture bound, filled from the direct buffer [pixels], from its position to its limit. */
+    @Suppress("LongParameterList")
     fun texImage2D(
         target: Int,
         level: Int,
@@ -72,11 +73,11 @@ interface GlContext : AutoCloseable {
         /** The context [open] makes, with what [prepare] makes in it; the context is closed if [prepare] fails. */
         private fun <T> prepared(open: () -> GlContext, prepare: (DesktopGl) -> T): Pair<GlContext, T> {
             val context = open()
-            return try {
-                context to prepare(context.gl)
-            } catch (error: Throwable) {
-                context.close()
-                throw error
+            var prepared = false
+            try {
+                return (context to prepare(context.gl)).also { prepared = true }
+            } finally {
+                if (!prepared) context.close()
             }
         }
 

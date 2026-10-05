@@ -59,12 +59,9 @@ class Mp4Test {
         val times = if (version == 1) 32 else 20
         val header = ByteArray(4 + times + 16 + 36 + 8)
         header[0] = version.toByte()
-        val (a, b, c, d) = matrix
         val at = 4 + times + 16
-        int(a).copyInto(header, at)
-        int(b).copyInto(header, at + 4)
-        int(c).copyInto(header, at + 12)
-        int(d).copyInto(header, at + 16)
+        // a and b, and c and d past u: the first two rows of the 3 x 3 matrix.
+        listOf(0, 4, 12, 16).forEachIndexed { i, offset -> int(matrix[i]).copyInto(header, at + offset) }
         int(0x40000000).copyInto(header, at + 32) // w, 1.0 in 2.30
         val handlerBox = box("hdlr", ByteArray(8) + handler.encodeToByteArray() + ByteArray(12))
         return box("trak", box("tkhd", header), box("mdia", box("mdhd", ByteArray(24)), handlerBox))

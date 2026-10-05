@@ -41,6 +41,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * An OpenGL ES 3.0 context through EGL on the [display] given, with no surface, current on the thread that makes it;
@@ -52,6 +53,7 @@ import java.security.MessageDigest
  */
 class EglContext private constructor(private val display: Long, private val api: Api = Api.ES) : GlContext {
     /** An API EGL makes a context for: what to bind and ask for, and how LWJGL reads its strings. */
+    @Suppress("MagicNumber")
     enum class Api(
         val title: String,
         val eglApi: Int,
@@ -90,6 +92,7 @@ class EglContext private constructor(private val display: Long, private val api:
     override val version: String
 
     init {
+        var made = false
         try {
             check(display != EGL_NO_DISPLAY) { "EGL cannot open the display (error 0x${eglError()})" }
             MemoryStack.stackPush().use { stack ->
@@ -105,6 +108,7 @@ class EglContext private constructor(private val display: Long, private val api:
                 check(eglChooseConfig(display, attributes, configs, count) && count[0] > 0) {
                     "EGL has no configuration for ${api.title} (error 0x${eglError()})"
                 }
+                @Suppress("SpreadOperator")
                 val version = stack.ints(*api.contextAttributes, EGL_NONE)
                 context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, version)
                 check(context != EGL_NO_CONTEXT) { "Cannot make an ${api.title} context (error 0x${eglError()})" }
@@ -129,9 +133,9 @@ class EglContext private constructor(private val display: Long, private val api:
             }
             renderer = api.getString(GLES20.GL_RENDERER).orEmpty()
             version = api.getString(GLES20.GL_VERSION).orEmpty()
-        } catch (error: Throwable) {
-            release()
-            throw error
+            made = true
+        } finally {
+            if (!made) release()
         }
     }
 
@@ -174,6 +178,7 @@ class EglContext private constructor(private val display: Long, private val api:
     companion object {
         private const val MAX_DEVICES = 16
 
+        @Suppress("MagicNumber")
         private fun eglError() = eglGetError().toString(16)
 
         /**
@@ -223,7 +228,7 @@ class EglContext private constructor(private val display: Long, private val api:
             }
             val digest = MessageDigest.getInstance("SHA-256")
             libraries.values.forEach(digest::update)
-            val hash = digest.digest().take(ANGLE_HASH_BYTES).joinToString("") { "%02x".format(it) }
+            val hash = digest.digest().take(ANGLE_HASH_BYTES).joinToString("") { "%02x".format(Locale.ROOT, it) }
             val user = System.getProperty("user.name").filter(Char::isLetterOrDigit)
             val folder = Path.of(System.getProperty("java.io.tmpdir"), "dog-vision-$user", "angle-$hash")
             try {
