@@ -151,11 +151,11 @@ pwsh tools/package_cli_zip_on_windows.ps1
 ./gradlew :packaging:packageDeb      # packaging/build/distributions: dog-vision-compose_0.1.0_amd64.deb,
                                      # dog-vision-swing_0.1.0_amd64.deb, dog-vision-cli_0.1.0_all.deb,
                                      # dog-vision-common_0.1.0_all.deb, dog-vision-web_0.1.0_all.deb,
-                                     # dog-vision-web-sourcemap_0.1.0_all.deb
+                                     # dog-vision-web-sourcemap_0.1.0_all.deb, dog-vision_0.1.0_amd64.deb
 ./gradlew :packaging:packageRpm      # packaging/build/distributions: dog-vision-compose-0.1.0-1.x86_64.rpm,
                                      # dog-vision-swing-0.1.0-1.x86_64.rpm, dog-vision-cli-0.1.0-1.noarch.rpm,
                                      # dog-vision-common-0.1.0-1.noarch.rpm, dog-vision-web-0.1.0-1.noarch.rpm,
-                                     # dog-vision-web-sourcemap-0.1.0-1.noarch.rpm
+                                     # dog-vision-web-sourcemap-0.1.0-1.noarch.rpm, dog-vision-0.1.0-1.x86_64.rpm
 ./gradlew :gui-compose:packageTarGz  # gui-compose/build/compose/binaries/main/tar/dog-vision-compose-0.1.0-linux-x64.tar.gz
 ./gradlew :gui-swing:packageTarGz    # gui-swing/build/packages/tar/dog-vision-swing-0.1.0-linux-x64.tar.gz
 tools/fetch_msi_tools_on_linux.sh
@@ -171,7 +171,7 @@ pwsh tools/package_msi_on_windows.ps1
 
 Each deb and rpm alone is a task of `:packaging` named after it:
 `packageDogVisionComposeDeb`, `packageDogVisionSwingDeb`, `packageDogVisionCliDeb`, `packageDogVisionCommonDeb`,
-`packageDogVisionWebDeb` and `packageDogVisionWebSourcemapDeb`, and the same with `Rpm`.
+`packageDogVisionWebDeb`, `packageDogVisionWebSourcemapDeb` and `packageDogVisionDeb`, and the same with `Rpm`.
 
 Besides the build's own needs, making them takes these tools, on Ubuntu from the packages named:
 
@@ -225,9 +225,22 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     which opens that `index.html` in the system's browser through `xdg-open`, and its icons;
   - no command in `/usr/bin`, as the menu entry is what opens the page.
 - **The script's source map is a package of its own, `dog-vision-web-sourcemap`**:
-  `dog-vision.js.map` in `/usr/share/dog-vision-web`, beside the script of `dog-vision-web`,
+  `dog-vision.js.map` in `/usr/share/dog-vision-web`, beside the script of `dog-vision-web` or `dog-vision`,
   with which a browser's developer tools show the Kotlin sources.
   It is for debugging, and larger than the script, so the page's own packages leave it out.
+- **`dog-vision` holds the five others in one**,
+  all but the source map, for the command line, both windows and the page at once:
+  - their files, each where its own package installs it,
+    so the same commands, menu entries and folders, but for the license's;
+  - it conflicts with each of `dog-vision-common`,
+    `dog-vision-cli`, `dog-vision-compose`, `dog-vision-swing` and `dog-vision-web`, and each with it,
+    so that either it or those are installed, never both;
+  - the debs also replace one another, as [Debian Policy 7.6.2](https://www.debian.org/doc/debian-policy/ch-relationships.html#replacing-whole-packages-forcing-their-removal) has it for a package that takes another's place,
+    so that `apt install` of the one removes the others by itself;
+  - the rpm does not obsolete them, which would replace them with it on every update,
+    so dnf installs the one in place of the others with `--allowerasing`,
+    and zypper asks which to remove, or removes them with `--force-resolution`;
+  - `dog-vision-web-sourcemap` installs beside it, as beside `dog-vision-web`.
 - **FlatLaf's natives stay in its JAR** in `dog-vision-swing`:
   it loads them on Linux only for window decorations of its own, which the window does not use, and they link GTK 3.
 - **Each launcher finds its Java** in `JAVA_HOME`, then on `PATH`,
@@ -310,7 +323,10 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   The Compose window draws its text through skiko and needs none.
 - **`xdg-utils` alone, for `dog-vision-web`**, whose `xdg-open` the menu entry runs:
   the browser is the user's, as a desktop has one, and the windows' packages name no desktop either.
-- **`dog-vision-web` of its own version, for `dog-vision-web-sourcemap`**, as the map describes that one script.
+- **The others' together, for `dog-vision`**: both windows' and the page's,
+  of which a Java that can open a window serves the command line too, but not `dog-vision-common`, whose JARs it holds.
+- **`dog-vision-web` or `dog-vision` of its own version, for `dog-vision-web-sourcemap`**,
+  as the map describes that one script, which either installs.
 - **Nothing else, and no scripts**:
   the menu entry and the icons are files of the package, which the desktop finds by itself.
 
@@ -328,10 +344,12 @@ in [`build-logic`](../build-logic), as jpackage always puts a runtime into its p
     and that skiko, LWJGL and FlatLaf unpacked no natives of their own into the home or `/tmp`;
   - of `dog-vision-web`, which no browser opens there, that its menu entry is valid,
     as `desktop-file-validate` has it, and that the file it opens with `xdg-open` is there;
-  - of `dog-vision-web-sourcemap`, that the map lies beside the script, and that removing it leaves the page.
+  - of `dog-vision-web-sourcemap`, that the map lies beside the script, and that removing it leaves the page;
+  - of `dog-vision`, all of the above for the five packages it holds.
   - A deb of the project's that the deb depends on at its own version,
-    `dog-vision-web` of `dog-vision-web-sourcemap` and `dog-vision-common` of the command line and both windows,
-    no repository has, so the script installs it with the deb from the deb's own folder.
+    `dog-vision-web` of `dog-vision-web-sourcemap`, the first of its alternatives,
+    and `dog-vision-common` of the command line and both windows, no repository has,
+    so the script installs it with the deb from the deb's own folder.
   - It holds on Ubuntu 20.04, 22.04 and 24.04 and on Debian 12.\
     Debian 11 is not among them: its support ended in August 2026, and its repositories moved to archive.debian.org.
 - **[`tools/test_rpm.sh`](../tools/test_rpm.sh) does for an rpm what `test_deb.sh` does**, with dnf, zypper or microdnf;
@@ -340,6 +358,17 @@ in [`build-logic`](../build-logic), as jpackage always puts a runtime into its p
   as an update does, and checks that the later version is the one installed and does what the first did.\
   The later package is the same build with `-PappVersion=0.1.1`,
   which the build writes beside the first, as the Linux job of [`ci.yml`](../.github/workflows/ci.yml) does.
+- **With `--switch <another package>`, each then installs that one after the first**:
+  in its place where it conflicts with the first, as `dog-vision` and the five it holds do;
+  beside it otherwise, as `dog-vision-compose` beside `dog-vision-cli`,
+  or `dog-vision` beside `dog-vision-web-sourcemap`, as `dog-vision` holds the page the map is for.
+  - It checks that the package manager removed every package the other conflicts with,
+    and that of the first package's files only those an installed package owns are left.
+  - It then tries the other as it tried the first, and the first again where that stays installed,
+    as `dog-vision-web-sourcemap` does beside `dog-vision`,
+    and removes both at the end, the first one first, checking what each leaves behind.
+  - `test_rpm.sh` switches with dnf's `--allowerasing` and zypper's `--force-resolution`, and not with microdnf,
+    which removes no package to install another.
 - **With `--temurin`, each installs Temurin's JRE from Adoptium's repository first**,
   and checks that the package takes it and no OpenJDK beside it, as it does on Ubuntu 24.04 and Fedora 42.
 

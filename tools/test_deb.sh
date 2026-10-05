@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# Installs a deb of the project's,
-# dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-common, dog-vision-web or dog-vision-web-sourcemap,
+# Installs a deb of the project's, dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-common,
+# dog-vision-web, dog-vision-web-sourcemap or dog-vision, which holds the first five,
 # in a bare container, runs it and removes it, checking each step.
 # With --upgrade, it installs a later deb over the first before removing it, as an update does.
 # With --temurin, it installs Adoptium's Temurin JRE first,
 # from Adoptium's repository, and checks that the deb takes it rather than an OpenJDK.
+#
+# With --switch, it then installs another deb: in the first one's place where it conflicts with it,
+# as dog-vision and each package it holds do with one another, and beside it otherwise.
+# It checks that apt removed every package the other deb conflicts with,
+# and that of the first deb's files only those an installed package owns are left,
+# then goes on with the other deb as the package, which it removes in the end,
+# after the first deb where that stays installed, checking what each leaves behind.
 #
 # A bare image has no desktop and none of its folders, /usr/share/applications among them,
 # which is what a headless install for the command line alone meets.
@@ -30,8 +37,8 @@
 #
 # Needs docker, or podman installed as docker.
 # Usage:
-#   tools/test_deb.sh [--temurin] [--upgrade <a later deb>] <the deb> [image, ubuntu:20.04 by
-#   default]
+#   tools/test_deb.sh [--temurin] [--upgrade <a later deb>] [--switch <another deb>] <the deb>
+#   [image, ubuntu:20.04 by default]
 set -euo pipefail
 
 # Says why on the standard error and exits, with 1 or the status given.
@@ -41,7 +48,7 @@ die() {
 }
 
 usage() {
-    die "usage: $0 [--temurin] [--upgrade <a later deb>] <the deb> [image]" 2
+    die "usage: $0 [--temurin] [--upgrade <a later deb>] [--switch <another deb>] <the deb> [image]" 2
 }
 
 mounts=()
@@ -57,6 +64,13 @@ if [[ "${1:-}" == --upgrade ]]; then
     mounts+=(-v "$later:/deb/later/package.deb:ro" -v "$(dirname "$later"):/deb/later/beside:ro")
     shift 2
 fi
+if [[ "${1:-}" == --switch ]]; then
+    (( $# >= 2 )) || usage
+    other="$(realpath "$2")"
+    [[ -f "$other" ]] || die "$other does not exist" 2
+    mounts+=(-v "$other:/deb/switch/package.deb:ro" -v "$(dirname "$other"):/deb/switch/beside:ro")
+    shift 2
+fi
 (( $# >= 1 && $# <= 2 )) || usage
 deb="$(realpath "$1")"
 image="${2:-ubuntu:20.04}"
@@ -66,8 +80,8 @@ photo="$(dirname "$(realpath "$0")")/test_photo.jpg"
 command -v docker >/dev/null || die "Missing command: docker"
 
 # What runs in the container, as root, with the deb at /deb/package.deb,
-# the later one, if any, at /deb/later/package.deb, each one's folder at /deb/beside and /deb/later/beside,
-# and the photo at /photo/test_photo.jpg.
+# the later one, if any, at /deb/later/package.deb, the other one, if any, at /deb/switch/package.deb,
+# each one's folder at /deb/beside, /deb/later/beside and /deb/switch/beside, and the photo at /photo/test_photo.jpg.
 docker run --rm -i -e "JRE=$jre" -v "$deb:/deb/package.deb:ro" -v "$(dirname "$deb"):/deb/beside:ro" \
     -v "$photo:/photo/test_photo.jpg:ro" "${mounts[@]}" "$image" sh -s <<'EOF'
 package="$(dpkg-deb -f /deb/package.deb Package)"
@@ -84,15 +98,16 @@ check() {
         failed=$((failed + 1))
     fi
 }
-# dpkg's state of the package: installed, half-configured, config-files, not-installed and the like.
+# dpkg's state of the package $1, the package by default: installed, half-configured, config-files,
+# not-installed and the like.
 state() {
-    dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null || echo not-installed
+    dpkg-query -W -f='${db:Status-Status}' "${1:-$package}" 2>/dev/null || echo not-installed
 }
 is_installed() {
-    [ "$(state)" = installed ]
+    [ "$(state "$1")" = installed ]
 }
 is_removed() {
-    [ "$(state)" = not-installed ] || [ "$(state)" = config-files ]
+    [ "$(state "$1")" = not-installed ] || [ "$(state "$1")" = config-files ]
 }
 is_version() {
     [ "$(dpkg-query -W -f='${Version}' "$package")" = "$1" ]
@@ -103,14 +118,14 @@ converts() {
         "$1" /tmp/photo/test_photo.jpg &&
         [ "$(od -An -tx1 -N8 /tmp/photo/test_photo.dog.png | tr -d ' \n')" = 89504e470d0a1a0a ]
 }
-# The package's window, dog-vision-compose's or dog-vision-swing's, shows the photo in a window
-# called Dog Vision on the display :99, which Xvfb draws in memory; the window's output is in
-# /tmp/window.log, and its home is /tmp/home.
+# The window $1, dog-vision-compose or dog-vision-swing, shows the photo in a window called Dog
+# Vision on the display :99, which Xvfb draws in memory; the window's output is in /tmp/window.log,
+# and its home is /tmp/home.
 window_opens() {
     [ -e /tmp/.X11-unix/X99 ] || { Xvfb :99 -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 & }
     for _ in 1 2 3 4 5 6 7 8 9 10; do [ -e /tmp/.X11-unix/X99 ] && break; sleep 1; done
     rm -rf /tmp/home && mkdir /tmp/home
-    DISPLAY=:99 HOME=/tmp/home "$package" /photo/test_photo.jpg >/tmp/window.log 2>&1 &
+    DISPLAY=:99 HOME=/tmp/home "$1" /photo/test_photo.jpg >/tmp/window.log 2>&1 &
     window=$!
     shown=""
     for _ in $(seq 60); do
@@ -149,9 +164,10 @@ opens_a_file() {
     [ "$#" -eq 2 ] && [ "$1" = xdg-open ] && command -v xdg-open && [ -f "$2" ]
 }
 # The debs in the folder $2 of the project's packages that the deb $1 depends on at a version, one a
-# line; it fails where one is not there.
+# line, of alternatives the first, as dog-vision-web of dog-vision-web-sourcemap's; it fails where
+# one is not there.
 beside() {
-    dpkg-deb -f "$1" Depends | tr ',' '\n' |
+    dpkg-deb -f "$1" Depends | tr ',' '\n' | sed 's/ *|.*//' |
         sed -n 's/^ *\(dog-vision[a-z-]*\) (= \([^)]*\))$/\1_\2/p' | while read -r name; do
             ls "$2/${name}_"*.deb || return 1
         done
@@ -173,90 +189,121 @@ install_temurin() {
 no_openjdk() {
     ! dpkg-query -W -f='${db:Status-Status} ${Package}\n' 2>/dev/null | grep -q '^installed openjdk'
 }
+# The packages the deb $1 conflicts with, one a line, by name alone, as the project's debs name them.
+conflicts_of() {
+    dpkg-deb -f "$1" Conflicts | tr ',' '\n' | tr -d ' '
+}
+# None of the packages the deb $1 conflicts with is installed.
+conflicts_removed() {
+    for name in $(conflicts_of "$1"); do
+        is_installed "$name" && return 1
+    done
+    return 0
+}
+# Each file of the deb $1 that is still there, and each folder in one of the project's, is an
+# installed package's: dpkg removed what only the packages it conflicted with had, and handed over
+# to the other deb what it replaces. Those that are no one's are shown.
+no_strays() {
+    strays="$(dpkg-deb -c "$1" | awk '{ print $6 }' | sed 's|^\.||' | grep -E '[^/]$|/dog-vision' |
+        while read -r path; do
+            if [ -e "$path" ] && ! dpkg -S "${path%/}" >/dev/null 2>&1; then echo "$path"; fi
+        done)"
+    [ -z "$strays" ] || echo "$strays" >&3
+    [ -z "$strays" ]
+}
+# What each part of the package does once installed; $1 is added to each check's name.
+installed_compose() {
+    check "dog-vision-compose's window is in the desktop menu folder$1" \
+        test -f /usr/share/applications/cz.loplex.dogvision.compose.desktop
+    check "dog-vision-compose runs from PATH$1" dog-vision-compose --help
+    command -v Xvfb >/dev/null || install_display
+    check "dog-vision-compose's window opens under Xvfb$1" window_opens dog-vision-compose
+    check "skiko and LWJGL load the deb's natives$1" unpacks_no_natives
+}
+installed_swing() {
+    check "dog-vision-swing's window is in the desktop menu folder$1" \
+        test -f /usr/share/applications/cz.loplex.dogvision.swing.desktop
+    check "dog-vision-swing runs from PATH$1" dog-vision-swing --help
+    command -v Xvfb >/dev/null || install_display
+    check "dog-vision-swing's window opens under Xvfb$1" window_opens dog-vision-swing
+    check "LWJGL and FlatLaf unpack no natives$1" unpacks_no_natives
+}
+installed_cli() {
+    check "dog-vision-cli runs from PATH$1" dog-vision-cli --help
+    check "it converts a JPEG to a PNG$1" converts dog-vision-cli
+}
+installed_common() {
+    check "the shared JARs are in /usr/share/dog-vision-common/lib$1" \
+        test -f /usr/share/dog-vision-common/lib/cli-jvm.jar
+    check "/usr/bin has no dog-vision-common$1" test ! -e /usr/bin/dog-vision-common
+}
+installed_sourcemap() {
+    check "the source map is beside the page's script$1" \
+        test -f /usr/share/dog-vision-web/dog-vision.js.map -a -f /usr/share/dog-vision-web/dog-vision.js
+}
+installed_web() {
+    check "the page is in the desktop menu folder$1" \
+        test -f /usr/share/applications/cz.loplex.dogvision.web.desktop
+    check "the page's desktop entry is valid$1" entry_is_valid /usr/share/applications/cz.loplex.dogvision.web.desktop
+    check "the page's desktop entry opens it with xdg-open$1" \
+        opens_a_file /usr/share/applications/cz.loplex.dogvision.web.desktop
+    check "the page's script and style are beside it$1" \
+        test -f /usr/share/dog-vision-web/dog-vision.js -a -f /usr/share/dog-vision-web/styles.css
+    check "/usr/bin has nothing of the page's$1" test ! -e /usr/bin/dog-vision-web
+}
+# What each part leaves behind once removed: nothing of its own.
+removed_compose() {
+    check "dog-vision-compose's menu entry is gone" \
+        test ! -e /usr/share/applications/cz.loplex.dogvision.compose.desktop
+    check "dog-vision-compose's icons are gone" \
+        test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.compose.png
+    check "/usr/bin/dog-vision-compose is gone" test ! -e /usr/bin/dog-vision-compose
+    check "/usr/share/dog-vision-compose is gone" test ! -e /usr/share/dog-vision-compose
+    check "/usr/lib/dog-vision-compose is gone" test ! -e /usr/lib/dog-vision-compose
+}
+removed_swing() {
+    check "dog-vision-swing's menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.swing.desktop
+    check "dog-vision-swing's icons are gone" \
+        test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.swing.png
+    check "/usr/bin/dog-vision-swing is gone" test ! -e /usr/bin/dog-vision-swing
+    check "/usr/share/dog-vision-swing is gone" test ! -e /usr/share/dog-vision-swing
+    check "/usr/lib/dog-vision-swing is gone" test ! -e /usr/lib/dog-vision-swing
+}
+removed_cli() {
+    check "/usr/bin/dog-vision-cli is gone" test ! -e /usr/bin/dog-vision-cli
+    check "/usr/share/dog-vision-cli is gone" test ! -e /usr/share/dog-vision-cli
+}
+removed_common() {
+    check "/usr/share/dog-vision-common is gone" test ! -e /usr/share/dog-vision-common
+}
+removed_sourcemap() {
+    check "the source map is gone" test ! -e /usr/share/dog-vision-web/dog-vision.js.map
+    check "the page stays" test -f /usr/share/dog-vision-web/index.html
+}
+removed_web() {
+    check "the page's menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.web.desktop
+    check "the page's icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.web.png
+    check "/usr/share/dog-vision-web is gone" test ! -e /usr/share/dog-vision-web
+}
+# The parts of the package: dog-vision's are the packages it holds.
+parts() {
+    case "$package" in
+        dog-vision) echo compose swing cli common web ;;
+        dog-vision-compose | dog-vision-swing | dog-vision-cli | dog-vision-common | dog-vision-web)
+            echo "${package#dog-vision-}"
+            ;;
+        dog-vision-web-sourcemap) echo sourcemap ;;
+    esac
+}
 # What the package does once installed; $1 is added to each check's name.
 check_installed() {
     command -v java >/dev/null && echo "note: java is $(readlink -f "$(command -v java)")"
     [ "$JRE" = temurin ] && check "no OpenJDK is installed beside Temurin$1" no_openjdk
-    case "$package" in
-        dog-vision-compose)
-            check "the window is in the desktop menu folder$1" \
-                test -f /usr/share/applications/cz.loplex.dogvision.compose.desktop
-            check "dog-vision-compose runs from PATH$1" dog-vision-compose --help
-            command -v Xvfb >/dev/null || install_display
-            check "its window opens under Xvfb$1" window_opens
-            check "skiko and LWJGL load the deb's natives$1" unpacks_no_natives
-            ;;
-        dog-vision-swing)
-            check "the window is in the desktop menu folder$1" \
-                test -f /usr/share/applications/cz.loplex.dogvision.swing.desktop
-            check "dog-vision-swing runs from PATH$1" dog-vision-swing --help
-            command -v Xvfb >/dev/null || install_display
-            check "its window opens under Xvfb$1" window_opens
-            check "LWJGL and FlatLaf unpack no natives$1" unpacks_no_natives
-            ;;
-        dog-vision-cli)
-            check "dog-vision-cli runs from PATH$1" dog-vision-cli --help
-            check "it converts a JPEG to a PNG$1" converts dog-vision-cli
-            ;;
-        dog-vision-common)
-            check "its JARs are in /usr/share/dog-vision-common/lib$1" \
-                test -f /usr/share/dog-vision-common/lib/cli-jvm.jar
-            check "/usr/bin has nothing of its$1" test ! -e /usr/bin/dog-vision-common
-            ;;
-        dog-vision-web-sourcemap)
-            check "the source map is beside the page's script$1" \
-                test -f /usr/share/dog-vision-web/dog-vision.js.map -a -f /usr/share/dog-vision-web/dog-vision.js
-            ;;
-        dog-vision-web)
-            check "the page is in the desktop menu folder$1" \
-                test -f /usr/share/applications/cz.loplex.dogvision.web.desktop
-            check "its desktop entry is valid$1" entry_is_valid /usr/share/applications/cz.loplex.dogvision.web.desktop
-            check "its desktop entry opens the page with xdg-open$1" \
-                opens_a_file /usr/share/applications/cz.loplex.dogvision.web.desktop
-            check "the page's script and style are beside it$1" \
-                test -f /usr/share/dog-vision-web/dog-vision.js -a -f /usr/share/dog-vision-web/styles.css
-            check "/usr/bin has nothing of the page's$1" test ! -e /usr/bin/dog-vision-web
-            ;;
-        *)
-            echo "FAILED: no checks for the package $package"
-            failed=$((failed + 1))
-            ;;
-    esac
+    [ -n "$(parts)" ] || { echo "FAILED: no checks for the package $package"; failed=$((failed + 1)); }
+    for part in $(parts); do "installed_$part" "$1"; done
 }
-# What the package leaves behind once removed: nothing of its own.
 check_removed() {
-    case "$package" in
-        dog-vision-compose)
-            check "its menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.compose.desktop
-            check "its icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.compose.png
-            check "/usr/bin/dog-vision-compose is gone" test ! -e /usr/bin/dog-vision-compose
-            check "/usr/share/dog-vision-compose is gone" test ! -e /usr/share/dog-vision-compose
-            check "/usr/lib/dog-vision-compose is gone" test ! -e /usr/lib/dog-vision-compose
-            ;;
-        dog-vision-swing)
-            check "its menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.swing.desktop
-            check "its icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.swing.png
-            check "/usr/bin/dog-vision-swing is gone" test ! -e /usr/bin/dog-vision-swing
-            check "/usr/share/dog-vision-swing is gone" test ! -e /usr/share/dog-vision-swing
-            check "/usr/lib/dog-vision-swing is gone" test ! -e /usr/lib/dog-vision-swing
-            ;;
-        dog-vision-cli)
-            check "/usr/bin/dog-vision-cli is gone" test ! -e /usr/bin/dog-vision-cli
-            check "/usr/share/dog-vision-cli is gone" test ! -e /usr/share/dog-vision-cli
-            ;;
-        dog-vision-common)
-            check "/usr/share/dog-vision-common is gone" test ! -e /usr/share/dog-vision-common
-            ;;
-        dog-vision-web-sourcemap)
-            check "the source map is gone" test ! -e /usr/share/dog-vision-web/dog-vision.js.map
-            check "the page stays, dog-vision-web's" test -f /usr/share/dog-vision-web/index.html
-            ;;
-        dog-vision-web)
-            check "its menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.web.desktop
-            check "its icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.web.png
-            check "/usr/share/dog-vision-web is gone" test ! -e /usr/share/dog-vision-web
-            ;;
-    esac
+    for part in $(parts); do "removed_$part"; done
 }
 
 export DEBIAN_FRONTEND=noninteractive
@@ -283,6 +330,43 @@ if [ -e /deb/later/package.deb ]; then
     check_installed " after the upgrade"
 fi
 
+# Where the other deb conflicts with the package, apt removes the package to install it, with every
+# package it conflicts with; where not, the package stays beside it. From here on, the other deb is
+# the package.
+staying=""
+if [ -e /deb/switch/package.deb ]; then
+    first="$package"
+    first_deb=/deb/package.deb
+    [ -e /deb/later/package.deb ] && first_deb=/deb/later/package.deb
+    package="$(dpkg-deb -f /deb/switch/package.deb Package)"
+    apt-get install -y -qq /deb/switch/package.deb $(beside /deb/switch/package.deb /deb/switch/beside) \
+        >/tmp/switch.log 2>&1 || tail -n 20 /tmp/switch.log
+    check "$package installs and is configured" is_installed
+    check "no package it conflicts with stays installed" conflicts_removed /deb/switch/package.deb
+    if ! conflicts_of /deb/switch/package.deb | grep -qx "$first"; then
+        check "$first, which it does not conflict with, stays installed" is_installed "$first"
+        staying="$first"
+        # And does what it did.
+        other="$package"
+        package="$first"
+        check_installed " beside $other"
+        package="$other"
+    fi
+    check "of $first's files, only those an installed package owns are left" no_strays "$first_deb"
+    check_installed " after the switch"
+fi
+
+# The package that stayed goes first, so that what it leaves is checked while the other is still
+# there: the page the source map is for stays, dog-vision's.
+if [ -n "$staying" ]; then
+    apt-get remove -y -qq "$staying" >/tmp/remove-staying.log 2>&1 \
+        || tail -n 20 /tmp/remove-staying.log
+    check "$staying is removed" is_removed "$staying"
+    other="$package"
+    package="$staying"
+    check_removed
+    package="$other"
+fi
 apt-get remove -y -qq "$package" >/tmp/remove.log 2>&1 || tail -n 20 /tmp/remove.log
 check "$package is removed" is_removed
 check_removed

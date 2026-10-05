@@ -63,6 +63,14 @@ abstract class DebPackage : DefaultTask() {
     @get:Input
     abstract val recommends: ListProperty<String>
 
+    /** The packages that cannot be installed beside this one, which apt removes to install it. */
+    @get:Input
+    abstract val conflicts: ListProperty<String>
+
+    /** The packages whose files this one takes over, as Debian Policy 7.6 has it, where they install the same ones. */
+    @get:Input
+    abstract val replaces: ListProperty<String>
+
     /** The license's text, which the deb installs as /usr/share/doc/<name>/copyright, as Debian's packages do. */
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
@@ -70,6 +78,11 @@ abstract class DebPackage : DefaultTask() {
 
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
+
+    init {
+        conflicts.convention(emptyList())
+        replaces.convention(emptyList())
+    }
 
     @get:OutputFile
     val deb: Provider<RegularFile>
@@ -94,6 +107,8 @@ abstract class DebPackage : DefaultTask() {
                 appendLine("Installed-Size: $installedSize")
                 if (depends.get().isNotEmpty()) appendLine("Depends: ${depends.get().joinToString(", ")}")
                 if (recommends.get().isNotEmpty()) appendLine("Recommends: ${recommends.get().joinToString(", ")}")
+                if (conflicts.get().isNotEmpty()) appendLine("Conflicts: ${conflicts.get().joinToString(", ")}")
+                if (replaces.get().isNotEmpty()) appendLine("Replaces: ${replaces.get().joinToString(", ")}")
                 appendLine("Section: ${section.get()}")
                 appendLine("Priority: optional")
                 appendLine("Homepage: ${homepage.get()}")

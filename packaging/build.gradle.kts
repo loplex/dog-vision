@@ -1,14 +1,19 @@
 @file:Suppress("UnstableApiUsage")
 
+import cz.loplex.dogvision.packaging.DebDepends
 import cz.loplex.dogvision.packaging.DebPackage
 import cz.loplex.dogvision.packaging.DesktopEntry
 import cz.loplex.dogvision.packaging.JavaLauncher
+import cz.loplex.dogvision.packaging.RpmLibraryRequires
 import cz.loplex.dogvision.packaging.RpmPackage
 import cz.loplex.dogvision.packaging.WEB_PAGE_USAGE
 import cz.loplex.dogvision.packaging.WINDOWS_LAUNCHER_USAGE
 import cz.loplex.dogvision.packaging.artifact
+import cz.loplex.dogvision.packaging.debianPackages
 import cz.loplex.dogvision.packaging.jvmRuntimeOf
+import cz.loplex.dogvision.packaging.windowDebDepends
 import cz.loplex.dogvision.packaging.windowPackages
+import cz.loplex.dogvision.packaging.windowRpmRequires
 import cz.loplex.dogvision.packaging.windowsAppImage
 import cz.loplex.dogvision.packaging.windowsMsi
 import cz.loplex.dogvision.packaging.windowsRuntimeImage
@@ -19,6 +24,7 @@ import cz.loplex.dogvision.packaging.windowsRuntimeImage
 //   each of the JARs its module runs on, which jvmRuntimeOf takes, less the shared ones;
 // - the deb and the rpm of the web page, the folder web hands this module through webPage,
 //   opened in the system's browser, and those of its script's source map;
+// - the deb and the rpm dog-vision, of all of those but the source map's in one, which conflict with each of theirs;
 // - the MSI for Windows on x86-64, of the Compose window, the Swing window and the command line,
 //   each a launcher of one app image, on one runtime, and of the web page;
 //   and the command line's zip, of its launcher alone.
@@ -161,8 +167,9 @@ val packageCommonRpm = tasks.register<RpmPackage>("packageDogVisionCommonRpm") {
 artifact(packageCommonRpm)
 
 // The deb and the rpm, dog-vision-compose, on the system's Java.
-windowPackages(
-    packageName = "dog-vision-compose",
+val composePackage = "dog-vision-compose"
+val composeTree = windowPackages(
+    packageName = composePackage,
     jars = jvmRuntimeOf(":gui-compose"),
     sharedJars = files(commonJars),
     sharedPackage = commonPackage,
@@ -189,8 +196,15 @@ windowPackages(
 
 // The deb and the rpm, dog-vision-swing, on the system's Java, as the Compose window's dog-vision-compose,
 // with the desktop entry and icons under names of their own, so that both windows install side by side.
-windowPackages(
-    packageName = "dog-vision-swing",
+val swingPackage = "dog-vision-swing"
+
+// A font Java can use, without which Swing cannot start: openSUSE's JRE brings none, where Debian's fontconfig does.
+// Named outright, DejaVu Sans as Fedora and Rocky package it, or DejaVu as openSUSE does:
+// font(:lang=en) is met on openSUSE by xorg-x11-fonts-core, whose bitmap fonts Java does not read.
+val swingRpmRequires = listOf("(dejavu-sans-fonts or dejavu-fonts)")
+
+val swingTree = windowPackages(
+    packageName = swingPackage,
     jars = jvmRuntimeOf(":gui-swing"),
     sharedJars = files(commonJars),
     sharedPackage = commonPackage,
@@ -213,11 +227,7 @@ windowPackages(
     // FlatLaf loads its natives on Linux only for window decorations of its own,
     // which the window does not use, and they link GTK 3.
     nativesLeftIn = listOf("flatlaf-"),
-    // A font Java can use, without which Swing cannot start:
-    // openSUSE's JRE brings none, where Debian's fontconfig does.
-    // Named outright, DejaVu Sans as Fedora and Rocky package it, or DejaVu as openSUSE does:
-    // font(:lang=en) is met on openSUSE by xorg-x11-fonts-core, whose bitmap fonts Java does not read.
-    rpmRequires = listOf("(dejavu-sans-fonts or dejavu-fonts)"),
+    rpmRequires = swingRpmRequires,
 )
 
 // The deb and the rpm, dog-vision-cli, on the system's Java: a launcher in /usr/bin,
@@ -379,8 +389,104 @@ val packageWebRpm = tasks.register<RpmPackage>("packageDogVisionWebRpm") {
 }
 artifact(packageWebRpm)
 
+// The deb and the rpm, dog-vision: the files of each package above,
+// where that package installs them, in one, for the command line, both windows and the page at once.
+// It leaves out the source map's, whose package installs beside it as beside dog-vision-web.
+// As its files are theirs, it conflicts with each of those packages, and each with it,
+// so that a package manager removes the one to install the other.
+// The debs replace one another as well,
+// as Debian Policy 7.6.2 has it for a package that takes another's place, so that dpkg hands the files over.
+// The rpm does not obsolete them, which would replace them with it on every update.
+val allInOnePackage = "dog-vision"
+val heldPackages = listOf(commonPackage, cliPackage, composePackage, swingPackage, webPackage)
+
+/** The packages each package conflicts with, by its name: dog-vision with each it holds, and each of those with it. */
+val conflicting = heldPackages.associateWith { listOf(allInOnePackage) } + (allInOnePackage to heldPackages)
+tasks.withType<DebPackage>().configureEach {
+    // A local copy, as the configuration cache cannot store the script a lambda reads a property of.
+    val table = conflicting
+    conflicts = packageName.map { table[it].orEmpty() }
+    replaces = packageName.map { table[it].orEmpty() }
+}
+tasks.withType<RpmPackage>().configureEach {
+    val table = conflicting
+    conflicts = packageName.map { table[it].orEmpty() }
+}
+
+val allInOneTree = tasks.register<Sync>("dogVisionTree") {
+    description = "Lays out in build/linux/dog-vision/tree the files its deb and its rpm install: those of " +
+        heldPackages.joinToString(", ") + "."
+    into(layout.buildDirectory.dir("linux/$allInOnePackage/tree"))
+    from(commonTree, cliTree, composeTree, swingTree, webTree)
+    // Each package's files are in folders or under names of its own, so none is two packages';
+    // were one to be, the build fails rather than install either.
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+val allInOneDebDepends = tasks.register<DebDepends>("dogVisionDebDepends") {
+    description = "Writes its deb's Depends into build/linux/dog-vision/debDepends.txt: those of both windows' " +
+        "debs, but dog-vision-common, and xdg-utils, the page's."
+    image = layout.dir(allInOneTree.map { it.destinationDir })
+    packages = debianPackages
+    // A Java that can open a window serves the command line too, and xdg-open opens the page.
+    others = windowDebDepends + "xdg-utils"
+    depends = layout.buildDirectory.file("linux/$allInOnePackage/debDepends.txt")
+}
+
+val allInOneRpmLibraryRequires = tasks.register<RpmLibraryRequires>("dogVisionRpmLibraryRequires") {
+    description = "Lists in build/linux/dog-vision/rpmLibraryRequires.txt the libraries both windows' natives link " +
+        "against and do not bring themselves, which its rpm requires."
+    image = layout.dir(allInOneTree.map { it.destinationDir })
+    requires = layout.buildDirectory.file("linux/$allInOnePackage/rpmLibraryRequires.txt")
+}
+
+/** What the deb and the rpm are listed with, in a package manager's search and its details. */
+val allInOneSummary = "How a dog or another animal sees colours (all in one)"
+val allInOneDescription = """
+    dog-vision shows a photo, a video or the camera with the colours a dog,
+    a cat or another animal can tell apart, beside the original.
+
+    This package is the command line, both desktop windows and the web page
+    in one: what the packages dog-vision-cli, dog-vision-compose,
+    dog-vision-swing, dog-vision-web and dog-vision-common install, in their
+    place. It cannot be installed beside any of them.
+""".trimIndent()
+
+val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
+    description = "Packs build/distributions/dog-vision_<version>_amd64.deb, on the system's Java."
+    group = "distribution"
+    tree = layout.dir(allInOneTree.map { it.destinationDir })
+    packageName = allInOnePackage
+    architecture = "amd64"
+    summary = allInOneSummary
+    longDescription = allInOneDescription
+    depends = allInOneDebDepends.flatMap { it.depends }.map { it.asFile.readText().split(", ") }
+    recommends = emptyList()
+}
+artifact(packageAllInOneDeb)
+
+val packageAllInOneRpm = tasks.register<RpmPackage>("packageDogVisionRpm") {
+    description = "Packs build/distributions/dog-vision-<version>-1.x86_64.rpm, on the system's Java."
+    group = "distribution"
+    tree = layout.dir(allInOneTree.map { it.destinationDir })
+    packageName = allInOnePackage
+    architecture = "x86_64"
+    summary = allInOneSummary
+    longDescription = allInOneDescription
+    // The folders each package it holds owns, as /usr/share/dog-vision-common, rather than those named after it alone.
+    folderNames = heldPackages
+    // What both windows' rpms require, but dog-vision-common, and xdg-utils, as the deb's.
+    val others = windowRpmRequires + swingRpmRequires + "xdg-utils"
+    requires = allInOneRpmLibraryRequires.flatMap { it.requires }.map { file ->
+        file.asFile.readText().split(',') + others
+    }
+    recommends = emptyList()
+}
+artifact(packageAllInOneRpm)
+
 // The deb and the rpm, dog-vision-web-sourcemap: the script's source map alone,
-// beside the script that dog-vision-web installs, so that a browser's developer tools show the Kotlin sources' lines.
+// beside the script that dog-vision-web or dog-vision installs,
+// so that a browser's developer tools show the Kotlin sources' lines.
 // It is for debugging, and larger than the script, so the page's own packages leave it out.
 val webSourceMapPackage = "dog-vision-web-sourcemap"
 
@@ -402,8 +508,9 @@ val webSourceMapDescription = """
     a cat or another animal can tell apart, beside the original.
 
     This package is the source map of the script of the page that
-    dog-vision-web installs, with which a web browser's developer tools show
-    the lines of the Kotlin sources the script was compiled from.
+    dog-vision-web or dog-vision installs, with which a web browser's
+    developer tools show the lines of the Kotlin sources the script was
+    compiled from.
 """.trimIndent()
 
 val packageWebSourceMapDeb = tasks.register<DebPackage>("packageDogVisionWebSourcemapDeb") {
@@ -414,8 +521,8 @@ val packageWebSourceMapDeb = tasks.register<DebPackage>("packageDogVisionWebSour
     architecture = "all"
     summary = webSourceMapSummary
     longDescription = webSourceMapDescription
-    // The script of its own version, which the map describes.
-    depends = version.map { listOf("$webPackage (= $it)") }
+    // The script of its own version, which the map describes, from either package that installs it.
+    depends = version.map { listOf("$webPackage (= $it) | $allInOnePackage (= $it)") }
     recommends = emptyList()
 }
 artifact(packageWebSourceMapDeb)
@@ -429,7 +536,9 @@ val packageWebSourceMapRpm = tasks.register<RpmPackage>("packageDogVisionWebSour
     summary = webSourceMapSummary
     longDescription = webSourceMapDescription
     // As the deb's.
-    requires = version.zip(release) { version, release -> listOf("$webPackage = $version-$release") }
+    requires = version.zip(release) { version, release ->
+        listOf("($webPackage = $version-$release or $allInOnePackage = $version-$release)")
+    }
     recommends = emptyList()
 }
 artifact(packageWebSourceMapRpm)

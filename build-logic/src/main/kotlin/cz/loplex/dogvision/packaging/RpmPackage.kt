@@ -21,7 +21,7 @@ import java.nio.file.Files
  * Packs [tree], the files as they are installed from /, into an rpm with rpmbuild, as jpackage cannot:
  * it always puts a Java runtime in.\
  * The rpm is named as rpmbuild names them, name-version-release.architecture.rpm, and:
- * - it owns the folders of the tree under one named after the package,
+ * - it owns the folders of the tree under one of [folderNames], the package's name unless told otherwise,
  *   such as /usr/share/<name>, and no other, which the system's packages own;
  * - it names only what it is told to require:
  *   rpmbuild's generators, which differ from one build machine to another, do not run,
@@ -67,6 +67,14 @@ abstract class RpmPackage : DefaultTask() {
     @get:Input
     abstract val recommends: ListProperty<String>
 
+    /** The packages that cannot be installed beside this one. */
+    @get:Input
+    abstract val conflicts: ListProperty<String>
+
+    /** The names of the folders the package owns, with every folder under them. */
+    @get:Input
+    abstract val folderNames: ListProperty<String>
+
     /** The license's text, which the rpm installs as %license, under /usr/share/licenses/<name>. */
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
@@ -74,6 +82,11 @@ abstract class RpmPackage : DefaultTask() {
 
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
+
+    init {
+        conflicts.convention(emptyList())
+        folderNames.convention(packageName.map { listOf(it) })
+    }
 
     @get:OutputFile
     val rpm: Provider<RegularFile>
@@ -91,12 +104,13 @@ abstract class RpmPackage : DefaultTask() {
             root.mkdirs()
             stage(tree.get().asFile, root)
             license.get().asFile.copyTo(top.resolve("SOURCES/LICENSE"))
+            val owned = folderNames.get()
             val entries = root.walkTopDown().drop(1).sortedBy { it.path }.mapNotNull { file ->
                 val path = "/" + file.relativeTo(root).invariantSeparatorsPath
                 check(path.none { it.isWhitespace() || it == '"' }) { "rpm's %files cannot take $path as it is" }
                 when {
                     file.isFile -> path
-                    packageName.get() in path.split('/') -> "%dir $path"
+                    path.split('/').any { it in owned } -> "%dir $path"
                     else -> null
                 }
             }
@@ -113,6 +127,7 @@ abstract class RpmPackage : DefaultTask() {
                     appendLine("AutoReqProv: no")
                     for (requirement in requires.get()) appendLine("Requires: $requirement")
                     for (recommendation in recommends.get()) appendLine("Recommends: $recommendation")
+                    for (conflict in conflicts.get()) appendLine("Conflicts: $conflict")
                     appendLine("%global __os_install_post %{nil}")
                     appendLine("%global debug_package %{nil}")
                     // /usr/share/licenses/<name>, as Fedora's and openSUSE's rpm name it, where others add the version.

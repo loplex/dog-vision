@@ -109,7 +109,7 @@ the apples as they are and as a dog sees them side by side, the buttons above th
 
 - **The built `index.html` opens as it is**, from the folder or from any static server:
   the page fetches nothing, and its wording is compiled into `dog-vision.js`.
-- **On Linux it installs from the deb or the rpm `dog-vision-web`**,
+- **On Linux it installs from the deb or the rpm `dog-vision-web`**, or with every other program from `dog-vision`,
   as *Dog Vision (web)* in the desktop's menu, which opens the installed `index.html` in the system's browser.
 - **On Windows the MSI installs it**, as its part *GUI (web browser)*,
   with *Dog Vision (web)* in the Start menu, which opens the installed `index.html` in the system's browser.\
@@ -175,6 +175,7 @@ java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
 ```
 
 - **On Linux it installs as a package of its own, `dog-vision-cli`**, from its deb or its rpm,
+  or with every other program from `dog-vision`,
   and runs as `dog-vision-cli` from the `PATH` on the system's Java 17 or newer,
   which the package manager installs with it where there is none; a headless Java is enough, as it opens no window.\
   Its JARs are the package `dog-vision-common`'s, which the windows' packages run on too.
@@ -208,7 +209,8 @@ It runs on Linux and Windows on x86-64.
 
 ![The Compose window: the apples as they are and as a dog sees them side by side, and the controls on the right](images/window.png)
 
-- **On Linux it installs from the deb or the rpm `dog-vision-compose`**, as `dog-vision-compose` on the `PATH`
+- **On Linux it installs from the deb or the rpm `dog-vision-compose`**,
+  or with every other program from `dog-vision`, as `dog-vision-compose` on the `PATH`
   and *Dog Vision (Kotlin Compose)* in the desktop's menu (*Jak vidí pes (Kotlin Compose)* in Czech),
   on the system's Java 17 or newer, which the package manager installs with it where there is none.\
   It recommends `dog-vision-cli`, the command line alone, which is a package of its own.
@@ -243,9 +245,9 @@ dog-vision-swing photo.jpg   # as dog-vision-compose, with the same options, key
 - **It shows what the Compose window shows, from the same state**, the `LiveSession` in [`gui-core`](../gui-core):
   the same images, drawn by the same passes, and the same controls, in Swing's own widgets with [FlatLaf](https://www.formdev.com/flatlaf/).
 - **It needs neither Compose nor skiko**, so its packages leave out Compose's JARs and skiko's natives.
-- **On Linux it installs from the deb or the rpm `dog-vision-swing`**, as `dog-vision-swing` on the `PATH`
-  and *Dog Vision (Java Swing)* in the desktop's menu (*Jak vidí pes (Java Swing)* in Czech),
-  beside `dog-vision-compose` where both are installed.\
+- **On Linux it installs from the deb or the rpm `dog-vision-swing`**, or with every other program from `dog-vision`,
+  as `dog-vision-swing` on the `PATH` and *Dog Vision (Java Swing)* in the desktop's menu
+  (*Jak vidí pes (Java Swing)* in Czech), beside `dog-vision-compose` where both are installed.\
   Its tar.gz runs as `dog-vision-swing/bin/dog-vision-swing`, and on Windows the MSI installs it,
   as its part *GUI (Java Swing)*, beside the Compose window's *GUI (Compose Multiplatform)*.
 - **It is light or dark as the desktop asks**:

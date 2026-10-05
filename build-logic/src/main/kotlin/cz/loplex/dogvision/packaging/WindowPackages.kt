@@ -5,6 +5,21 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskProvider
+
+/**
+ * What a window's deb depends on that its natives do not name: a Java that can open a window,
+ * the distribution's default where it is 17 or newer, as the Debian Java Policy has it;
+ * LWJGL opens libEGL once it runs, and ffmpeg runs apart for a video or the camera.
+ */
+val windowDebDepends = listOf("default-jre (>= 2:1.17) | java17-runtime", "libegl1", "ffmpeg")
+
+/**
+ * What a window's rpm requires besides the libraries its natives link against:
+ * a Java that can open a window, as the command line's rpm says why; libEGL, which LWJGL opens once it runs;
+ * and ffmpeg's command rather than a package, as Fedora has two ffmpeg packages.
+ */
+val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEGL.so.1()(64bit)", "/usr/bin/ffmpeg")
 
 /**
  * Registers a window's deb and rpm, [packageName], on the system's Java, with the tasks they are made from,
@@ -22,6 +37,8 @@ import org.gradle.api.tasks.Sync
  * - [summary] and [description] are what a package manager lists the packages with, in its search and its details.
  * - [nativesLeftIn] names the JARs, by the start of their names, whose natives are not unpacked.
  * - [rpmRequires] is what the rpm requires besides what every window's does.
+ *
+ * Returns the task that lays out the files the packages install, less [sharedJars].
  */
 fun Project.windowPackages(
     packageName: String,
@@ -36,7 +53,7 @@ fun Project.windowPackages(
     description: String,
     nativesLeftIn: List<String> = emptyList(),
     rpmRequires: List<String> = emptyList(),
-) {
+): TaskProvider<Sync> {
     val home = "/usr/share/$packageName"
     // The files the packages are made of, in a folder of the package's own.
     val work = "linux/$packageName"
@@ -126,10 +143,7 @@ fun Project.windowPackages(
             "window, libEGL and ffmpeg."
         image.set(linuxNatives.flatMap { it.natives })
         packages.set(debianPackages)
-        // What the natives do not name: a Java that can open a window,
-        // the distribution's default where it is 17 or newer, as the Debian Java Policy has it;
-        // LWJGL opens libEGL once it runs, and ffmpeg runs apart for a video or the camera.
-        others.set(listOf("default-jre (>= 2:1.17) | java17-runtime", "libegl1", "ffmpeg"))
+        others.set(windowDebDepends)
         depends.set(layout.buildDirectory.file("$work/debDepends.txt"))
     }
 
@@ -155,15 +169,11 @@ fun Project.windowPackages(
         this.summary.set(summary)
         longDescription.set(description)
         // The libraries the natives need,
-        // as rpm's own generator names them, since Fedora's and openSUSE's package names differ;
-        // a Java that can open a window, as the command line's rpm says why; libEGL, which LWJGL opens once it runs;
-        // ffmpeg's command rather than a package, as Fedora has two ffmpeg packages;
-        // and the shared JARs' package of this version.
+        // as rpm's own generator names them, since Fedora's and openSUSE's package names differ,
+        // what every window's rpm requires, and the shared JARs' package of this version.
         requires.set(
             rpmLibraryRequires.flatMap { it.requires }.map { file ->
-                file.asFile.readText().split(',') +
-                    listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEGL.so.1()(64bit)", "/usr/bin/ffmpeg") +
-                    rpmRequires
+                file.asFile.readText().split(',') + windowRpmRequires + rpmRequires
             },
         )
         requires.add(this.version.zip(release) { version, release -> "$sharedPackage = $version-$release" })
@@ -171,4 +181,5 @@ fun Project.windowPackages(
     }
     artifact(packageDeb)
     artifact(packageRpm)
+    return linuxTree
 }
