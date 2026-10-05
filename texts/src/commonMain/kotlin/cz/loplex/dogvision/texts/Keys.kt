@@ -1,6 +1,8 @@
 package cz.loplex.dogvision.texts
 
+import cz.loplex.dogvision.core.CameraChoice
 import cz.loplex.dogvision.core.ColourVision
+import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.FactLabel
 import cz.loplex.dogvision.core.Note
 import cz.loplex.dogvision.core.Species
@@ -79,4 +81,15 @@ val Note.key: Str
         Note.ABOUT_60 -> Str.NOTE_ABOUT_60
         Note.IN_AIR -> Str.NOTE_IN_AIR
         Note.STRIPES_8_2_ARCMIN -> Str.NOTE_STRIPES_8_2_ARCMIN
+    }
+
+/**
+ * What a switch of the camera does:
+ * switches between the back and the front camera where those are the two there are, else to the next camera.
+ */
+val CameraChoice.switchKey: Str
+    get() = if (cameras.map { it.facing }.sorted() == listOf(Facing.FRONT, Facing.BACK)) {
+        Str.SWITCH_CAMERA
+    } else {
+        Str.NEXT_CAMERA
     }

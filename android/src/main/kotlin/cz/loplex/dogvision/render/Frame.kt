@@ -57,6 +57,21 @@ class FrameExchange {
     @Synchronized
     fun open(): Int = ++generation
 
+    /**
+     * Forgets every frame, the one shown included, and drops those of the source before,
+     * so that nothing is drawn until another source publishes one, as while the camera is off.
+     */
+    fun clear() {
+        synchronized(this) {
+            generation++
+            latest?.let(free::addLast)
+            latest = null
+            shown?.let(free::addLast)
+            shown = null
+        }
+        onPublish?.invoke()
+    }
+
     /** A frame of the given size to fill, or null if all of them are in use. */
     @Synchronized
     fun obtain(width: Int, height: Int): Frame? {

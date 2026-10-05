@@ -6,11 +6,17 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import androidx.camera.core.InitializationException
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import cz.loplex.dogvision.camera.listCameras
 import cz.loplex.dogvision.core.Arrangement
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Facing
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.compose
 import cz.loplex.dogvision.core.composedSize
@@ -32,8 +38,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,9 +51,11 @@ import java.io.IOException
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
-/** What is shown: the camera, a photo, or a video. */
+/** What is shown: the camera, a photo, a video, or nothing, while the camera is off. */
 sealed interface Source {
     data object Camera : Source
+
+    data object Off : Source
 
     data class Photo(val uri: Uri, val name: String) : Source
 
@@ -86,7 +97,7 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
     init {
         when (val kept = state.get<Bundle>(SOURCE_STATE)?.toSource()) {
             is Source.Photo -> viewModelScope.launch { openPhoto(kept.uri, kept.name) }
-            is Source.Video -> _source.value = kept
+            is Source.Video, Source.Off -> _source.value = kept
             Source.Camera, null -> Unit
         }
         state.setSavedStateProvider(SOURCE_STATE) { _source.value.toBundle() }
@@ -101,9 +112,9 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
     private fun View.keepingSizeOf(old: View): View =
         if (_recorder.value == null) this else copy(sideBySide = old.sideBySide, difference = old.difference)
 
-    /** Called on the GL thread. */
+    /** Called on the GL thread; what was drawn before the camera was turned off is not kept. */
     fun onDrawn(drawn: Drawn) {
-        _drawn.value = drawn
+        if (_source.value != Source.Off) _drawn.value = drawn
     }
 
     fun onCameraError(error: Throwable) {
@@ -167,14 +178,62 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
         if (_recorder.value == null) _source.value = Source.Camera
     }
 
-    private val _frontCamera = state.getMutableStateFlow(FRONT_CAMERA_STATE, false)
+    private val cameras = MutableStateFlow<List<CameraOption>>(emptyList())
 
-    /** Whether the camera is the front one, whose image is shown mirrored, as a mirror shows a face. */
-    val frontCamera: StateFlow<Boolean> = _frontCamera.asStateFlow()
+    /** The id of the camera chosen last, or null for the back camera, or the first there is. */
+    private val chosenCamera = state.getMutableStateFlow<String?>(CHOSEN_CAMERA_STATE, null)
 
-    /** Switches between the back and the front camera; not while recording, as the frames' size would change. */
+    private val mirroring = state.getMutableStateFlow(MIRRORING_STATE, Mirroring.AUTO)
+
+    /** The cameras, the one shown while the source is the camera, and how its image is mirrored. */
+    val camera: StateFlow<CameraChoice> =
+        combine(cameras, chosenCamera, mirroring, _source) { cameras, chosen, mirroring, source ->
+            val shown = if (source != Source.Camera) {
+                null
+            } else {
+                cameras.firstOrNull { it.id == chosen }
+                    ?: cameras.firstOrNull { it.facing == Facing.BACK }
+                    ?: cameras.firstOrNull()
+            }
+            CameraChoice(cameras, shown, mirroring)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, CameraChoice())
+
+    init {
+        viewModelScope.launch {
+            cameras.value = try {
+                listCameras(getApplication())
+            } catch (error: InitializationException) {
+                onCameraError(error)
+                emptyList()
+            }
+        }
+    }
+
+    /**
+     * Shows [camera] in place of what is shown, or turns the camera off for null, which then shows nothing;
+     * not while recording, as the source's size would change the video's.\
+     * Off does nothing while a photo or a video is shown, which is shown with the camera off already.
+     */
+    fun chooseCamera(camera: CameraOption?) {
+        if (_recorder.value != null) return
+        if (camera != null) {
+            chosenCamera.value = camera.id
+            _source.value = Source.Camera
+        } else if (_source.value == Source.Camera) {
+            _source.value = Source.Off
+            frames.clear()
+            _drawn.value = null
+        }
+    }
+
+    /** Shows the next camera, after the last the first; not while recording, as the frames' size would change. */
     fun switchCamera() {
-        if (_recorder.value == null) _frontCamera.update { !it }
+        if (_recorder.value == null) camera.value.next?.let { chosenCamera.value = it.id }
+    }
+
+    /** Mirrors the camera's image as [mirroring] says. */
+    fun setMirroring(mirroring: Mirroring) {
+        this.mirroring.value = mirroring
     }
 
     /** Asks the renderer for the images it draws next, with their layout; set while one is shown. */
@@ -389,4 +448,5 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
 
 private const val VIEW_STATE = "view"
 private const val SOURCE_STATE = "source"
-private const val FRONT_CAMERA_STATE = "frontCamera"
+private const val CHOSEN_CAMERA_STATE = "chosenCamera"
+private const val MIRRORING_STATE = "mirroring"

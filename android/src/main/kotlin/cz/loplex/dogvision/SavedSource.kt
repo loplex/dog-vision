@@ -8,6 +8,8 @@ internal fun Source.toBundle(): Bundle = Bundle().apply {
     when (this@toBundle) {
         Source.Camera -> putString(KIND, CAMERA)
 
+        Source.Off -> putString(KIND, OFF)
+
         is Source.Photo -> {
             putString(KIND, PHOTO)
             putString(URI, uri.toString())
@@ -24,6 +26,7 @@ internal fun Source.toBundle(): Bundle = Bundle().apply {
 
 /** The source [toBundle] kept; the camera, where it kept none it knows. */
 internal fun Bundle.toSource(): Source {
+    if (getString(KIND) == OFF) return Source.Off
     val uri = getString(URI)?.let(Uri::parse) ?: return Source.Camera
     val name = getString(NAME) ?: uri.lastPathSegment.orEmpty()
     return when (getString(KIND)) {
@@ -37,5 +40,6 @@ private const val KIND = "kind"
 private const val URI = "uri"
 private const val NAME = "name"
 private const val CAMERA = "camera"
+private const val OFF = "off"
 private const val PHOTO = "photo"
 private const val VIDEO = "video"

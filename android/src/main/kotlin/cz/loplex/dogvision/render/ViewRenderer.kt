@@ -102,6 +102,11 @@ class ViewRenderer(private val frames: FrameExchange, private val onDrawn: (Draw
 
     override fun onDrawFrame(unused: GL10?) {
         val newest = frames.take() ?: frames.current().takeIf { shown == null }
+        if (newest == null && frames.current() == null) {
+            // The frames were cleared: nothing is drawn, and the next frame drawn is told of again.
+            shown = null
+            lastDrawn = null
+        }
         if (newest != null) {
             glBindTexture(GL_TEXTURE_2D, raw)
             glTexImage2D(

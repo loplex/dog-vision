@@ -53,4 +53,8 @@ data class CameraChoice(
      */
     val offered: List<CameraOption?>
         get() = listOf(null) + cameras + listOfNotNull(shown?.takeIf { it !in cameras })
+
+    /** The camera a switch shows: the one after the camera shown, the first after the last or if none is shown. */
+    val next: CameraOption?
+        get() = cameras.getOrNull((cameras.indexOf(shown) + 1) % cameras.size.coerceAtLeast(1))
 }

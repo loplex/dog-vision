@@ -2,14 +2,18 @@ package cz.loplex.dogvision.camera
 
 import android.content.Context
 import android.util.Size
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.lifecycle.awaitInstance
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.render.FrameExchange
 import java.util.concurrent.Executors
 
@@ -34,11 +38,15 @@ class CameraFeed(
     /** The display's rotation, kept for a camera that has not started yet when it turns. */
     private var rotation = 0
 
+    /** Whether the frames are mirrored, as the controls' choice of mirroring resolves for the camera shown. */
+    @Volatile
+    var mirrored = false
+
     /**
-     * Starts the back or the front camera, stopping the other.\
+     * Starts [camera], one [listCameras] lists, stopping the one before.\
      * The frames of the one stopped that come in meanwhile belong to a generation before, and are dropped.
      */
-    fun start(front: Boolean, rotation: Int) {
+    fun start(camera: CameraOption, rotation: Int) {
         this.rotation = rotation
         val generation = frames.open()
         val future = ProcessCameraProvider.getInstance(context)
@@ -63,8 +71,9 @@ class CameraFeed(
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .setTargetRotation(this.rotation)
                     .build()
-                analysis.setAnalyzer(executor) { deliver(it, front, generation) }
-                val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                analysis.setAnalyzer(executor) { deliver(it, generation) }
+                val selector = provider.availableCameraInfos.getOrNull(camera.id.toInt())?.cameraSelector
+                    ?: error("No camera ${camera.id}")
                 provider.unbindAll()
                 provider.bindToLifecycle(owner, selector, analysis)
                 this.analysis = analysis
@@ -90,7 +99,7 @@ class CameraFeed(
         executor.shutdown()
     }
 
-    private fun deliver(image: ImageProxy, front: Boolean, generation: Int) {
+    private fun deliver(image: ImageProxy, generation: Int) {
         image.use {
             val plane = image.planes[0]
             val frame = frames.obtain(image.width, image.height) ?: return
@@ -102,10 +111,25 @@ class CameraFeed(
                 frame.pixels.put(source)
             }
             frame.rotation = image.imageInfo.rotationDegrees
-            frame.mirrored = front
+            frame.mirrored = mirrored
             frames.publish(frame, generation)
         }
     }
+}
+
+/**
+ * The cameras CameraX makes available, each with its place in CameraX's list as its id,
+ * by which [CameraFeed.start] starts it again, and where it faces: an external camera's facing is unknown.
+ */
+suspend fun listCameras(context: Context): List<CameraOption> =
+    ProcessCameraProvider.awaitInstance(context).availableCameraInfos.mapIndexed { index, info ->
+        CameraOption("$index", null, facing(info))
+    }
+
+private fun facing(info: CameraInfo): Facing = when (info.lensFacing) {
+    CameraSelector.LENS_FACING_FRONT -> Facing.FRONT
+    CameraSelector.LENS_FACING_BACK -> Facing.BACK
+    else -> Facing.UNKNOWN
 }
 
 /** The longest side of a texture that OpenGL ES 3.0 lets no GPU refuse. */

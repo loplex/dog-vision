@@ -44,6 +44,11 @@ class SavedSourceTest {
     }
 
     @Test
+    fun theCameraTurnedOffComesBack() {
+        assertEquals(Source.Off, parcelled(Source.Off.toBundle()).toSource())
+    }
+
+    @Test
     fun aKindMissingOrUnknownIsTheCamera() {
         val bundle = Source.Photo(picked, "IMG_0042.jpg").toBundle()
         assertEquals(Source.Camera, Bundle(bundle).apply { remove("kind") }.toSource())

@@ -39,6 +39,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +70,7 @@ import cz.loplex.dogvision.Source
 import cz.loplex.dogvision.camera.CameraFeed
 import cz.loplex.dogvision.savingNeedsPermission
 import cz.loplex.dogvision.texts.Str
+import cz.loplex.dogvision.texts.switchKey
 import cz.loplex.dogvision.video.VideoFeed
 
 private val CAPTION_HEIGHT = 40.dp
@@ -80,17 +82,11 @@ fun MainScreen(model: MainViewModel) {
     val source by model.source.collectAsStateWithLifecycle()
     val converting by model.converting.collectAsStateWithLifecycle()
     val recorder by model.recorder.collectAsStateWithLifecycle()
+    val camera by model.camera.collectAsStateWithLifecycle()
     val recording = recorder != null
     var cameraAllowed by remember {
         val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
         mutableStateOf(permission == PackageManager.PERMISSION_GRANTED)
-    }
-
-    @Suppress("UnsupportedChromeOsCameraSystemFeature")
-    val bothCameras = remember {
-        val features = context.packageManager
-        features.hasSystemFeature(PackageManager.FEATURE_CAMERA) &&
-            features.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
     }
     val askForCamera = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         cameraAllowed = it
@@ -111,8 +107,8 @@ fun MainScreen(model: MainViewModel) {
                     }
                     if (source != Source.Camera) {
                         ImageButton(R.drawable.ic_camera, Str.SHOW_CAMERA, onClick = model::openCamera)
-                    } else if (cameraAllowed && bothCameras) {
-                        ImageButton(R.drawable.ic_switch_camera, Str.SWITCH_CAMERA, onClick = model::switchCamera)
+                    } else if (cameraAllowed && camera.cameras.size > 1) {
+                        ImageButton(R.drawable.ic_switch_camera, camera.switchKey, onClick = model::switchCamera)
                     }
                 }
                 ImageButton(R.drawable.ic_save, Str.SAVE_SNAPSHOT) { save(model::saveSnapshot) }
@@ -146,7 +142,7 @@ fun MainScreen(model: MainViewModel) {
 
                 is Source.Video -> Video(model, shown)
 
-                is Source.Photo -> Unit
+                is Source.Photo, Source.Off -> Unit
             }
         }
         val message by model.message.collectAsStateWithLifecycle()
@@ -308,20 +304,25 @@ private fun WithControls(model: MainViewModel, buttons: @Composable () -> Unit, 
 private val CONTROLS_WIDTH = 360.dp
 private const val CONTROLS_SHARE = 0.45f
 
-/** The back or the front camera, as the model says, feeding the model's frames while the screen is started. */
+/**
+ * The camera the model shows, once the cameras are listed,
+ * feeding the model's frames while the screen is started, mirrored as the model's choice says.
+ */
 @Composable
 private fun Camera(model: MainViewModel) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val display = LocalView.current.display
-    val front by model.frontCamera.collectAsStateWithLifecycle()
+    val camera by model.camera.collectAsStateWithLifecycle()
     val feed = remember(owner) { CameraFeed(context, owner, model.frames, model::onCameraError) }
+    SideEffect { feed.mirrored = camera.mirrored }
     // Declared first, so disposed of last: the feed is released once, after it last started.
     DisposableEffect(feed) {
         onDispose(feed::release)
     }
-    DisposableEffect(feed, front) {
-        feed.start(front, display.rotation)
+    val shown = camera.shown
+    DisposableEffect(feed, shown) {
+        shown?.let { feed.start(it, display.rotation) }
         onDispose { }
     }
     // Every turn of the display, including one of 180 degrees, which changes no configuration.
