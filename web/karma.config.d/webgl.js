@@ -22,3 +22,7 @@ config.set({
     },
     browsers: [process.env.DOG_VISION_TESTS_ON_GPU === "true" ? "ChromeGpuWebGl2" : "ChromeHeadlessWebGl2"],
 });
+
+// Mocha's 2 seconds a test are too few for a test that renders or encodes in software
+// while Gradle builds other modules at once, as `./gradlew check` does; a hang still fails, after 20.
+config.set({ client: { mocha: { timeout: 20000 } } });
