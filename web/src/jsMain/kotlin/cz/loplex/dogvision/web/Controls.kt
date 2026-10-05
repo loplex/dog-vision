@@ -1,6 +1,9 @@
 package cz.loplex.dogvision.web
 
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.ChromaScale
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
@@ -21,6 +24,8 @@ import kotlin.math.roundToInt
  * The controls of the view, in the sections and ranges of the Android app's panel, built into [container].\
  * Each change is handed to [onChange] as a function of the view; [show] sets every control to what a view holds.
  *
+ * The camera section at the top, where there is [onCamera], hands it a camera chosen, or null for Off,
+ * and a mirroring chosen to [onMirroring].\
  * The language chooser at the end shows [language], null for the browser's, and hands a choice to [onLanguage].
  */
 class Controls(
@@ -28,8 +33,18 @@ class Controls(
     private val texts: Texts,
     language: String?,
     private val onChange: ((View) -> View) -> Unit,
+    onCamera: ((CameraOption?) -> Unit)?,
+    onMirroring: (Mirroring) -> Unit,
     onLanguage: (String?) -> Unit,
 ) {
+    /** The cameras offered, Off first, each an option of [cameraChoice] by its place among them. */
+    private var offered: List<CameraOption?> = emptyList()
+    private val cameraChoice = select(emptyList())
+    private val mirroring = Mirroring.entries.associateWith { radio("mirroring") }
+
+    /** The label of the automatic mirroring, which says where the camera faces. */
+    private var automatic: HTMLElement? = null
+
     private val speciesOptions = Species.entries.map { it.name to texts.speciesLabel(it) }
     private val species = select(speciesOptions)
     private val adaptation = slider(0..100)
@@ -53,6 +68,20 @@ class Controls(
     }
 
     init {
+        if (onCamera != null) {
+            section(Str.CAMERA) {
+                labelled(Str.CAMERA, Str.ABOUT_CAMERA, cameraChoice)
+                val heading = document.createElement("p") as HTMLElement
+                heading.className = "label"
+                heading.textContent = texts.get(Str.MIRRORING)
+                appendChild(heading)
+                inline(Str.MIRROR, Str.ABOUT_MIRROR, mirroring.getValue(Mirroring.MIRROR))
+                inline(Str.DO_NOT_MIRROR, Str.ABOUT_DO_NOT_MIRROR, mirroring.getValue(Mirroring.PLAIN))
+                automatic = inline(Str.MIRROR_AUTOMATIC, Str.ABOUT_MIRROR_AUTOMATIC, mirroring.getValue(Mirroring.AUTO))
+            }
+            cameraChoice.onChange { offered.getOrNull(cameraChoice.value.toInt()).let(onCamera) }
+            mirroring.forEach { (choice, input) -> input.onChange { if (input.checked) onMirroring(choice) } }
+        }
         section(Str.SPECIES) {
             labelled(Str.SPECIES, Str.ABOUT_SPECIES, species)
         }
@@ -123,10 +152,11 @@ class Controls(
     }
 
     /**
-     * Sets every control to what [view] holds, and enables those that apply to it;
-     * while [recording], not those that change how many images the view has, as in the Android app.
+     * Sets every control to what [view] and [camera] hold, and enables those that apply to them;
+     * while [recording], not those that change how many images the view has, nor the camera, as in the Android app.
      */
-    fun show(view: View, recording: Boolean = false) {
+    fun show(view: View, recording: Boolean = false, camera: CameraChoice = CameraChoice()) {
+        showCamera(camera, recording)
         val params = view.params
         species.value = params.species.name
         if (params.species != factsOf) showFacts(params.species)
@@ -142,6 +172,25 @@ class Controls(
         compare.disabled = !view.sideBySide
         difference.checked = view.difference
         difference.disabled = !view.sideBySide || recording
+    }
+
+    /** Sets the camera section to [camera]: the cameras offered, the one shown, and its mirroring. */
+    private fun showCamera(camera: CameraChoice, recording: Boolean) {
+        if (camera.offered != offered) {
+            offered = camera.offered
+            cameraChoice.innerHTML = ""
+            texts.cameraNames(camera).forEachIndexed { index, name ->
+                val option = document.createElement("option") as HTMLOptionElement
+                option.value = index.toString()
+                option.textContent = name
+                cameraChoice.appendChild(option)
+            }
+        }
+        cameraChoice.value = offered.indexOf(camera.shown).toString()
+        cameraChoice.disabled = recording
+        mirroring.forEach { (choice, input) -> input.checked = choice == camera.shownMirroring }
+        mirroring.getValue(Mirroring.AUTO).disabled = !camera.automaticAvailable
+        automatic?.lastChild?.textContent = " " + texts.automaticMirroring(camera.facing)
     }
 
     /**
@@ -214,8 +263,8 @@ class Controls(
         about(row, about)
     }
 
-    /** A check box or radio button with its label after it, and what it means. */
-    private fun HTMLElement.inline(label: Str, about: Str, input: HTMLInputElement) {
+    /** A check box or radio button with its label after it, and what it means; returns the label. */
+    private fun HTMLElement.inline(label: Str, about: Str, input: HTMLInputElement): HTMLElement {
         val row = document.createElement("div") as HTMLElement
         row.className = "row"
         val text = document.createElement("label") as HTMLElement
@@ -224,6 +273,7 @@ class Controls(
         row.appendChild(text)
         appendChild(row)
         about(row, about)
+        return text
     }
 
     /**
