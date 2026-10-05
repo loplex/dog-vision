@@ -176,7 +176,8 @@ java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
 
 - **On Linux it installs as a package of its own, `dog-vision-cli`**, from its deb or its rpm,
   and runs as `dog-vision-cli` from the `PATH` on the system's Java 17 or newer,
-  which the package manager installs with it where there is none; a headless Java is enough, as it opens no window.
+  which the package manager installs with it where there is none; a headless Java is enough, as it opens no window.\
+  Its JARs are the package `dog-vision-common`'s, which the windows' packages run on too.
 - **On Windows the MSI installs it beside both windows**, as its part *Command line*, and puts it on the `PATH`,
   so that it runs as `dog-vision-cli` in a console opened after, on a Java it brings with it.\
   [Building it](building.md#what-each-package-holds) says what it installs.

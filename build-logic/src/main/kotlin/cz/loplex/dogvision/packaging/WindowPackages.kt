@@ -3,6 +3,7 @@ package cz.loplex.dogvision.packaging
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
 
 /**
@@ -13,6 +14,8 @@ import org.gradle.api.tasks.Sync
  * a launcher in /usr/bin, which finds a Java 17 or newer, and the desktop entry and the icons, named [applicationId].\
  * The command line is the package dog-vision-cli, which each recommends.
  *
+ * - [sharedJars] are those of [jars] that the package [sharedPackage] installs,
+ *   in /usr/share/[sharedPackage]/lib, which the packages depend on at their own version and leave out.
  * - [mainClass] is the class the launcher starts, its main the window's.
  * - [jvmOptions] are the launcher's options before org.lwjgl.librarypath's, given the folder of the natives.
  * - [nameSuffix] follows the desktop entry's name in each language.
@@ -23,6 +26,8 @@ import org.gradle.api.tasks.Sync
 fun Project.windowPackages(
     packageName: String,
     jars: NamedDomainObjectProvider<out Configuration>,
+    sharedJars: FileCollection,
+    sharedPackage: String,
     applicationId: String,
     mainClass: String,
     jvmOptions: (natives: String) -> List<String> = { emptyList() },
@@ -61,6 +66,8 @@ fun Project.windowPackages(
         this.mainClass.set(mainClass)
         this.jars.from(linuxJars)
         jarDirectory.set("$home/lib")
+        this.sharedJars.from(sharedJars)
+        sharedJarDirectory.set("/usr/share/$sharedPackage/lib")
         jarNames.set(linuxJarNames)
         this.jvmOptions.set(jvmOptions(nativesHome) + "-Dorg.lwjgl.librarypath=$nativesHome")
         minimumJava.set(17)
@@ -88,7 +95,7 @@ fun Project.windowPackages(
         this.description = "Lays out in build/$work/tree the files its deb and its rpm install: the " +
             "JARs, the natives, the launcher, the desktop entry and the icons."
         into(layout.buildDirectory.dir("$work/tree"))
-        from(linuxJars) {
+        from(linuxJars.minus(sharedJars)) {
             into(home.removePrefix("/") + "/lib")
             exclude(NativesOnly)
             renameJars(linuxJarNames)
@@ -135,6 +142,7 @@ fun Project.windowPackages(
         this.summary.set(summary)
         longDescription.set(description)
         depends.set(debDepends.flatMap { it.depends }.map { it.asFile.readText().split(", ") })
+        depends.add(this.version.map { "$sharedPackage (= $it)" })
         recommends.set(listOf("dog-vision-cli"))
     }
 
@@ -149,7 +157,8 @@ fun Project.windowPackages(
         // The libraries the natives need,
         // as rpm's own generator names them, since Fedora's and openSUSE's package names differ;
         // a Java that can open a window, as the command line's rpm says why; libEGL, which LWJGL opens once it runs;
-        // and ffmpeg's command rather than a package, as Fedora has two ffmpeg packages.
+        // ffmpeg's command rather than a package, as Fedora has two ffmpeg packages;
+        // and the shared JARs' package of this version.
         requires.set(
             rpmLibraryRequires.flatMap { it.requires }.map { file ->
                 file.asFile.readText().split(',') +
@@ -157,6 +166,7 @@ fun Project.windowPackages(
                     rpmRequires
             },
         )
+        requires.add(this.version.zip(release) { version, release -> "$sharedPackage = $version-$release" })
         recommends.set(listOf("dog-vision-cli"))
     }
     artifact(packageDeb)

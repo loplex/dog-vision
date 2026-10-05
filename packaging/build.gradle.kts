@@ -14,8 +14,9 @@ import cz.loplex.dogvision.packaging.windowsMsi
 import cz.loplex.dogvision.packaging.windowsRuntimeImage
 
 // Packages made apart from the modules they hold:
-// - the deb and the rpm of the Compose window, the Swing window and the command line,
-//   on the system's Java, each of the JARs its module runs on, which jvmRuntimeOf takes;
+// - the deb and the rpm of the JARs the command line runs on, which both windows run on as well,
+//   and of the Compose window, the Swing window and the command line, on the system's Java,
+//   each of the JARs its module runs on, which jvmRuntimeOf takes, less the shared ones;
 // - the deb and the rpm of the web page, the folder web hands this module through webPage,
 //   opened in the system's browser, and those of its script's source map;
 // - the MSI for Windows on x86-64, of the Compose window, the Swing window and the command line,
@@ -108,10 +109,63 @@ tasks.register("packageRpm") {
     dependsOn(tasks.withType<RpmPackage>())
 }
 
+// The deb and the rpm, dog-vision-common: the JARs the command line runs on,
+// core's, texts' and Kotlin's among them, in /usr/share/dog-vision-common/lib, which both windows run on as well.
+// dog-vision-cli and both windows' packages depend on it at their own version and leave its JARs out.
+// It starts nothing itself, so it depends on no Java, and it has no natives, so one package serves every architecture.
+val commonPackage = "dog-vision-common"
+val commonHome = "/usr/share/$commonPackage"
+val commonJars = jvmRuntimeOf(":cli")
+
+val commonTree = tasks.register<Sync>("dogVisionCommonTree") {
+    description = "Lays out in build/linux/dog-vision-common/tree the files its deb and its rpm install: the JARs."
+    into(layout.buildDirectory.dir("linux/$commonPackage/tree"))
+    from(commonJars) { into(commonHome.removePrefix("/") + "/lib") }
+}
+
+/** What the deb and the rpm are listed with, in a package manager's search and its details. */
+val commonSummary = "How a dog or another animal sees colours (common files)"
+val commonDescription = """
+    dog-vision shows a photo, a video or the camera with the colours a dog,
+    a cat or another animal can tell apart, beside the original.
+
+    This package is what the command line and the desktop windows share,
+    the packages dog-vision-cli, dog-vision-compose and dog-vision-swing:
+    their Java libraries. It does nothing on its own.
+""".trimIndent()
+
+val packageCommonDeb = tasks.register<DebPackage>("packageDogVisionCommonDeb") {
+    description = "Packs build/distributions/dog-vision-common_<version>_all.deb."
+    group = "distribution"
+    tree = layout.dir(commonTree.map { it.destinationDir })
+    packageName = commonPackage
+    architecture = "all"
+    summary = commonSummary
+    longDescription = commonDescription
+    depends = emptyList()
+    recommends = emptyList()
+}
+artifact(packageCommonDeb)
+
+val packageCommonRpm = tasks.register<RpmPackage>("packageDogVisionCommonRpm") {
+    description = "Packs build/distributions/dog-vision-common-<version>-1.noarch.rpm."
+    group = "distribution"
+    tree = layout.dir(commonTree.map { it.destinationDir })
+    packageName = commonPackage
+    architecture = "noarch"
+    summary = commonSummary
+    longDescription = commonDescription
+    requires = emptyList()
+    recommends = emptyList()
+}
+artifact(packageCommonRpm)
+
 // The deb and the rpm, dog-vision-compose, on the system's Java.
 windowPackages(
     packageName = "dog-vision-compose",
     jars = jvmRuntimeOf(":gui-compose"),
+    sharedJars = files(commonJars),
+    sharedPackage = commonPackage,
     // The application's ID, which the Windows MSI does not use.
     applicationId = "cz.loplex.dogvision.compose",
     mainClass = "cz.loplex.dogvision.desktop.MainKt",
@@ -125,7 +179,8 @@ windowPackages(
         dog-vision shows a photo, a video or the camera with the colours a dog,
         a cat or another animal can tell apart, beside the original.
 
-        This package is the desktop window, in Compose.
+        This package is the desktop window, in Compose. The package
+        dog-vision-swing is the same window in Swing.
 
         The command line, which converts a photo, is the package
         dog-vision-cli.
@@ -137,6 +192,8 @@ windowPackages(
 windowPackages(
     packageName = "dog-vision-swing",
     jars = jvmRuntimeOf(":gui-swing"),
+    sharedJars = files(commonJars),
+    sharedPackage = commonPackage,
     // Not the Compose window's cz.loplex.dogvision.compose.
     applicationId = "cz.loplex.dogvision.swing",
     mainClass = "cz.loplex.dogvision.swing.MainKt",
@@ -163,31 +220,27 @@ windowPackages(
     rpmRequires = listOf("(dejavu-sans-fonts or dejavu-fonts)"),
 )
 
-// The deb and the rpm, dog-vision-cli, on the system's Java:
-// its JARs in /usr/share/dog-vision-cli/lib and a launcher in /usr/bin, which finds a Java 17 or newer.
+// The deb and the rpm, dog-vision-cli, on the system's Java: a launcher in /usr/bin,
+// which finds a Java 17 or newer and starts the command line from dog-vision-common's JARs.
 // It has no natives, so one package serves every architecture,
 // and it needs a headless Java only, as it opens no window.
 val cliPackage = "dog-vision-cli"
-val cliHome = "/usr/share/$cliPackage"
-val cliJars = jvmRuntimeOf(":cli")
 
 val cliLauncher = tasks.register<JavaLauncher>("dogVisionCliLauncher") {
     description = "Writes build/linux/dog-vision-cli/launcher/dog-vision-cli, the script its deb and rpm install in " +
         "/usr/bin, which starts the command line on the system's Java 17 or newer."
     commandName = cliPackage
     mainClass = "cz.loplex.dogvision.cli.MainKt"
-    jars.from(cliJars)
-    jarDirectory = "$cliHome/lib"
+    jars.from(commonJars)
+    jarDirectory = "$commonHome/lib"
     jvmOptions = emptyList()
     minimumJava = 17
     script = layout.buildDirectory.file("linux/$cliPackage/launcher/$cliPackage")
 }
 
 val cliTree = tasks.register<Sync>("dogVisionCliTree") {
-    description = "Lays out in build/linux/dog-vision-cli/tree the files its deb and its rpm install: the JARs " +
-        "and the launcher."
+    description = "Lays out in build/linux/dog-vision-cli/tree the file its deb and its rpm install: the launcher."
     into(layout.buildDirectory.dir("linux/$cliPackage/tree"))
-    from(cliJars) { into(cliHome.removePrefix("/") + "/lib") }
     from(cliLauncher) { into("usr/bin") }
 }
 
@@ -214,7 +267,10 @@ val packageCliDeb = tasks.register<DebPackage>("packageDogVisionCliDeb") {
     longDescription = cliDescription
     // The distribution's default JRE where it is 17 or newer, as the Debian Java Policy has it,
     // and any JRE that provides java17-runtime-headless where it is not: Ubuntu 20.04's and 22.04's are 11.
-    depends = listOf("default-jre-headless (>= 2:1.17) | java17-runtime-headless")
+    // The JARs of its own version.
+    depends = version.map {
+        listOf("default-jre-headless (>= 2:1.17) | java17-runtime-headless", "$commonPackage (= $it)")
+    }
     recommends = emptyList()
 }
 artifact(packageCliDeb)
@@ -232,7 +288,11 @@ val packageCliRpm = tasks.register<RpmPackage>("packageDogVisionCliRpm") {
     // which provides it at epoch 1 and so above any version at epoch 0,
     // and Temurin's 8 and 11, which provide it with no version at all.
     // A new LTS joins the list when a distribution makes it its default.
-    requires = listOf("/bin/sh", "(jre-17-headless or jre-21-headless or jre-25-headless)")
+    // The JARs of its own version, as the deb's.
+    requires = version.zip(release) { version, release ->
+        val java = "(jre-17-headless or jre-21-headless or jre-25-headless)"
+        listOf("/bin/sh", java, "$commonPackage = $version-$release")
+    }
     recommends = emptyList()
 }
 artifact(packageCliRpm)

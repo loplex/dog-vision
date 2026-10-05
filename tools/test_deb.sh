@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs a deb of the project's,
-# dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-web or dog-vision-web-sourcemap,
+# dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-common, dog-vision-web or dog-vision-web-sourcemap,
 # in a bare container, runs it and removes it, checking each step.
 # With --upgrade, it installs a later deb over the first before removing it, as an update does.
 # With --temurin, it installs Adoptium's Temurin JRE first,
@@ -17,8 +17,9 @@
 # the script fails if any did.
 #
 # A deb of the project's that the deb depends on at its own version,
-# as dog-vision-web-sourcemap does on dog-vision-web, which no repository has,
-# is installed with it from the deb's own folder, and so is the later one's from the later deb's.
+# as dog-vision-web-sourcemap does on dog-vision-web and the command line and both windows on dog-vision-common,
+# which no repository has, is installed with it from the deb's own folder,
+# and so is the later one's from the later deb's.
 #
 # The command line converts test_photo.jpg, beside this script, and both windows show it.
 # ffmpeg made it:
@@ -197,6 +198,11 @@ check_installed() {
             check "dog-vision-cli runs from PATH$1" dog-vision-cli --help
             check "it converts a JPEG to a PNG$1" converts dog-vision-cli
             ;;
+        dog-vision-common)
+            check "its JARs are in /usr/share/dog-vision-common/lib$1" \
+                test -f /usr/share/dog-vision-common/lib/cli-jvm.jar
+            check "/usr/bin has nothing of its$1" test ! -e /usr/bin/dog-vision-common
+            ;;
         dog-vision-web-sourcemap)
             check "the source map is beside the page's script$1" \
                 test -f /usr/share/dog-vision-web/dog-vision.js.map -a -f /usr/share/dog-vision-web/dog-vision.js
@@ -237,6 +243,9 @@ check_removed() {
         dog-vision-cli)
             check "/usr/bin/dog-vision-cli is gone" test ! -e /usr/bin/dog-vision-cli
             check "/usr/share/dog-vision-cli is gone" test ! -e /usr/share/dog-vision-cli
+            ;;
+        dog-vision-common)
+            check "/usr/share/dog-vision-common is gone" test ! -e /usr/share/dog-vision-common
             ;;
         dog-vision-web-sourcemap)
             check "the source map is gone" test ! -e /usr/share/dog-vision-web/dog-vision.js.map

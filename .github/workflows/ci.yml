@@ -22,7 +22,7 @@ jobs:
       # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
       - run: ./gradlew check
-      # The Linux packages, dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-web
+      # The Linux packages, dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-common, dog-vision-web
       # and dog-vision-web-sourcemap, and a later version of each, which the build writes beside the first.
       - name: Build the debs and the rpms
         id: packages
@@ -47,6 +47,11 @@ jobs:
         run: >-
           tools/test_deb.sh --upgrade packaging/build/distributions/dog-vision-cli_0.1.1_all.deb
           packaging/build/distributions/dog-vision-cli_0.1.0_all.deb ubuntu:20.04
+      - name: Try the dog-vision-common deb
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_deb.sh --upgrade packaging/build/distributions/dog-vision-common_0.1.1_all.deb
+          packaging/build/distributions/dog-vision-common_0.1.0_all.deb ubuntu:20.04
       - name: Try the dog-vision-web deb
         if: (success() || failure()) && steps.packages.outcome == 'success'
         run: >-
@@ -73,6 +78,11 @@ jobs:
         run: >-
           tools/test_rpm.sh --upgrade packaging/build/distributions/dog-vision-cli-0.1.1-1.noarch.rpm
           packaging/build/distributions/dog-vision-cli-0.1.0-1.noarch.rpm fedora:42
+      - name: Try the dog-vision-common rpm
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: >-
+          tools/test_rpm.sh --upgrade packaging/build/distributions/dog-vision-common-0.1.1-1.noarch.rpm
+          packaging/build/distributions/dog-vision-common-0.1.0-1.noarch.rpm fedora:42
       - name: Try the dog-vision-web rpm
         if: (success() || failure()) && steps.packages.outcome == 'success'
         run: >-

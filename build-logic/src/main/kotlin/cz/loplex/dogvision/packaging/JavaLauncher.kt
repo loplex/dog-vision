@@ -8,6 +8,7 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
@@ -31,6 +32,15 @@ abstract class JavaLauncher : DefaultTask() {
     /** Where the package installs [jars]. */
     @get:Input
     abstract val jarDirectory: Property<String>
+
+    /** Those of [jars] that another package installs, in [sharedJarDirectory], rather than this one. */
+    @get:Classpath
+    abstract val sharedJars: ConfigurableFileCollection
+
+    /** Where the other package installs [sharedJars]. */
+    @get:Input
+    @get:Optional
+    abstract val sharedJarDirectory: Property<String>
 
     /** The names [jars] are installed under where they are not their own, keyed by each JAR's path. */
     @get:Input
@@ -57,7 +67,16 @@ abstract class JavaLauncher : DefaultTask() {
     @TaskAction
     fun write() {
         val names = jarNames.get()
-        val classpath = jars.files.filterNot(::nativesOnly).map { "${jarDirectory.get()}/${names[it.path] ?: it.name}" }
+        val shared = sharedJars.files
+        // A JAR of a shared one's name and not the same file would be the shared one, of another version or build.
+        val unlike = jars.files.filter { jar -> jar !in shared && shared.any { it.name == jar.name } }
+        check(unlike.isEmpty()) { "$unlike differ from the shared JARs of their names in $shared" }
+        val classpath = jars.files.filterNot(::nativesOnly).map { jar ->
+            when (jar) {
+                in shared -> "${sharedJarDirectory.get()}/${jar.name}"
+                else -> "${jarDirectory.get()}/${names[jar.path] ?: jar.name}"
+            }
+        }
         check(classpath.distinct().size == classpath.size) { "Two JARs of one name in $classpath" }
         val unquotable = (classpath + jvmOptions.get()).filter { '\'' in it }
         check(unquotable.isEmpty()) { "The launcher cannot put $unquotable in single quotes" }

@@ -40,6 +40,7 @@ Each artifact lands here:
 | web page       | the deb, the rpm             | `packaging/build/distributions`               |
 | command line   | the JAR                      | `cli/build/jars`                              |
 | command line   | the deb, the rpm             | `packaging/build/distributions`               |
+| JVM programs   | the shared deb, rpm          | `packaging/build/distributions`               |
 | Compose window | the JARs, Linux's, Windows's | `gui-compose/build/compose/jars`              |
 | Compose window | the deb, the rpm             | `packaging/build/distributions`               |
 | Compose window | the tar.gz                   | `gui-compose/build/compose/binaries/main/tar` |
@@ -149,10 +150,11 @@ pwsh tools/package_cli_zip_on_windows.ps1
 ```sh
 ./gradlew :packaging:packageDeb      # packaging/build/distributions: dog-vision-compose_0.1.0_amd64.deb,
                                      # dog-vision-swing_0.1.0_amd64.deb, dog-vision-cli_0.1.0_all.deb,
-                                     # dog-vision-web_0.1.0_all.deb, dog-vision-web-sourcemap_0.1.0_all.deb
+                                     # dog-vision-common_0.1.0_all.deb, dog-vision-web_0.1.0_all.deb,
+                                     # dog-vision-web-sourcemap_0.1.0_all.deb
 ./gradlew :packaging:packageRpm      # packaging/build/distributions: dog-vision-compose-0.1.0-1.x86_64.rpm,
                                      # dog-vision-swing-0.1.0-1.x86_64.rpm, dog-vision-cli-0.1.0-1.noarch.rpm,
-                                     # dog-vision-web-0.1.0-1.noarch.rpm,
+                                     # dog-vision-common-0.1.0-1.noarch.rpm, dog-vision-web-0.1.0-1.noarch.rpm,
                                      # dog-vision-web-sourcemap-0.1.0-1.noarch.rpm
 ./gradlew :gui-compose:packageTarGz  # gui-compose/build/compose/binaries/main/tar/dog-vision-compose-0.1.0-linux-x64.tar.gz
 ./gradlew :gui-swing:packageTarGz    # gui-swing/build/packages/tar/dog-vision-swing-0.1.0-linux-x64.tar.gz
@@ -168,8 +170,8 @@ pwsh tools/package_msi_on_windows.ps1
 ```
 
 Each deb and rpm alone is a task of `:packaging` named after it:
-`packageDogVisionComposeDeb`, `packageDogVisionSwingDeb`, `packageDogVisionCliDeb`, `packageDogVisionWebDeb`
-and `packageDogVisionWebSourcemapDeb`, and the same with `Rpm`.
+`packageDogVisionComposeDeb`, `packageDogVisionSwingDeb`, `packageDogVisionCliDeb`, `packageDogVisionCommonDeb`,
+`packageDogVisionWebDeb` and `packageDogVisionWebSourcemapDeb`, and the same with `Rpm`.
 
 Besides the build's own needs, making them takes these tools, on Ubuntu from the packages named:
 
@@ -197,14 +199,16 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 
 - **The windows' and the command line's deb and rpm run on the system's Java**, 17 or newer,
   which they depend on: the distribution updates it, and a machine with a JRE downloads little more.\
-  They come in three packages:
+  They come in four packages:
   - `dog-vision-compose`, the Compose window;
   - `dog-vision-swing`, the Swing window, which installs beside `dog-vision-compose`;
   - `dog-vision-cli`, the command line alone,
-    which needs no display and so only a headless Java, and which both windows recommend.
+    which needs no display and so only a headless Java, and which both windows recommend;
+  - `dog-vision-common`, the JARs the command line runs on, which both windows run on as well,
+    and which the other three depend on at their own version; it depends on no Java, as it starts nothing.
 - **Their files are where Debian's and Fedora's Java applications have them**:
-  - the JARs in `/usr/share/<package>/lib`,
-    each package with its own copy of the command line's, so that they share no classpath;
+  - `dog-vision-common`'s JARs in `/usr/share/dog-vision-common/lib`,
+    and each window's others in `/usr/share/<package>/lib`;
   - each window's native libraries in `/usr/lib/<package>`, where the FHS puts what depends on the architecture,
     and which skiko and LWJGL load them from rather than unpack their own copies at run time:
     skiko's and LWJGL's for `dog-vision-compose`, LWJGL's alone for `dog-vision-swing`;
@@ -326,8 +330,8 @@ in [`build-logic`](../build-logic), as jpackage always puts a runtime into its p
     as `desktop-file-validate` has it, and that the file it opens with `xdg-open` is there;
   - of `dog-vision-web-sourcemap`, that the map lies beside the script, and that removing it leaves the page.
   - A deb of the project's that the deb depends on at its own version,
-    `dog-vision-web` of `dog-vision-web-sourcemap`, no repository has,
-    so the script installs it with the deb from the deb's own folder.
+    `dog-vision-web` of `dog-vision-web-sourcemap` and `dog-vision-common` of the command line and both windows,
+    no repository has, so the script installs it with the deb from the deb's own folder.
   - It holds on Ubuntu 20.04, 22.04 and 24.04 and on Debian 12.\
     Debian 11 is not among them: its support ended in August 2026, and its repositories moved to archive.debian.org.
 - **[`tools/test_rpm.sh`](../tools/test_rpm.sh) does for an rpm what `test_deb.sh` does**, with dnf, zypper or microdnf;
