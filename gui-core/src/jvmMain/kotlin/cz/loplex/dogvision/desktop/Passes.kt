@@ -22,7 +22,8 @@ import java.nio.ByteBuffer
  * The passes compile when this is made, and throw IllegalStateException if the GPU's driver cannot compile or link one.
  *
  * A frame comes upright, as ffmpeg turns a video and as a photo is turned when it is read,
- * so it is turned upright as it is, as the app turns every frame.
+ * so it is turned upright as it is, as the app turns every frame,
+ * and mirrored if it is to be, as the app mirrors its front camera's.
  */
 internal class Passes(private val gl: DesktopGl) {
     private val passes = ViewPasses(gl).apply { create() }
@@ -40,12 +41,24 @@ internal class Passes(private val gl: DesktopGl) {
     private val reads = ArrayDeque<Read>()
     private val spareBuffers = ArrayDeque<Int>()
 
-    /** Makes [pixels], tightly packed RGBA of [width] x [height] with the top row first, the frame to render. */
-    fun upload(width: Int, height: Int, pixels: ByteBuffer) {
+    /** The size of the frame as uploaded. */
+    private var rawWidth = 0
+    private var rawHeight = 0
+
+    /**
+     * Makes [pixels], tightly packed RGBA of [width] x [height] with the top row first,
+     * the frame to render, mirrored if [mirrored].
+     */
+    fun upload(width: Int, height: Int, pixels: ByteBuffer, mirrored: Boolean = false) {
         gl.bindTexture(GL_TEXTURE_2D, raw)
         gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels)
-        passes.turnUpright(raw, width, height, rotation = 0, mirrored = false)
+        rawWidth = width
+        rawHeight = height
+        mirror(mirrored)
     }
+
+    /** Makes the frame uploaded last the frame to render again, mirrored if [mirrored]; it is composed anew then. */
+    fun mirror(mirrored: Boolean) = passes.turnUpright(raw, rawWidth, rawHeight, rotation = 0, mirrored = mirrored)
 
     /** The size of the frame uploaded last. */
     val frameWidth: Int get() = passes.frame.width

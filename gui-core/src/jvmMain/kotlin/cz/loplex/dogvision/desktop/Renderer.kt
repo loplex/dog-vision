@@ -31,10 +31,17 @@ data class Area(val width: Int, val height: Int, val captionHeight: Int, val gap
 /** What a feed shows its frames on, and a [LiveSession] draws its view through: a [GlRenderer], or a test's own. */
 interface Renderer : AutoCloseable {
     /**
-     * Makes [frame] the one to render, copying it, so that its buffer can be reused as soon as this returns;
+     * Makes [frame] the one to render, copying it, so that its buffer can be reused as soon as this returns,
+     * and mirrored if [mirrored], as a camera's is where the controls choose so;
      * a [live] frame is a video's or a camera's, followed by others, a frame that is not is a photo's.
      */
-    fun show(frame: Frame, live: Boolean)
+    fun show(frame: Frame, live: Boolean, mirrored: Boolean = false)
+
+    /** Mirrors the frame shown if [mirrored], and not if not, as a change of the controls' choice does a camera's. */
+    fun setMirrored(mirrored: Boolean)
+
+    /** Forgets the frame shown, so that nothing is drawn until another is shown, as while the camera is off. */
+    fun clear()
 
     fun setView(view: View)
 
@@ -47,7 +54,7 @@ interface Renderer : AutoCloseable {
  * and hands each picture to [onPicture] on that thread, its image made there by [imageMaker].\
  * [onFailure] is told, once, why nothing can be drawn, if GL cannot be set up.
  *
- * It renders when something has changed: a frame, the view or the area;
+ * It renders when something has changed: a frame, its mirroring, the view or the area;
  * a live frame's share of differing pixels,
  * counted without waiting for the GPU as the Android app counts it, comes with a later picture.\
  * The area drawn is read back without waiting for the GPU either, [READS] at a time:
@@ -70,6 +77,8 @@ class GlRenderer<I>(
     private var pendingHeight = 0
     private var pendingLive = false
     private var framePending = false
+    private var mirrored = false
+    private var clearPending = false
     private var view: View? = null
     private var area: Area? = null
     private var changed = false
@@ -77,16 +86,24 @@ class GlRenderer<I>(
 
     private val thread = thread(name = "dog-vision-gl", isDaemon = true) { run() }
 
-    override fun show(frame: Frame, live: Boolean) = lock.withLock {
+    override fun show(frame: Frame, live: Boolean, mirrored: Boolean) = lock.withLock {
         val size = frame.width * frame.height * 4
         if (pending.capacity() < size) pending = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
         pending.clear().put(frame.pixels.duplicate()).flip()
         pendingWidth = frame.width
         pendingHeight = frame.height
         pendingLive = live
+        this.mirrored = mirrored
         framePending = true
         changed = true
         changes.signalAll()
+    }
+
+    override fun setMirrored(mirrored: Boolean) = update { this.mirrored = mirrored }
+
+    override fun clear() = update {
+        framePending = false
+        clearPending = true
     }
 
     override fun setView(view: View) = update { this.view = view }
@@ -126,14 +143,19 @@ class GlRenderer<I>(
         }
     }
 
-    /** An area drawn and being read back, with what its picture says of it. */
-    private class Drawn(val layout: ScreenLayout, val view: View, var share: Double?, val area: Area)
+    /**
+     * An area drawn and being read back, with what its picture says of it,
+     * and how many times the frame had been cleared when it was drawn.
+     */
+    private class Drawn(val layout: ScreenLayout, val view: View, var share: Double?, val area: Area, val clears: Int)
 
     /** The loop that renders until [close]. */
     private fun render(passes: Passes) {
         var uploading: ByteBuffer = ByteBuffer.allocateDirect(0)
         var live = false
         var hasFrame = false
+        var uploadedMirrored = false
+        var clears = 0
         var composed: View? = null
         var share: Double? = null
         var last: Picture<I>? = null
@@ -143,6 +165,8 @@ class GlRenderer<I>(
 
         fun handOver(pixels: ByteArray) {
             val drawn = drawing.removeFirst()
+            // An area of a frame cleared since is not shown.
+            if (drawn.clears != clears) return
             val image = imageMaker.make(pixels, drawn.area.width, drawn.area.height)
             val picture = Picture(image, drawn.layout, drawn.view, drawn.share)
             last = picture
@@ -152,6 +176,8 @@ class GlRenderer<I>(
             var frameWidth = 0
             var frameHeight = 0
             val newFrame: Boolean
+            val cleared: Boolean
+            val mirrored: Boolean
             val view: View?
             val area: Area?
             lock.withLock {
@@ -165,6 +191,9 @@ class GlRenderer<I>(
                 }
                 if (closed) return
                 changed = false
+                cleared = clearPending
+                clearPending = false
+                mirrored = this.mirrored
                 newFrame = framePending
                 if (newFrame) {
                     framePending = false
@@ -178,14 +207,28 @@ class GlRenderer<I>(
                 view = this.view
                 area = this.area
             }
+            if (cleared) {
+                clears++
+                hasFrame = false
+                composed = null
+                share = null
+                last = null
+                drawnArea = null
+            }
             while (true) handOver(passes.takeArea() ?: break)
+            var remirrored = false
             if (newFrame) {
-                passes.upload(frameWidth, frameHeight, uploading)
+                passes.upload(frameWidth, frameHeight, uploading, mirrored)
+                uploadedMirrored = mirrored
                 hasFrame = true
+            } else if (hasFrame && mirrored != uploadedMirrored) {
+                passes.mirror(mirrored)
+                uploadedMirrored = mirrored
+                remirrored = true
             }
             if (!hasFrame || view == null || area == null || area.width <= 0 || area.height <= 0) continue
             val counts = view.sideBySide && view.difference
-            val recomposed = newFrame || view != composed
+            val recomposed = newFrame || remirrored || view != composed
             if (recomposed) {
                 if (live) {
                     passes.composeLive(view)
@@ -215,7 +258,7 @@ class GlRenderer<I>(
                     area.gap,
                 )
                 passes.draw(layout.images, area.width, area.height)
-                drawing.addLast(Drawn(layout, view, shown, area))
+                drawing.addLast(Drawn(layout, view, shown, area, clears))
                 drawnArea = area
             } else if (counted) {
                 // The share goes with the picture drawn last, or, if that is shown already, with that picture again.

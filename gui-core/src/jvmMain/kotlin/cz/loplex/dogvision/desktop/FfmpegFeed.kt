@@ -13,8 +13,8 @@ import kotlin.math.abs
  * the buffer is reused for the next frame once [onFrame] returns.\
  * [onEnd] is told why the frames stopped, unless [close] stopped them.
  *
- * ffmpeg decodes, turns a video upright as its file says, mirrors a camera's frames,
- * and scales the frames down to [PREVIEW_LONGEST_SIDE], so that the frames arrive as the passes take them.
+ * ffmpeg decodes, turns a video upright as its file says, and scales the frames down to [PREVIEW_LONGEST_SIDE],
+ * so that the frames arrive as the passes take them; the passes mirror a camera's, as the controls choose.
  */
 class FfmpegFeed private constructor(
     command: List<String>,
@@ -107,13 +107,11 @@ class FfmpegFeed private constructor(
          * which a USB webcam gives at 30 frames a second where its raw frames come at 10,
          * and else for whatever it gives: /dev/video[index] through Video4Linux on Linux,
          * and on Windows the DirectShow camera that ffmpeg lists [index]th.\
-         * Its frames are mirrored, as a mirror shows a face:
-         * neither Video4Linux nor DirectShow says where a camera faces, and the web page mirrors such a camera too.\
          * Throws IOException if ffmpeg cannot open it.
          */
         fun camera(index: Int, onFrame: (Frame) -> Unit, onEnd: (String) -> Unit): FfmpegFeed {
             val (input, size) = if (onWindows) directShowCamera(index) else videoForLinuxCamera(index)
-            return start(input, size, mirrored = true, onFrame, onEnd, asTheyCome = true)
+            return start(input, size, onFrame, onEnd, asTheyCome = true)
         }
 
         /**
@@ -160,7 +158,7 @@ class FfmpegFeed private constructor(
                 ?: throw IOException(
                     if (cameras.isEmpty()) "ffmpeg finds no camera" else "ffmpeg finds ${cameras.size}",
                 )
-            val device = "video=$camera"
+            val device = "video=${camera.device}"
             val preferred = listOf("-f", "dshow", "-vcodec", "mjpeg", "-video_size", CAMERA_SIZE)
             if (readsAFrame(preferred, device)) {
                 return preferred + listOf("-i", device) to
@@ -181,8 +179,11 @@ class FfmpegFeed private constructor(
             return process.waitFor() == 0
         }
 
-        /** The DirectShow cameras ffmpeg lists, each as its unique alternative name where it has one. */
-        private fun directShowCameras(): List<String> {
+        /**
+         * The DirectShow cameras ffmpeg lists.\
+         * Throws [FfmpegMissing] if ffmpeg cannot be run.
+         */
+        internal fun directShowCameras(): List<DirectShowCamera> {
             val process = start(listOf("ffmpeg", "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy"))
             // The list comes on the standard error, and ffmpeg ends with an error as the dummy input opens nothing.
             val listed = process.errorStream.bufferedReader().readText()
@@ -191,13 +192,12 @@ class FfmpegFeed private constructor(
         }
 
         /**
-         * The video devices in [listed], what ffmpeg's `-list_devices true -f dshow` writes,
-         * each as its alternative name where it has one, which tells two cameras of one model apart,
-         * else as its name: `"name" (video)` lines, as ffmpeg 4.4 and newer write them,
-         * or the names under "DirectShow video devices", as older ones do.
+         * The video devices in [listed], what ffmpeg's `-list_devices true -f dshow` writes:
+         * `"name" (video)` lines, as ffmpeg 4.4 and newer write them, or the names under "DirectShow video devices",
+         * as older ones do, each with the alternative name after it where it has one.
          */
-        internal fun directShowCameras(listed: String): List<String> {
-            val cameras = mutableListOf<String>()
+        internal fun directShowCameras(listed: String): List<DirectShowCamera> {
+            val cameras = mutableListOf<DirectShowCamera>()
             var video = false
             for (line in listed.lines()) {
                 val said = line.substringAfter("] ", line).trim()
@@ -207,12 +207,14 @@ class FfmpegFeed private constructor(
                     said.startsWith("DirectShow audio devices") -> video = false
 
                     said.startsWith("Alternative name ") && cameras.isNotEmpty() && video ->
-                        cameras[cameras.lastIndex] = said.removePrefix("Alternative name ").trim('"')
+                        cameras[cameras.lastIndex] = cameras.last().copy(
+                            alternativeName = said.removePrefix("Alternative name ").trim('"'),
+                        )
 
                     else -> DEVICE.matchEntire(said)?.let { match ->
                         val kinds = match.groupValues[2]
                         if (kinds.isNotEmpty()) video = "video" in kinds
-                        if (video) cameras += match.groupValues[1]
+                        if (video) cameras += DirectShowCamera(match.groupValues[1])
                     }
                 }
             }
@@ -225,24 +227,22 @@ class FfmpegFeed private constructor(
         /** The video in [file], played over and over at its own speed, without its sound. */
         fun video(file: File, onFrame: (Frame) -> Unit, onEnd: (String) -> Unit): FfmpegFeed {
             val size = probe(emptyList(), file.path)
-            return start(listOf("-re", "-stream_loop", "-1", "-i", file.path), size, mirrored = false, onFrame, onEnd)
+            return start(listOf("-re", "-stream_loop", "-1", "-i", file.path), size, onFrame, onEnd)
         }
 
         /**
-         * The frames of [input], of the [upright] size, scaled down to fit, and mirrored if [mirrored];
+         * The frames of [input], of the [upright] size, scaled down to fit;
          * [asTheyCome], each as it comes, where ffmpeg would otherwise make them of a constant rate.
          */
         internal fun start(
             input: List<String>,
             upright: Pair<Int, Int>,
-            mirrored: Boolean,
             onFrame: (Frame) -> Unit,
             onEnd: (String) -> Unit,
             asTheyCome: Boolean = false,
         ): FfmpegFeed {
             val (width, height) = fitted(upright.first, upright.second)
-            val filters = "scale=$width:$height:flags=area" + if (mirrored) ",hflip" else ""
-            val output = listOf("-an", "-sn", "-vf", filters, "-pix_fmt", "rgba") +
+            val output = listOf("-an", "-sn", "-vf", "scale=$width:$height:flags=area", "-pix_fmt", "rgba") +
                 if (asTheyCome) asTheyComeOption() else emptyList()
             val command = listOf("ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin") + input + output +
                 listOf("-f", "rawvideo", "-")
@@ -290,6 +290,15 @@ class FfmpegFeed private constructor(
             throw FfmpegMissing(command.first(), error)
         }
     }
+}
+
+/**
+ * A DirectShow camera as ffmpeg lists it:
+ * its [name], and its [alternativeName], which tells two cameras of one model apart, where it has one.
+ */
+internal data class DirectShowCamera(val name: String, val alternativeName: String? = null) {
+    /** What ffmpeg opens it by: its alternative name where it has one, else its name. */
+    val device: String get() = alternativeName ?: name
 }
 
 /** ffmpeg's [program], ffmpeg or ffprobe, which cannot be run, as where it is not installed or not on the PATH. */

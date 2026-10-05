@@ -1,13 +1,18 @@
 package cz.loplex.dogvision.desktop
 
 import cz.loplex.dogvision.cli.ViewOptions
+import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.Image
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
+import cz.loplex.dogvision.core.layOut
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.io.File
+import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -20,7 +25,7 @@ import kotlin.test.assertTrue
 
 /**
  * The session both windows lay out:
- * one source at a time, what failed worded in the language chosen,
+ * one source at a time, the cameras and their mirroring, what failed worded in the language chosen,
  * ffmpeg offered where it is missing, and the view the command line asked for to go back to.\
  * Its feeds and its renderer are stand-ins that write down what is done to them, so that no GL and no ffmpeg is needed.
  */
@@ -35,8 +40,17 @@ class LiveSessionTest {
         val views = mutableListOf<View>()
         var shown = 0
 
-        override fun show(frame: Frame, live: Boolean) {
+        override fun show(frame: Frame, live: Boolean, mirrored: Boolean) {
             synchronized(this) { shown++ }
+            log += if (mirrored) "frame mirrored" else "frame"
+        }
+
+        override fun setMirrored(mirrored: Boolean) {
+            log += "mirrored $mirrored"
+        }
+
+        override fun clear() {
+            log += "cleared"
         }
 
         override fun setView(view: View) {
@@ -50,18 +64,35 @@ class LiveSessionTest {
         }
     }
 
-    /** A feed that shows nothing, and writes down that it started and that it closed. */
-    private val feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = { source, _, onFailure ->
+    /** The renderer each feed started was given, in order. */
+    private val feedRenderers = mutableListOf<Renderer>()
+
+    /**
+     * A feed that shows nothing until a test shows a frame on its renderer,
+     * and writes down that it started and that it closed.
+     */
+    private val feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = { source, renderer, onFailure ->
         val name = name(source)
         log += "start $name"
         feedFailures += onFailure
+        feedRenderers += renderer
         AutoCloseable { log += "close $name" }
     }
 
     private fun name(source: Source) = when (source) {
         is Source.Media -> source.file.name
         is Source.Camera -> "camera ${source.index}"
+        Source.None -> "nothing"
     }
+
+    /** A frame for a feed to show. */
+    private val frame = Frame(1, 1, ByteBuffer.allocateDirect(4))
+
+    /** The cameras the session lists. */
+    private var cameras = listOf(
+        CameraOption("0", "Integrated Camera", Facing.UNKNOWN),
+        CameraOption("2", "USB Camera", Facing.BACK),
+    )
 
     private fun session(
         arguments: WindowArguments = WindowArguments(file = File("a.jpg")),
@@ -74,6 +105,8 @@ class LiveSessionTest {
         arguments,
         { _, _ -> renderer },
         feed,
+        cameraLister = { cameras },
+        inBackground = { it() },
         ffmpegInstaller = installer,
         ffmpegDownloader = downloader,
         canInstallFfmpeg = canInstallFfmpeg,
@@ -317,6 +350,8 @@ class LiveSessionTest {
             WindowArguments(),
             { _, onFailure -> renderer.also { failDrawing = onFailure } },
             feed,
+            cameraLister = { cameras },
+            inBackground = { it() },
             post = { it() },
             systemLanguage = { "en" },
         )
@@ -332,6 +367,93 @@ class LiveSessionTest {
         session.close()
         session.close()
         assertEquals(listOf("start a.jpg", "close a.jpg", "renderer closed"), log)
+    }
+
+    @Test
+    fun theCamerasAreOfferedOnceListedTheOneShownAsTheListHasIt() {
+        val camera = session(arguments = WindowArguments()).state.value.camera
+        assertEquals(cameras, camera.cameras)
+        assertEquals(cameras[0], camera.shown)
+        assertNull(session().state.value.camera.shown, "a file is shown")
+    }
+
+    @Test
+    fun aCameraNotListedIsShownAsTheCommandLineNamesIt() {
+        cameras = emptyList()
+        val camera = session(arguments = WindowArguments(camera = 4)).state.value.camera
+        assertEquals(CameraOption("4", null, Facing.UNKNOWN), camera.shown)
+        assertEquals(listOf(null, camera.shown), camera.offered)
+    }
+
+    @Test
+    fun offShowsNothingAndTheCameraButtonTheCameraChosenLast() {
+        val session = session()
+        session.chooseCamera(null)
+        assertTrue(session.state.value.source is Source.Media, "Off while a file is shown")
+        session.chooseCamera(cameras[1])
+        session.chooseCamera(null)
+        assertEquals(Source.None, session.state.value.source)
+        assertNull(session.state.value.camera.shown)
+        session.openFile(File("b.mp4"))
+        session.openCamera()
+        assertEquals(
+            listOf(
+                "start a.jpg", "close a.jpg", "start camera 2", "close camera 2", "cleared", "start nothing",
+                "close nothing", "start b.mp4", "close b.mp4", "start camera 2",
+            ),
+            log,
+        )
+        assertEquals(cameras[1], session.state.value.camera.shown)
+    }
+
+    @Test
+    fun noPictureIsShownWhileTheCameraIsOff() {
+        var onPicture: (Picture<Unit>) -> Unit = {}
+        val session = LiveSession(
+            WindowArguments(),
+            { picture, _ -> renderer.also { onPicture = picture } },
+            feed,
+            cameraLister = { cameras },
+            inBackground = { it() },
+            post = { it() },
+            systemLanguage = { "en" },
+        )
+        val picture = Picture(Unit, layOut(1, 1, 1, 1, 1, 0, 0), View(), null)
+        onPicture(picture)
+        assertEquals(picture, session.picture.value)
+        session.chooseCamera(null)
+        assertNull(session.picture.value)
+        onPicture(picture)
+        assertNull(session.picture.value)
+    }
+
+    @Test
+    fun aCamerasFramesAreMirroredAsChosenAndTheFrameShownAtOnce() {
+        val session = session(arguments = WindowArguments())
+        feedRenderers.last().show(frame, live = true)
+        session.setMirroring(Mirroring.PLAIN)
+        feedRenderers.last().show(frame, live = true)
+        // Automatic, of a camera that faces away.
+        session.setMirroring(Mirroring.AUTO)
+        session.chooseCamera(cameras[1])
+        feedRenderers.last().show(frame, live = true)
+        session.setMirroring(Mirroring.MIRROR)
+        assertEquals(
+            listOf(
+                "start camera 0", "frame mirrored", "mirrored false", "frame", "mirrored true", "close camera 0",
+                "start camera 2", "frame", "mirrored true",
+            ),
+            log,
+        )
+    }
+
+    @Test
+    fun aFilesFramesAreNotMirrored() {
+        val session = session()
+        session.setMirroring(Mirroring.MIRROR)
+        feedRenderers.last().show(frame, live = false)
+        assertEquals(listOf("start a.jpg", "frame"), log)
+        assertEquals(Mirroring.MIRROR, session.state.value.camera.mirroring)
     }
 
     private companion object {

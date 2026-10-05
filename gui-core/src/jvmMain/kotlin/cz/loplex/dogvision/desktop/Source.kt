@@ -11,11 +11,16 @@ import kotlin.concurrent.thread
 /** Whether this runs on Windows, where the window draws through ANGLE or WGL and a camera comes through DirectShow. */
 val onWindows = System.getProperty("os.name").startsWith("Windows")
 
-/** What the window shows: a file, which is a photo or else a video played over and over, or a camera. */
+/**
+ * What the window shows: a file, which is a photo or else a video played over and over,
+ * a camera, by the number --camera takes, or nothing, while the camera is turned off.
+ */
 sealed interface Source {
     class Media(val file: File) : Source
 
     class Camera(val index: Int) : Source
+
+    data object None : Source
 }
 
 /**
@@ -63,6 +68,8 @@ fun startFeed(
                     { renderer.show(it, live = true) },
                     { reason -> onFailure(Failure { it.get(Str.CAMERA_FAILED, reason) }) },
                 )
+
+                Source.None -> null
             }
         } catch (error: FfmpegMissing) {
             onFailure(Failure(ffmpegMissing = true) { it.get(Str.FFMPEG_MISSING, error.program) })
@@ -74,6 +81,7 @@ fun startFeed(
                     when (source) {
                         is Source.Camera -> texts.get(Str.CAMERA_FAILED, reason)
                         is Source.Media -> texts.get(Str.MEDIA_FAILED, source.file.name) + ": $reason"
+                        Source.None -> reason
                     }
                 },
             )

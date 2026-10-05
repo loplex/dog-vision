@@ -88,28 +88,10 @@ class FfmpegFeedTest {
         val frames = AtomicInteger()
         val ended = CountDownLatch(1)
         val onFrame: (Frame) -> Unit = { frames.incrementAndGet() }
-        FfmpegFeed.start(listOf("-i", file.path), 16 to 16, false, onFrame, { ended.countDown() }, asTheyCome = true)
-            .use { assertTrue(ended.await(20, TimeUnit.SECONDS), "ffmpeg did not end") }
-        assertEquals(10, frames.get())
-    }
-
-    /** The frames come mirrored if asked to, as a camera's: the red half on the right. */
-    @Test
-    fun framesComeMirroredIfAskedTo() {
-        val file = video(0)
-        for (mirrored in listOf(false, true)) {
-            val frames = CountDownLatch(1)
-            val ends = AtomicReference<Pair<String, String>>()
-            val onFrame = { frame: Frame ->
-                ends.compareAndSet(null, colour(frame, 2, 8) to colour(frame, 29, 8))
-                frames.countDown()
-            }
-            FfmpegFeed.start(listOf("-i", file.path), 32 to 16, mirrored, onFrame, {}).use {
-                assertTrue(frames.await(20, TimeUnit.SECONDS), "no frame came")
-            }
-            val expected = if (mirrored) "blue" to "red" else "red" to "blue"
-            assertEquals(expected, ends.get(), "mirrored $mirrored")
+        FfmpegFeed.start(listOf("-i", file.path), 16 to 16, onFrame, { ended.countDown() }, asTheyCome = true).use {
+            assertTrue(ended.await(20, TimeUnit.SECONDS), "ffmpeg did not end")
         }
+        assertEquals(10, frames.get())
     }
 
     @Test
@@ -135,7 +117,7 @@ class FfmpegFeedTest {
      * whose DirectShow shows Video4Linux's camera, shortened, with another camera after it.
      */
     @Test
-    fun directShowCamerasAreListedByTheirAlternativeNames() {
+    fun directShowCamerasAreListedWithTheirAlternativeNames() {
         val listed = """
             [in#0 @ 00007ffffe846280] "Integrated Camera: Integrated C" (video)
             [in#0 @ 00007ffffe846280]   Alternative name "@device_cm_{860BB310-5D01-11D0-BD3B-00A0C911CE86}\video0"
@@ -143,8 +125,15 @@ class FfmpegFeedTest {
             [in#0 @ 00007ffffe846280] "OBS Virtual Camera" (video)
             Error opening input file dummy.
         """.trimIndent()
-        val cameras = listOf("""@device_cm_{860BB310-5D01-11D0-BD3B-00A0C911CE86}\video0""", "OBS Virtual Camera")
+        val cameras = listOf(
+            DirectShowCamera(
+                "Integrated Camera: Integrated C",
+                """@device_cm_{860BB310-5D01-11D0-BD3B-00A0C911CE86}\video0""",
+            ),
+            DirectShowCamera("OBS Virtual Camera"),
+        )
         assertEquals(cameras, FfmpegFeed.directShowCameras(listed))
+        assertEquals(listOf(cameras[0].alternativeName, "OBS Virtual Camera"), cameras.map { it.device })
     }
 
     @Test
@@ -158,7 +147,8 @@ class FfmpegFeedTest {
             [dshow @ 0000000000346f00]     Alternative name "@device_cm_{33D9A762}\wave_{A1B2}"
             dummy: Immediate exit requested
         """.trimIndent()
-        assertEquals(listOf("""@device_pnp_\\?\usb#vid_13d3"""), FfmpegFeed.directShowCameras(listed))
+        val camera = DirectShowCamera("USB2.0 HD UVC WebCam", """@device_pnp_\\?\usb#vid_13d3""")
+        assertEquals(listOf(camera), FfmpegFeed.directShowCameras(listed))
         @Suppress("KotlinMisorderedAssertEqualsArguments")
         assertEquals(emptyList(), FfmpegFeed.directShowCameras("dummy: Immediate exit requested"))
     }

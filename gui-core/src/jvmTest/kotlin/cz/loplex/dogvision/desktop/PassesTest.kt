@@ -120,6 +120,30 @@ abstract class PassesTest(private val api: TestApi) {
     }
 
     /**
+     * A frame uploaded mirrored, as a camera's is, is flipped left to right,
+     * and turned back without another upload, as the controls' choice changes it:
+     * a frame red on the left shows red on the right.
+     */
+    @Test
+    fun aFrameIsMirroredAsAskedAndTurnedBackWithoutAnotherUpload() {
+        val (width, height) = 40 to 30
+        val image = Image(width, height, IntArray(width * height) { if (it % width < width / 2) RED else BLUE })
+        val frame = frameOf(image)
+        val view = View(Params(Species.HUMAN), sideBySide = false)
+
+        fun ends(): Pair<Int, Int> {
+            passes.compose(view)
+            val shown = passes.readImages(1).single()
+            val row = height / 2 * width
+            return shown.pixels[row + 1] to shown.pixels[row + width - 2]
+        }
+        passes.upload(frame.width, frame.height, frame.pixels, mirrored = true)
+        assertEquals(BLUE to RED, ends(), "mirrored")
+        passes.mirror(false)
+        assertEquals(RED to BLUE, ends(), "turned back")
+    }
+
+    /**
      * Areas are read back without waiting, and handed over in the order they were drawn:
      * two areas of different sizes come in that order, and then nothing more.
      */

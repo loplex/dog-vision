@@ -277,8 +277,12 @@ The sections below hold for both windows.
   and on Windows the Nth camera ffmpeg lists through DirectShow, counted from 0.
 - **The camera is asked for Motion-JPEG at 1280 x 720**, which a USB webcam gives at 30 frames a second,
   and for whatever it gives where it has none.
-- **The camera's image is mirrored**, as a mirror shows a face:
-  neither Video4Linux nor DirectShow says where a camera faces, and the web page mirrors such a camera too.
+- **The camera's image is mirrored**, as a mirror shows a face,
+  unless the camera is known to face away, as the web page mirrors it.
+- **Only Linux can tell where a camera faces**,
+  from the panel the firmware places its USB device or port on, which sysfs gives as `physical_location`;
+  where the firmware places it on none, it is unknown.
+  Neither Video4Linux nor DirectShow says where a camera faces.
 
 #### On Windows, the window offers to download ffmpeg
 
