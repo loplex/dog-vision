@@ -14,6 +14,8 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
@@ -25,6 +27,10 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Facing
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
@@ -40,19 +46,24 @@ class ControlsTest {
     private val english = Texts.of("en")
 
     /** What the controls change, held as the app's ViewModel and gui-core's `LiveSession` hold it. */
-    private class Held(view: View) {
+    private class Held(view: View, camera: CameraChoice) {
         var view by mutableStateOf(view)
+        var camera by mutableStateOf(camera)
         var language by mutableStateOf("")
         var resets = 0
     }
+
+    private val back = CameraOption("0", null, Facing.BACK)
+    private val webcam = CameraOption("1", "Integrated Camera", Facing.UNKNOWN)
 
     private fun ComposeUiTest.show(
         view: View = View(),
         recording: Boolean = false,
         texts: Texts = english,
+        camera: CameraChoice = CameraChoice(listOf(back, webcam), shown = back),
         width: Dp? = null,
     ): Held {
-        val held = Held(view)
+        val held = Held(view, camera)
         setContent {
             CompositionLocalProvider(LocalTexts provides texts) {
                 MaterialTheme {
@@ -61,6 +72,9 @@ class ControlsTest {
                         recording = recording,
                         onChange = { change -> held.view = change(held.view) },
                         onReset = { held.resets++ },
+                        camera = held.camera,
+                        onCamera = { held.camera = held.camera.copy(shown = it) },
+                        onMirroring = { held.camera = held.camera.copy(mirroring = it) },
                         language = held.language,
                         onLanguage = { held.language = it },
                         modifier = width?.let { Modifier.width(it) } ?: Modifier,
@@ -167,5 +181,38 @@ class ControlsTest {
         val held = show()
         node(Str.RESET).performScrollTo().performClick()
         assertEquals(1, held.resets)
+    }
+
+    @Test
+    fun theCameraSectionOffersOffAndTheCamerasByName() = runComposeUiTest {
+        val held = show()
+        node(Str.CAMERA).performClick()
+        node(Str.BACK_CAMERA).performClick()
+        node(Str.CAMERA_OFF).assertExists()
+        onNodeWithText("Integrated Camera").performClick()
+        assertEquals(webcam, held.camera.shown)
+        onNodeWithText("Integrated Camera").performClick()
+        node(Str.CAMERA_OFF).performClick()
+        assertEquals(null, held.camera.shown)
+    }
+
+    @Test
+    fun automaticSaysWhereTheCameraFacesAndCannotBeChosenWhereThatIsUnknown() = runComposeUiTest {
+        val held = show()
+        node(Str.CAMERA).performClick()
+        onNodeWithText("Automatic (back)").assertIsSelected().assertIsEnabled()
+        node(Str.DO_NOT_MIRROR).performClick()
+        assertEquals(Mirroring.PLAIN, held.camera.mirroring)
+        held.camera = held.camera.copy(shown = webcam, mirroring = Mirroring.AUTO)
+        node(Str.MIRROR_AUTOMATIC).assertIsNotEnabled().assertIsNotSelected()
+        node(Str.MIRROR).assertIsSelected()
+    }
+
+    @Test
+    fun recordingLocksTheChoiceOfCameraButNotItsMirroring() = runComposeUiTest {
+        show(recording = true)
+        node(Str.CAMERA).performClick()
+        node(Str.BACK_CAMERA).assertIsNotEnabled()
+        node(Str.MIRROR).assertIsEnabled()
     }
 }

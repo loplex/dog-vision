@@ -91,6 +91,24 @@
     <string name="allow_camera">Allow the camera</string>
     <string name="camera_failed">Cannot open the camera: %1$s</string>
 
+    <!-- The camera section of the controls -->
+    <string name="camera">Camera</string>
+    <string name="camera_off">Off</string>
+    <string name="about_camera" formatted="false">The camera the images show. Off stops the camera, which turns its light off, and shows nothing until a camera, a photo or a video is chosen.</string>
+    <string name="front_camera">Front camera</string>
+    <string name="back_camera">Back camera</string>
+    <string name="numbered_camera">Camera %1$d</string>
+    <string name="mirroring">Mirroring</string>
+    <string name="mirror">Mirror</string>
+    <string name="about_mirror" formatted="false">Shows the camera\'s image flipped left to right, as a mirror shows a face: a hand raised on your left is on the left.</string>
+    <string name="do_not_mirror">Do not mirror</string>
+    <string name="about_do_not_mirror" formatted="false">Shows the camera\'s image as the camera sees it, as someone facing you sees you: a hand raised on your left is on the right.</string>
+    <string name="mirror_automatic">Automatic</string>
+    <string name="mirror_automatic_facing">Automatic (%1$s)</string>
+    <string name="facing_front">front</string>
+    <string name="facing_back">back</string>
+    <string name="about_mirror_automatic" formatted="false">Mirrors the image of a camera that faces you, as a phone\'s front camera does, and not that of a camera that faces away, as its back camera does.\n\nIt can be chosen only where the system says where the camera faces; where it does not, as of most webcams, the image is mirrored.</string>
+
     <!-- The source -->
     <string name="open_media">Open a photo or a video</string>
     <string name="show_camera">Camera</string>

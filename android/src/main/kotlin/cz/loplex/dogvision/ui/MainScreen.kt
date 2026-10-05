@@ -252,6 +252,7 @@ private fun WhileRecording(model: MainViewModel, recording: Boolean) {
 private fun WithControls(model: MainViewModel, buttons: @Composable () -> Unit, images: @Composable () -> Unit) {
     val view by model.view.collectAsStateWithLifecycle()
     val recorder by model.recorder.collectAsStateWithLifecycle()
+    val camera by model.camera.collectAsStateWithLifecycle()
     var shown by rememberSaveable { mutableStateOf(true) }
     val currentButtons by rememberUpdatedState(buttons)
     val currentImages by rememberUpdatedState(images)
@@ -281,6 +282,9 @@ private fun WithControls(model: MainViewModel, buttons: @Composable () -> Unit, 
                     recorder != null,
                     model::update,
                     model::reset,
+                    camera = camera,
+                    onCamera = model::chooseCamera,
+                    onMirroring = model::setMirroring,
                     language = AppCompatDelegate.getApplicationLocales().toLanguageTags(),
                     // Android remembers the choice, and recreates the activity in the language chosen.
                     onLanguage = { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it)) },

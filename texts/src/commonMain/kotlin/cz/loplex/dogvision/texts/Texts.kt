@@ -1,6 +1,9 @@
 package cz.loplex.dogvision.texts
 
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.ColourVision
+import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.FactTexts
 import cz.loplex.dogvision.core.Note
 import cz.loplex.dogvision.core.Species
@@ -43,6 +46,27 @@ class Texts private constructor(
         val left = view.compare?.let(::speciesLabel) ?: get(Str.ORIGINAL)
         if (!view.difference || differenceShare == null) return listOf(left, right)
         return listOf(left, right, get(Str.DIFFERENCE_CAPTION, percent(differenceShare, differenceShare, facts)))
+    }
+
+    /**
+     * What the controls offer of [choice], as [CameraChoice.offered] lists it:
+     * Off, then each camera named as [cameraName] names it, numbered by its place in the list.
+     */
+    fun cameraNames(choice: CameraChoice): List<String> =
+        choice.offered.mapIndexed { place, camera -> camera?.let { cameraName(it, place) } ?: get(Str.CAMERA_OFF) }
+
+    /** [camera]'s name: the system's, else where it faces, else "Camera [number]". */
+    fun cameraName(camera: CameraOption, number: Int): String = camera.name ?: when (camera.facing) {
+        Facing.FRONT -> get(Str.FRONT_CAMERA)
+        Facing.BACK -> get(Str.BACK_CAMERA)
+        Facing.UNKNOWN -> get(Str.NUMBERED_CAMERA, number)
+    }
+
+    /** The choice of automatic mirroring, with where the camera faces in brackets where that is known. */
+    fun automaticMirroring(facing: Facing): String = when (facing) {
+        Facing.FRONT -> get(Str.MIRROR_AUTOMATIC_FACING, get(Str.FACING_FRONT))
+        Facing.BACK -> get(Str.MIRROR_AUTOMATIC_FACING, get(Str.FACING_BACK))
+        Facing.UNKNOWN -> get(Str.MIRROR_AUTOMATIC)
     }
 
     /** The facts about a species, worded in this language. */

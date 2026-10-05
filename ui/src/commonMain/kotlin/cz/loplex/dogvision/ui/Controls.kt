@@ -42,12 +42,16 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.ChromaScale
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
@@ -60,8 +64,11 @@ import kotlin.math.roundToInt
 
 /**
  * The simulation's controls, in sections that open and close.\
- * While [recording], the controls that change how many images the view has are locked: a video cannot change its size.
+ * While [recording], the controls that change how many images the view has are locked:
+ * a video cannot change its size; so is the choice of camera, as the source's size would change.
  *
+ * The camera section at the top shows [camera], and hands a camera chosen, or null for Off, to [onCamera],
+ * and a mirroring chosen to [onMirroring].\
  * The language choice at the end shows [language], a language tag or "" for the system's,
  * and hands a choice to [onLanguage].
  */
@@ -71,6 +78,9 @@ fun Controls(
     recording: Boolean,
     onChange: ((View) -> View) -> Unit,
     onReset: () -> Unit,
+    camera: CameraChoice,
+    onCamera: (CameraOption?) -> Unit,
+    onMirroring: (Mirroring) -> Unit,
     language: String,
     onLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -78,6 +88,9 @@ fun Controls(
     val params = view.params
     fun setParams(change: Params.() -> Params) = onChange { it.copy(params = it.params.change()) }
     ScrollingColumn(modifier, PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+        Section(Str.CAMERA, startsOpen = false) {
+            CameraSection(camera, enabled = !recording, onCamera, onMirroring)
+        }
         Section(Str.SPECIES, startsOpen = true) {
             SpeciesChoice(
                 label = text(Str.SPECIES),
@@ -187,6 +200,45 @@ private fun LanguageChoice(current: String, onChoose: (String) -> Unit) {
     }
 }
 
+/**
+ * The camera [choice] offers, Off first, which a choice hands to [onCamera] while [enabled],
+ * and the mirroring of its image, which a choice hands to [onMirroring]:
+ * Automatic, worded with where the camera faces, only where that is known.
+ */
+@Composable
+private fun CameraSection(
+    choice: CameraChoice,
+    enabled: Boolean,
+    onCamera: (CameraOption?) -> Unit,
+    onMirroring: (Mirroring) -> Unit,
+) {
+    val texts = LocalTexts.current
+    val offered = choice.offered
+    ListChoice(
+        label = text(Str.CAMERA),
+        about = Str.ABOUT_CAMERA,
+        names = texts.cameraNames(choice),
+        selected = offered.indexOf(choice.shown),
+        enabled = enabled,
+        onSelect = { onCamera(offered[it]) },
+    )
+    Text(text(Str.MIRRORING), style = MaterialTheme.typography.labelLarge)
+    val choices = listOf(
+        Triple(Mirroring.MIRROR, text(Str.MIRROR), Str.ABOUT_MIRROR),
+        Triple(Mirroring.PLAIN, text(Str.DO_NOT_MIRROR), Str.ABOUT_DO_NOT_MIRROR),
+        Triple(Mirroring.AUTO, texts.automaticMirroring(choice.facing), Str.ABOUT_MIRROR_AUTOMATIC),
+    )
+    choices.forEach { (mirroring, name, about) ->
+        Choice(
+            text = name,
+            about = about,
+            selected = choice.shownMirroring == mirroring,
+            enabled = mirroring != Mirroring.AUTO || choice.automaticAvailable,
+            onClick = { onMirroring(mirroring) },
+        )
+    }
+}
+
 /** A section: its title, which opens or closes it, and what it holds. */
 @Composable
 private fun Section(title: Str, startsOpen: Boolean, content: @Composable () -> Unit) {
@@ -211,7 +263,6 @@ private fun Section(title: Str, startsOpen: Boolean, content: @Composable () -> 
 }
 
 /** A species out of [choices], null standing for the original image. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SpeciesChoice(
     label: String,
@@ -223,7 +274,27 @@ private fun SpeciesChoice(
 ) {
     val texts = LocalTexts.current
     val original = text(Str.ORIGINAL)
-    val name = { species: Species? -> species?.let(texts::speciesLabel) ?: original }
+    ListChoice(
+        label = label,
+        about = about,
+        names = choices.map { species -> species?.let(texts::speciesLabel) ?: original },
+        selected = choices.indexOf(selected),
+        enabled = enabled,
+        onSelect = { onSelect(choices[it]) },
+    )
+}
+
+/** One of [names], the [selected]th shown, in a list that drops down under its [label]; [onSelect] takes the index. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ListChoice(
+    label: String,
+    about: Str,
+    names: List<String>,
+    selected: Int,
+    enabled: Boolean,
+    onSelect: (Int) -> Unit,
+) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     CountedWhileOpen(expanded && enabled)
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -233,7 +304,7 @@ private fun SpeciesChoice(
             modifier = Modifier.weight(1f),
         ) {
             OutlinedTextField(
-                value = name(selected),
+                value = names.getOrElse(selected) { "" },
                 onValueChange = {},
                 readOnly = true,
                 enabled = enabled,
@@ -246,11 +317,11 @@ private fun SpeciesChoice(
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
             )
             ExposedDropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false }) {
-                choices.forEach { species ->
+                names.forEachIndexed { index, name ->
                     DropdownMenuItem(
-                        text = { Text(name(species)) },
+                        text = { Text(name) },
                         onClick = {
-                            onSelect(species)
+                            onSelect(index)
                             expanded = false
                         },
                     )
@@ -317,16 +388,21 @@ private fun LabelledSlider(
 }
 
 @Composable
-private fun Choice(text: String, about: Str, selected: Boolean, onClick: () -> Unit) {
+private fun Choice(text: String, about: Str, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .selectable(selected, onClick = onClick, role = Role.RadioButton)
+            .selectable(selected, enabled = enabled, onClick = onClick, role = Role.RadioButton)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(text, modifier = Modifier.padding(start = 8.dp).weight(1f))
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
+        val disabled = MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA)
+        Text(
+            text,
+            modifier = Modifier.padding(start = 8.dp).weight(1f),
+            color = if (enabled) Color.Unspecified else disabled,
+        )
         InfoButton(text, about)
     }
 }
@@ -409,3 +485,6 @@ private fun Facts(species: Species) {
         }
     }
 }
+
+/** How opaque a disabled control's text is, as Material 3 dims a disabled control's content. */
+private const val DISABLED_ALPHA = 0.38f

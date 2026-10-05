@@ -81,6 +81,22 @@
     <string name="camera_needed">Kamera ukazuje scénu tak, jak ji vidí vybraný živočich. Povolte aplikaci kameru, aby se zobrazil živý obraz.</string>
     <string name="allow_camera">Povolit kameru</string>
     <string name="camera_failed">Kameru nejde otevřít: %1$s</string>
+    <string name="camera">Kamera</string>
+    <string name="camera_off">Vypnutá</string>
+    <string name="about_camera" formatted="false">Kamera, jejíž obraz se zobrazí. Vypnutá kameru zastaví, takže zhasne její kontrolka, a nezobrazí nic, dokud nevyberete kameru, fotku nebo video.</string>
+    <string name="front_camera">Přední kamera</string>
+    <string name="back_camera">Zadní kamera</string>
+    <string name="numbered_camera">Kamera %1$d</string>
+    <string name="mirroring">Zrcadlení</string>
+    <string name="mirror">Zrcadlit</string>
+    <string name="about_mirror" formatted="false">Zobrazí obraz kamery převrácený zleva doprava, jak zrcadlo ukazuje obličej: ruka zvednutá po vaší levici je vlevo.</string>
+    <string name="do_not_mirror">Nezrcadlit</string>
+    <string name="about_do_not_mirror" formatted="false">Zobrazí obraz kamery tak, jak ho kamera vidí, jako vás vidí někdo naproti: ruka zvednutá po vaší levici je vpravo.</string>
+    <string name="mirror_automatic">Automaticky</string>
+    <string name="mirror_automatic_facing">Automaticky (%1$s)</string>
+    <string name="facing_front">přední</string>
+    <string name="facing_back">zadní</string>
+    <string name="about_mirror_automatic" formatted="false">Zrcadlí obraz kamery, která míří na vás, jako přední kamera telefonu, a nezrcadlí obraz kamery, která míří od vás, jako jeho zadní kamera.\n\nVybrat se dá jen tam, kde systém říká, kam kamera míří; kde to neříká, jako u většiny webkamer, se obraz zrcadlí.</string>
     <string name="open_media">Otevřít fotku nebo video</string>
     <string name="show_camera">Kamera</string>
     <string name="hide_panel">Skrýt ovládání (F9)</string>
