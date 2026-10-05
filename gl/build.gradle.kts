@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // shared by the Android app's OpenGL ES, the desktop windows' OpenGL ES or OpenGL 3.3, and the web page's WebGL 2.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kover)
 }
 
 kotlin {

@@ -5,8 +5,18 @@ plugins {
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kover)
     alias(libs.plugins.ktlint) apply false
     id("cz.loplex.dogvision.packaging") apply false
+}
+
+// Which lines and branches the JVM tests reach: Kover measures the modules that apply it,
+// and `./gradlew koverHtmlReport` here writes all of them in one report, in build/reports/kover/html.
+// Nothing fails on coverage.
+// The web page's tests run in a browser, and the app's on a device, where Kover measures nothing.
+dependencies {
+    val measured = listOf(":cli", ":core", ":gl", ":gui-compose", ":gui-core", ":gui-swing", ":texts", ":ui")
+    measured.forEach { kover(project(it)) }
 }
 
 // tools/cache, what tools/fetch_msi_tools_on_linux.sh downloads,

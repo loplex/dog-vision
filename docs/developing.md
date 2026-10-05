@@ -5,7 +5,7 @@ Building the programs is [Building it](building.md)'s.
 
 - [How the code is laid out](#how-the-code-is-laid-out) — the modules, their layers and which uses which, and the GPU renderer they share.
 - [Checking it](#checking-it) — what each Gradle task tests,
-  the documents held to `core`, the Kotlin style, and what GitHub Actions runs.
+  the documents held to `core`, the Kotlin style, the tests' coverage, and what GitHub Actions runs.
 - The caveats: [the emulator's colours](#caveat-the-emulator-fails-the-video-tests-colour-checks), and [Windows without a GPU and under Wine](#caveat-windows-is-tested-without-a-gpu-and-under-wine).
 - [Where the test data comes from](#where-the-test-data-comes-from) — the test videos and the reference values.
 
@@ -269,11 +269,21 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 - `./gradlew checkLineLength` holds every line to 120 characters, comments included:
   ktlint does not measure a line that is a comment and nothing else.
 
+### The JVM tests' coverage is measured, not required
+
+- **`./gradlew koverHtmlReport` writes which lines and branches the JVM tests reach**,
+  for `cli`, `core`, `gl`, `gui-compose`, `gui-core`, `gui-swing`, `texts` and `ui`, in one report:
+  `build/reports/kover/html/index.html`.
+- **Nothing fails on coverage**: the report is there to find what no test reaches.
+- **The web page's and the app's tests are not measured**:
+  they run in a browser and on a device, which [Kover](https://github.com/Kotlin/kotlinx-kover) does not reach.
+
 ### GitHub Actions runs them on Linux and Windows
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every push:
 
-- **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner has no GPU;
+- **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner has no GPU,
+  and the coverage report, which is the run's artifact;
   then the debs and the rpms of `dog-vision-compose`, `dog-vision-swing`, `dog-vision-cli`, `dog-vision-common`,
   `dog-vision-web`, `dog-vision-web-sourcemap` and `dog-vision`, each built in two versions
   and tried by `test_deb.sh --upgrade` in Ubuntu 20.04 and `test_rpm.sh --upgrade` in Fedora 42, each window under Xvfb,

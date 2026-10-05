@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // Its view options are the windows' as well, which read them through gui-core.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kover)
     id("cz.loplex.dogvision.packaging")
 }
 

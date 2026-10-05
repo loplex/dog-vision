@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // It takes gui-core's options of a window, as the Compose window does.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kover)
     id("cz.loplex.dogvision.packaging")
 }
 

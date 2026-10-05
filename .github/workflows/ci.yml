@@ -21,7 +21,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
       # ffmpeg for the window's feed; Mesa's EGL and llvmpipe for its GL tests, as the runner has no GPU.
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libegl-mesa0 libgl1-mesa-dri libgles2
-      - run: ./gradlew check
+      # The JVM tests' coverage, measured as `check` ran them, in one HTML report kept with the run.
+      - run: ./gradlew check koverHtmlReport
+      - uses: actions/upload-artifact@v5
+        with:
+          name: coverage
+          path: build/reports/kover/html/
       # The Linux packages, dog-vision-compose, dog-vision-swing, dog-vision-cli, dog-vision-common, dog-vision-web,
       # dog-vision-web-sourcemap and dog-vision, and a later version of each, which the build writes beside the first.
       - name: Build the debs and the rpms
