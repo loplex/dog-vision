@@ -80,7 +80,10 @@ class Page(private var texts: Texts) {
      * and [lastCamera] the one started last, which the camera button starts again.
      */
     private val camera = if (Camera.available) {
-        Camera({ video -> showFrame(video, cameraChoice.mirrored) }, onEnded = ::invalidate)
+        Camera({ video -> showFrame(video, cameraChoice.mirrored) }, onEnded = ::invalidate) { cameras ->
+            cameraChoice = cameraChoice.copy(cameras = cameras)
+            invalidate()
+        }
     } else {
         null
     }
@@ -346,10 +349,6 @@ class Page(private var texts: Texts) {
                 }
                 // A failure to start it, before a switch or a return to the page, no longer holds.
                 showNotice(null)
-                invalidate()
-            },
-            onListed = { cameras ->
-                cameraChoice = cameraChoice.copy(cameras = cameras)
                 invalidate()
             },
             onFailed = { name, message ->

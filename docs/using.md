@@ -159,8 +159,9 @@ the apples as they are and as a dog sees them side by side, the buttons above th
   a camera without 1280 x 720 gives the size it has nearest, such as 640 x 480.
 - **Switch camera goes to the next camera the browser lists**;
   it shows only where the browser knows of two cameras or more.
-- **The cameras are listed once one has started**:
-  until the page may use a camera, the browser names none, and the panel's *Camera* lists only *Off*.
+- **The cameras are listed once the page may use a camera**: at once where it was allowed before,
+  else after the first start; until then the browser names none, and the panel's *Camera* lists only *Off*.\
+  A camera plugged in or out is listed or dropped as it happens; the last one unplugged stays listed.
 - **A camera says where it faces through its `facingMode`**,
   which a phone's cameras report and a laptop's webcam often does not; [*Automatic*](#the-camera-and-its-mirroring) follows it.
 - **The camera stops while the page is hidden**, and starts again when it is shown; opening a photo or a video stops it.
