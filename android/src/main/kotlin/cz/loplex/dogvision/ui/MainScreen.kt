@@ -1,9 +1,11 @@
 package cz.loplex.dogvision.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.hardware.display.DisplayManager
+import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -59,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -95,6 +98,7 @@ fun MainScreen(model: MainViewModel) {
         uri?.let(model::openMedia)
     }
     val save = rememberSaving(model)
+    val convert = rememberConverting(save)
     WhileRecording(model, recording)
     Box(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding()) {
         WithControls(
@@ -123,11 +127,11 @@ fun MainScreen(model: MainViewModel) {
                     }
 
                     source is Source.Photo -> ImageButton(R.drawable.ic_full_size, Str.SAVE_FULL_SIZE) {
-                        save(model::convertPhoto)
+                        convert(model::convertPhoto)
                     }
 
                     source is Source.Video -> ImageButton(R.drawable.ic_full_size, Str.SAVE_VIDEO_FULL_SIZE) {
-                        save(model::convertVideo)
+                        convert(model::convertVideo)
                     }
                 }
             },
@@ -185,6 +189,39 @@ private fun rememberSaving(model: MainViewModel): (() -> Unit) -> Unit {
         }
     }
 }
+
+/**
+ * Saves a conversion as [save] does, after asking, on Android 13 and later, whether the app may post notifications,
+ * where it may not and has never asked: a conversion shows how far it has got in one.\
+ * The conversion starts whatever the answer, and a refusal is not asked about again.
+ */
+@Composable
+private fun rememberConverting(save: (() -> Unit) -> Unit): (() -> Unit) -> Unit {
+    val context = LocalContext.current
+    var waiting by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        waiting?.let(save)
+        waiting = null
+    }
+    return { convert ->
+        val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+        val unasked = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED &&
+            !preferences.getBoolean(ASKED_FOR_NOTIFICATIONS, false)
+        if (unasked) {
+            preferences.edit { putBoolean(ASKED_FOR_NOTIFICATIONS, true) }
+            waiting = convert
+            ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            save(convert)
+        }
+    }
+}
+
+/** The app's preferences, and the one that says it has asked whether it may post notifications. */
+private const val PREFERENCES = "dog-vision"
+private const val ASKED_FOR_NOTIFICATIONS = "asked-for-notifications"
 
 /** Why the camera is needed, and a button that asks for it. */
 @Composable

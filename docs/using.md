@@ -98,14 +98,16 @@ Images go to *Pictures/Dog Vision* and videos to *Movies/Dog Vision*, where the 
   as the view shows it now, with the same name ending in `-full.png` or `-full.mp4`,
   as the system photo picker does not tell an app a file's name.\
   A message says how far it has got, and the cross that replaces the button meanwhile cancels it.
+- **The conversion goes on in the background**, the app left or swiped away from the recent apps:
+  a notification shows how far it has got, with a button that cancels it, and then where it was saved.\
+  The first conversion asks whether the app may post notifications; without them, it runs all the same.
 - **A photo is converted on the CPU.**
 - **A video is converted by Media3's Transformer on the GPU**, with the original's sound:
   - it is encoded as H.265 where the phone has an encoder for it, and as H.264 where not;
   - it is scaled down, keeping its shape,
     where the encoder or the GPU cannot take the view's size, and the message says so;
   - an HDR video is tone-mapped to SDR first, since the model works on SDR;
-    a GPU without `GL_EXT_YUV_target`, as the emulator's, cannot, and the conversion then fails;
-  - it stops if Android ends the app in the background.
+    a GPU without `GL_EXT_YUV_target`, as the emulator's, cannot, and the conversion then fails.
 
 Before Android 10, saving asks for the storage permission.
 

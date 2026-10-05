@@ -109,6 +109,7 @@
     <string name="save_full_size">Uložit fotku v plném rozlišení</string>
     <string name="save_video_full_size">Uložit video v plném rozlišení</string>
     <string name="cancel_conversion">Zrušit převod</string>
+    <string name="conversions">Převody v plné velikosti</string>
     <string name="saved">Uloženo %1$s do složky %2$s</string>
     <string name="saved_video">Uloženo %1$s do složky %2$s, %3$s</string>
     <string name="written_with_sound">%1$s (%2$s), s původním zvukem</string>

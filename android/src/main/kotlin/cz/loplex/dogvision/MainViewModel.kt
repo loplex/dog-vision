@@ -21,7 +21,6 @@ import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.compose
 import cz.loplex.dogvision.core.composedSize
 import cz.loplex.dogvision.core.meanLinearRgb
-import cz.loplex.dogvision.core.percent
 import cz.loplex.dogvision.core.snapshotName
 import cz.loplex.dogvision.render.Capture
 import cz.loplex.dogvision.render.Drawn
@@ -30,9 +29,6 @@ import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.video.Recorder
 import cz.loplex.dogvision.video.Written
 import cz.loplex.dogvision.video.convertVideo
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -42,6 +38,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -259,28 +256,17 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
         }
     }
 
-    private var conversion: Job? = null
+    /** Whether a photo or a video is being converted at full size, by [Conversions], which outlives this model. */
+    val converting: StateFlow<Boolean> = Conversions.running
 
-    private val _converting = MutableStateFlow(false)
-
-    /** Whether a photo or a video is being converted at full size. */
-    val converting: StateFlow<Boolean> = _converting.asStateFlow()
-
-    /** Runs [convert] as the one conversion there is, which [cancelConversion] stops; the message goes with it. */
-    private fun startConversion(dispatcher: CoroutineDispatcher, convert: suspend CoroutineScope.() -> Unit) {
-        if (conversion?.isActive == true) return
-        _converting.value = true
-        conversion = viewModelScope.launch(dispatcher, block = convert).apply {
-            invokeOnCompletion { cause ->
-                if (cause is CancellationException) _message.value = null
-                _converting.value = false
-            }
-        }
+    init {
+        // What the conversion says from now on is the message; what it said last, before this model, is not,
+        // unless it still runs, as when the app is opened again from its notification.
+        val said = if (Conversions.running.value) Conversions.message else Conversions.message.drop(1)
+        viewModelScope.launch { said.collect { _message.value = it } }
     }
 
-    fun cancelConversion() {
-        conversion?.cancel()
-    }
+    fun cancelConversion() = Conversions.cancel(getApplication())
 
     /** The view as a conversion writes it now: its images arranged as the screen shows them. */
     private fun viewToConvert(): View =
@@ -293,12 +279,10 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
     fun convertPhoto() {
         val photo = source.value as? Source.Photo ?: return
         val context = getApplication<Application>()
-        val facts = context.texts.facts
         val view = viewToConvert()
         val name = snapshotName(view, now(), suffix = "-full")
-        startConversion(Dispatchers.Default) {
-            _message.value = context.texts.get(Str.CONVERTING, percent(0.0, 0.0, facts))
-            _message.value = try {
+        Conversions.start(context, Dispatchers.Default) { report ->
+            try {
                 val (decoded, turn) = decodePhoto(context, photo.uri) ?: throw IOException(photo.name)
                 val upright = upright(decoded, turn)
                 val (width, height) = composedSize(view, upright.width, upright.height)
@@ -306,8 +290,7 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
                 val mean = { meanLinearRgb(upright.width, upright.height, upright::getPixel) }
                 compose(BitmapSource(upright), view, BitmapSink(out), mean) { rows ->
                     ensureActive()
-                    val done = rows.toDouble() / upright.height
-                    _message.value = context.texts.get(Str.CONVERTING, percent(done, done, facts))
+                    report(rows.toDouble() / upright.height)
                 }
                 savePng(context, out, name)
                 context.texts.get(Str.SAVED, name, Gallery.IMAGES.folder)
@@ -326,17 +309,13 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
     fun convertVideo() {
         val video = source.value as? Source.Video ?: return
         val context = getApplication<Application>()
-        val facts = context.texts.facts
         val view = viewToConvert()
         val name = snapshotName(view, now(), suffix = "-full", extension = "mp4")
-        startConversion(Dispatchers.Main) {
-            _message.value = context.texts.get(Str.CONVERTING, percent(0.0, 0.0, facts))
+        Conversions.start(context, Dispatchers.Main) { report ->
             // Transformer writes to a path, which the gallery does not give out; the video is copied there afterwards.
             val file = File(context.cacheDir, name)
-            _message.value = try {
-                val written = convertVideo(context, video.uri, view, file) { done ->
-                    _message.value = context.texts.get(Str.CONVERTING, percent(done, done, facts))
-                }
+            try {
+                val written = convertVideo(context, video.uri, view, file, onProgress = report)
                 withContext(Dispatchers.IO) {
                     saveToGallery(context, name, Gallery.VIDEOS) { out -> file.inputStream().use { it.copyTo(out) } }
                 }

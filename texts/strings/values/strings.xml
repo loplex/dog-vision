@@ -124,6 +124,7 @@
     <string name="save_full_size">Save the photo at full size</string>
     <string name="save_video_full_size">Save the video at full size</string>
     <string name="cancel_conversion">Cancel the conversion</string>
+    <string name="conversions">Conversions at full size</string>
     <string name="saved">Saved %1$s to %2$s</string>
     <string name="saved_video">Saved %1$s to %2$s: %3$s</string>
     <string name="written_with_sound">%1$s (%2$s), with the original sound</string>
