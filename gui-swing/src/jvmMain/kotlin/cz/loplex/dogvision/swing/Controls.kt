@@ -2,7 +2,10 @@ package cz.loplex.dogvision.swing
 
 import com.formdev.flatlaf.FlatClientProperties
 import com.formdev.flatlaf.util.UIScale
+import cz.loplex.dogvision.core.CameraChoice
+import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.ChromaScale
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.speciesFacts
@@ -18,6 +21,7 @@ import java.awt.FlowLayout
 import java.awt.Rectangle
 import javax.swing.BorderFactory
 import javax.swing.ButtonGroup
+import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
 import javax.swing.JButton
 import javax.swing.JCheckBox
@@ -38,7 +42,7 @@ import kotlin.math.roundToInt
 
 /**
  * The simulation's controls in Swing, as ui's `Controls` lays them out for the Compose window:
- * sections that open and close, with the species, its facts, the simulation, the acuity and the view,
+ * sections that open and close, with the camera, the species, its facts, the simulation, the acuity and the view,
  * then reset and the language.\
  * Each shows what [session]'s state says and hands a change to [session]; it keeps only which sections are open.
  */
@@ -63,6 +67,35 @@ internal class Controls(private val session: LiveSession<*>) :
         )
         val start = session.state.value
         val params = start.view.params
+        val mirroring = ButtonGroup()
+        add(
+            section(
+                Str.CAMERA,
+                startsOpen = false,
+                cameraChoice(),
+                label(Str.MIRRORING, "semibold"),
+                *Mirroring.entries.map { offered ->
+                    choice(
+                        when (offered) {
+                            Mirroring.MIRROR -> Str.MIRROR
+                            Mirroring.PLAIN -> Str.DO_NOT_MIRROR
+                            Mirroring.AUTO -> Str.MIRROR_AUTOMATIC
+                        },
+                        when (offered) {
+                            Mirroring.MIRROR -> Str.ABOUT_MIRROR
+                            Mirroring.PLAIN -> Str.ABOUT_DO_NOT_MIRROR
+                            Mirroring.AUTO -> Str.ABOUT_MIRROR_AUTOMATIC
+                        },
+                        mirroring,
+                        { it.camera.shownMirroring == offered },
+                        enabled = { offered != Mirroring.AUTO || it.camera.automaticAvailable },
+                        words = { state ->
+                            if (offered == Mirroring.AUTO) state.texts.automaticMirroring(state.camera.facing) else null
+                        },
+                    ) { session.setMirroring(offered) }
+                }.toTypedArray(),
+            ),
+        )
         add(
             section(
                 Str.SPECIES,
@@ -277,6 +310,28 @@ internal class Controls(private val session: LiveSession<*>) :
         return withInfo(column, { it.get(label) }, { it.get(about) })
     }
 
+    /** The camera the state's choice offers, Off first, named as the texts name them. */
+    private fun cameraChoice(): JComponent {
+        var choice = CameraChoice()
+        val box = JComboBox<CameraOption?>().apply {
+            renderer = worded { camera -> texts.cameraNames(choice).getOrElse(choice.offered.indexOf(camera)) { "" } }
+            addActionListener { reported { session.chooseCamera(selectedItem as CameraOption?) } }
+        }
+        on { state ->
+            if (choice.offered != state.camera.offered) {
+                box.model = DefaultComboBoxModel(state.camera.offered.toTypedArray())
+            }
+            choice = state.camera
+            if (box.selectedItem != choice.shown) box.selectedItem = choice.shown
+            box.repaint()
+        }
+        val column = Column().apply {
+            border = BorderFactory.createEmptyBorder(UIScale.scale(4), 0, UIScale.scale(4), 0)
+            addAll(Row().apply { add(label(Str.CAMERA, "small")) }, Row().apply { add(box) })
+        }
+        return withInfo(column, { it.get(Str.CAMERA) }, { it.get(Str.ABOUT_CAMERA) })
+    }
+
     /** A list cell of a combo box, worded by [words] in the texts shown last. */
     private fun worded(words: (Any?) -> String) = object : DefaultListCellRenderer() {
         override fun getListCellRendererComponent(
@@ -323,19 +378,25 @@ internal class Controls(private val session: LiveSession<*>) :
         }
     }
 
-    /** One of [group]'s choices, chosen where [selected] says. */
+    /**
+     * One of [group]'s choices, chosen where [selected] says and enabled where [enabled] does,
+     * worded as [text], or as [words] says where it says anything.
+     */
     private fun choice(
         text: Str,
         about: Str,
         group: ButtonGroup,
         selected: (LiveSession.State) -> Boolean,
+        enabled: (LiveSession.State) -> Boolean = { true },
+        words: (LiveSession.State) -> String? = { null },
         onClick: () -> Unit,
     ): JComponent {
         val button = JRadioButton().apply { addActionListener { reported(onClick) } }
         group.add(button)
         on { state ->
-            button.text = state.texts.get(text)
+            button.text = words(state) ?: state.texts.get(text)
             if (button.isSelected != selected(state)) button.isSelected = selected(state)
+            button.isEnabled = enabled(state)
         }
         return withInfo(button, { it.get(text) }, { it.get(about) })
     }
