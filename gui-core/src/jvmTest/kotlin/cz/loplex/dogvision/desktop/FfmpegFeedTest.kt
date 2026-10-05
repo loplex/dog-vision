@@ -88,10 +88,28 @@ class FfmpegFeedTest {
         val frames = AtomicInteger()
         val ended = CountDownLatch(1)
         val onFrame: (Frame) -> Unit = { frames.incrementAndGet() }
-        FfmpegFeed.start(listOf("-i", file.path), 16 to 16, onFrame, { ended.countDown() }, asTheyCome = true).use {
-            assertTrue(ended.await(20, TimeUnit.SECONDS), "ffmpeg did not end")
-        }
+        FfmpegFeed.start(listOf("-i", file.path), 16 to 16, false, onFrame, { ended.countDown() }, asTheyCome = true)
+            .use { assertTrue(ended.await(20, TimeUnit.SECONDS), "ffmpeg did not end") }
         assertEquals(10, frames.get())
+    }
+
+    /** The frames come mirrored if asked to, as a camera's: the red half on the right. */
+    @Test
+    fun framesComeMirroredIfAskedTo() {
+        val file = video(0)
+        for (mirrored in listOf(false, true)) {
+            val frames = CountDownLatch(1)
+            val ends = AtomicReference<Pair<String, String>>()
+            val onFrame = { frame: Frame ->
+                ends.compareAndSet(null, colour(frame, 2, 8) to colour(frame, 29, 8))
+                frames.countDown()
+            }
+            FfmpegFeed.start(listOf("-i", file.path), 32 to 16, mirrored, onFrame, {}).use {
+                assertTrue(frames.await(20, TimeUnit.SECONDS), "no frame came")
+            }
+            val expected = if (mirrored) "blue" to "red" else "red" to "blue"
+            assertEquals(expected, ends.get(), "mirrored $mirrored")
+        }
     }
 
     @Test

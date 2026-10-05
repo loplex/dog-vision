@@ -13,7 +13,7 @@ import kotlin.math.abs
  * the buffer is reused for the next frame once [onFrame] returns.\
  * [onEnd] is told why the frames stopped, unless [close] stopped them.
  *
- * ffmpeg decodes, turns a video upright as its file says,
+ * ffmpeg decodes, turns a video upright as its file says, mirrors a camera's frames,
  * and scales the frames down to [PREVIEW_LONGEST_SIDE], so that the frames arrive as the passes take them.
  */
 class FfmpegFeed private constructor(
@@ -107,11 +107,13 @@ class FfmpegFeed private constructor(
          * which a USB webcam gives at 30 frames a second where its raw frames come at 10,
          * and else for whatever it gives: /dev/video[index] through Video4Linux on Linux,
          * and on Windows the DirectShow camera that ffmpeg lists [index]th.\
+         * Its frames are mirrored, as a mirror shows a face:
+         * neither Video4Linux nor DirectShow says where a camera faces, and the web page mirrors such a camera too.\
          * Throws IOException if ffmpeg cannot open it.
          */
         fun camera(index: Int, onFrame: (Frame) -> Unit, onEnd: (String) -> Unit): FfmpegFeed {
             val (input, size) = if (onWindows) directShowCamera(index) else videoForLinuxCamera(index)
-            return start(input, size, onFrame, onEnd, asTheyCome = true)
+            return start(input, size, mirrored = true, onFrame, onEnd, asTheyCome = true)
         }
 
         /**
@@ -223,18 +225,24 @@ class FfmpegFeed private constructor(
         /** The video in [file], played over and over at its own speed, without its sound. */
         fun video(file: File, onFrame: (Frame) -> Unit, onEnd: (String) -> Unit): FfmpegFeed {
             val size = probe(emptyList(), file.path)
-            return start(listOf("-re", "-stream_loop", "-1", "-i", file.path), size, onFrame, onEnd)
+            return start(listOf("-re", "-stream_loop", "-1", "-i", file.path), size, mirrored = false, onFrame, onEnd)
         }
 
+        /**
+         * The frames of [input], of the [upright] size, scaled down to fit, and mirrored if [mirrored];
+         * [asTheyCome], each as it comes, where ffmpeg would otherwise make them of a constant rate.
+         */
         internal fun start(
             input: List<String>,
             upright: Pair<Int, Int>,
+            mirrored: Boolean,
             onFrame: (Frame) -> Unit,
             onEnd: (String) -> Unit,
             asTheyCome: Boolean = false,
         ): FfmpegFeed {
             val (width, height) = fitted(upright.first, upright.second)
-            val output = listOf("-an", "-sn", "-vf", "scale=$width:$height:flags=area", "-pix_fmt", "rgba") +
+            val filters = "scale=$width:$height:flags=area" + if (mirrored) ",hflip" else ""
+            val output = listOf("-an", "-sn", "-vf", filters, "-pix_fmt", "rgba") +
                 if (asTheyCome) asTheyComeOption() else emptyList()
             val command = listOf("ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin") + input + output +
                 listOf("-f", "rawvideo", "-")
