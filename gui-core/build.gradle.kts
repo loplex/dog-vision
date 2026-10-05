@@ -3,7 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // What a desktop window draws with, in neither Compose nor skiko: a photo, a video or the camera through ffmpeg,
 // rendered by gl's passes in an offscreen GL context, and read back into whatever image the window shows.
-// Neither may come in here, so that a window in another toolkit can do without them; Java's own AWT is all it uses.
+// Neither may come in here, so that a window in another toolkit can do without them;
+// Java's own AWT and Swing are all it uses.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
 }

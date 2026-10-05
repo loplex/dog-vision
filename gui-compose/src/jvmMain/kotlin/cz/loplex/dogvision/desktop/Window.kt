@@ -61,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import cz.loplex.dogvision.cli.Arguments
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.ui.Controls
@@ -82,14 +81,14 @@ private val CAPTION_HEIGHT = 40.dp
 private val GAP = 6.dp
 
 /**
- * Opens the window on what [arguments] ask for: the file given with --window, a photo or else a video,
+ * Opens the window on what [arguments] ask for: the file given, a photo or else a video,
  * or the camera --camera names; returns once the window is closed.\
  * Another file is opened from the system's dialog, from the o key, or dropped onto the window;
  * F9 or the button at the images' edge hides the controls, and q or Escape closes it.\
  * What it shows is a [LiveSession]'s, which the window only lays out.
  */
 @Suppress("SameReturnValue")
-fun showWindow(arguments: Arguments): Int {
+fun showWindow(arguments: WindowArguments): Int {
     application(exitProcessOnExit = false) {
         val session = remember { LiveSession.drawnOnGpu(arguments, ::composeImage) }
         DisposableEffect(session) {

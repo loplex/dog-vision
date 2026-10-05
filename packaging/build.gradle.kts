@@ -127,8 +127,8 @@ windowPackages(
 
         This package is the desktop window, in Compose.
 
-        Given a photo alone, it converts it as the command line does, which is
-        the package dog-vision-cli.
+        The command line, which converts a photo, is the package
+        dog-vision-cli.
     """.trimIndent(),
 )
 
@@ -150,8 +150,8 @@ windowPackages(
         nor skiko. The package dog-vision-compose is the same window in
         Compose.
 
-        Given a photo alone, it converts it as the command line does, which is
-        the package dog-vision-cli.
+        The command line, which converts a photo, is the package
+        dog-vision-cli.
     """.trimIndent(),
     // FlatLaf loads its natives on Linux only for window decorations of its own,
     // which the window does not use, and they link GTK 3.

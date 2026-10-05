@@ -8,41 +8,54 @@ import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.io.File
 
+/** The command line's name, which its usage and its mistakes say. */
+const val COMMAND = "dog-vision-cli"
+
 /** The command line's options. */
 data class Arguments(
-    /** The photo or video to convert, or to show if [window]. */
+    /** The photo to convert. */
     val file: File? = null,
-    /** Show [file] in the window instead of converting it. */
-    val window: Boolean = false,
-    /** The camera the window shows when no file is given, counted from 0: /dev/video followed by it on Linux. */
-    val camera: Int = 0,
-    val params: Params = Params(),
-    val compare: Species? = null,
-    val difference: Boolean = false,
+    val view: ViewOptions = ViewOptions(),
     /** Where a converted file goes, in place of next to its original. */
     val outputDir: File? = null,
-    /** How the window draws on Windows; null for ANGLE, and WGL where ANGLE cannot start. */
-    val windowsGl: WindowsGl? = null,
     val help: Boolean = false,
-) {
-    /** Whether this asks for [file] to be converted, rather than for the window. */
-    val converts: Boolean get() = file != null && !window && !help
+)
 
+/** The options of what is shown, which the command line and the windows both take. */
+data class ViewOptions(val params: Params = Params(), val compare: Species? = null, val difference: Boolean = false) {
     /** The view a file is converted to: the simulation alone unless another species or the map is asked for. */
     val conversionView: View
         get() = View(params, sideBySide = compare != null || difference, compare = compare, difference = difference)
 
-    /** The view the window starts with: side by side. */
-    val windowView: View get() = View(params, sideBySide = true, compare = compare, difference = difference)
-}
+    /** These options with [option] read into them, or null if [option] is none of them. */
+    fun read(option: Option): ViewOptions? = when (option.name) {
+        "--species" -> copy(params = params.copy(species = species(option.name, option.value())))
+        "--compare" -> copy(compare = species(option.name, option.value()))
+        "--difference" -> option.flag().let { copy(difference = true) }
+        "--adaptation" -> copy(params = params.copy(adaptation = share(option.name, option.value())))
+        "--strength" -> copy(params = params.copy(strength = share(option.name, option.value())))
+        "--chroma-scale" -> copy(params = params.copy(chromaScale = chromaScale(option.name, option.value())))
+        "--acuity" -> option.flag().let { copy(params = params.copy(acuity = true)) }
+        "--fov" -> copy(params = params.copy(fieldOfView = fieldOfView(option.name, option.value())))
+        else -> null
+    }
 
-/** The two ways the window can draw on Windows, as --gl names them. */
-enum class WindowsGl(val id: String) {
-    /** OpenGL ES over Direct3D 11. */
-    ANGLE("angle"),
-
-    /** The graphics driver's own desktop OpenGL. */
-    WGL("wgl"),
+    companion object {
+        /** Their lines of a usage, worded by [texts]. */
+        fun usage(texts: Texts): List<Pair<String, String>> {
+            val defaults = Params()
+            return listOf(
+                "--species ID" to texts.get(Str.USAGE_OPTION_SPECIES, defaults.species.id),
+                "--compare ID" to texts.get(Str.USAGE_OPTION_COMPARE),
+                "--difference" to texts.get(Str.USAGE_OPTION_DIFFERENCE),
+                "--adaptation X" to texts.get(Str.USAGE_OPTION_ADAPTATION, defaults.adaptation),
+                "--strength X" to texts.get(Str.USAGE_OPTION_STRENGTH, defaults.strength),
+                "--chroma-scale S" to texts.get(Str.USAGE_OPTION_CHROMA_SCALE, defaults.chromaScale.name.lowercase()),
+                "--acuity" to texts.get(Str.USAGE_OPTION_ACUITY),
+                "--fov DEGREES" to texts.get(Str.USAGE_OPTION_FOV, defaults.fieldOfView),
+            )
+        }
+    }
 }
 
 /** A command line that cannot be read, with the string [key] and the [args] that say what is wrong with it. */
@@ -51,82 +64,82 @@ class UsageException(val key: Str, vararg val args: Any?) : Exception(Texts.of("
     fun message(texts: Texts): String = texts.get(key, *args)
 }
 
+/** An option named [name], whose value follows it or an equals sign. */
+class Option internal constructor(
+    val name: String,
+    private val inline: String?,
+    private val remaining: ArrayDeque<String>,
+) {
+    /** Its value, taken off the command line. */
+    fun value(): String = inline ?: remaining.removeFirstOrNull() ?: throw UsageException(Str.USAGE_NEEDS_VALUE, name)
+
+    /** Throws unless it was given without a value, as a flag is. */
+    fun flag() {
+        if (inline != null) throw UsageException(Str.USAGE_TAKES_NO_VALUE, name)
+    }
+}
+
 /**
- * Reads [args] as `dog-vision [options] [file]` does: an option's value follows it or an equals sign.\
- * Throws UsageException for anything it does not know.
+ * Reads [args] as `command [options] [file]` from [start]:
+ * one file, handed to [file], and options, each handed to [option], which returns null for one it does not know.\
+ * Throws UsageException for anything it cannot read.
  */
-fun parseArguments(args: List<String>): Arguments {
-    var arguments = Arguments()
-    var params = Params()
+fun <T> readCommandLine(args: List<String>, start: T, file: T.(File) -> T, option: T.(Option) -> T?): T {
+    var read = start
+    var given: String? = null
     val remaining = ArrayDeque(args)
     while (remaining.isNotEmpty()) {
         val arg = remaining.removeFirst()
         if (!arg.startsWith("-") || arg == "-") {
-            if (arguments.file != null) throw UsageException(Str.USAGE_ONE_FILE, arg)
-            arguments = arguments.copy(file = File(arg))
+            if (given != null) throw UsageException(Str.USAGE_ONE_FILE, arg)
+            given = arg
+            read = read.file(File(arg))
             continue
         }
         val name = arg.substringBefore('=')
         val inline = if ('=' in arg) arg.substringAfter('=') else null
-
-        fun value(): String =
-            inline ?: remaining.removeFirstOrNull() ?: throw UsageException(Str.USAGE_NEEDS_VALUE, name)
-
-        fun flag() {
-            if (inline != null) throw UsageException(Str.USAGE_TAKES_NO_VALUE, name)
-        }
-        when (name) {
-            "-h", "--help" -> flag().also { arguments = arguments.copy(help = true) }
-            "--window" -> flag().also { arguments = arguments.copy(window = true) }
-            "--difference" -> flag().also { arguments = arguments.copy(difference = true) }
-            "--acuity" -> flag().also { params = params.copy(acuity = true) }
-            "--camera" -> arguments = arguments.copy(camera = camera(name, value()))
-            "--output-dir" -> arguments = arguments.copy(outputDir = File(value()))
-            "--gl" -> arguments = arguments.copy(windowsGl = windowsGl(name, value()))
-            "--species" -> params = params.copy(species = species(name, value()))
-            "--compare" -> arguments = arguments.copy(compare = species(name, value()))
-            "--adaptation" -> params = params.copy(adaptation = share(name, value()))
-            "--strength" -> params = params.copy(strength = share(name, value()))
-            "--chroma-scale" -> params = params.copy(chromaScale = chromaScale(name, value()))
-            "--fov" -> params = params.copy(fieldOfView = fieldOfView(name, value()))
-            else -> throw UsageException(Str.USAGE_UNKNOWN_OPTION, name)
-        }
+        read = read.option(Option(name, inline, remaining)) ?: throw UsageException(Str.USAGE_UNKNOWN_OPTION, name)
     }
-    return arguments.copy(params = params)
+    return read
 }
 
-/** How to call it, for --help, worded by [texts]; its first line is repeated after a mistake. */
-fun usage(texts: Texts): String {
-    val defaults = Params()
-    val examples = listOf(
-        "dog-vision" to texts.get(Str.USAGE_CAMERA),
-        "dog-vision photo.jpg" to texts.get(Str.USAGE_PHOTO),
-        "dog-vision --window clip.mp4" to texts.get(Str.USAGE_WINDOW),
-    )
-    val options = listOf(
-        "--species ID" to texts.get(Str.USAGE_OPTION_SPECIES, defaults.species.id),
-        "--compare ID" to texts.get(Str.USAGE_OPTION_COMPARE),
-        "--difference" to texts.get(Str.USAGE_OPTION_DIFFERENCE),
-        "--adaptation X" to texts.get(Str.USAGE_OPTION_ADAPTATION, defaults.adaptation),
-        "--strength X" to texts.get(Str.USAGE_OPTION_STRENGTH, defaults.strength),
-        "--chroma-scale S" to texts.get(Str.USAGE_OPTION_CHROMA_SCALE, defaults.chromaScale.name.lowercase()),
-        "--acuity" to texts.get(Str.USAGE_OPTION_ACUITY),
-        "--fov DEGREES" to texts.get(Str.USAGE_OPTION_FOV, defaults.fieldOfView),
-        "--window" to texts.get(Str.USAGE_OPTION_WINDOW),
-        "--camera N" to texts.get(Str.USAGE_OPTION_CAMERA, Arguments().camera),
-        "--output-dir DIR" to texts.get(Str.USAGE_OPTION_OUTPUT_DIR),
-        "--gl API" to texts.get(Str.USAGE_OPTION_GL),
-        "-h, --help" to texts.get(Str.USAGE_OPTION_HELP),
-    )
+/** Reads [args] as the command line takes them. */
+fun parseArguments(args: List<String>): Arguments = readCommandLine(args, Arguments(), { copy(file = it) }) { option ->
+    when (option.name) {
+        "-h", "--help" -> option.flag().let { copy(help = true) }
+        "--output-dir" -> copy(outputDir = File(option.value()))
+        else -> view.read(option)?.let { copy(view = it) }
+    }
+}
 
+/** How to call the command line, for --help, worded by [texts]; its first line is repeated after a mistake. */
+fun usage(texts: Texts): String = usage(
+    texts,
+    texts.get(Str.USAGE_SYNOPSIS, COMMAND),
+    texts.get(Str.USAGE_ABOUT),
+    listOf("$COMMAND photo.jpg" to texts.get(Str.USAGE_PHOTO)),
+    ViewOptions.usage(texts) + listOf(
+        "--output-dir DIR" to texts.get(Str.USAGE_OPTION_OUTPUT_DIR),
+        "-h, --help" to texts.get(Str.USAGE_OPTION_HELP),
+    ),
+)
+
+/** A usage of [synopsis] and [about], then [examples] and [options] in two columns each, and the species. */
+fun usage(
+    texts: Texts,
+    synopsis: String,
+    about: String,
+    examples: List<Pair<String, String>>,
+    options: List<Pair<String, String>>,
+): String {
     // Each list in two columns, the second as far in as its longest first column needs.
     fun columns(rows: List<Pair<String, String>>): String {
         val width = rows.maxOf { it.first.length } + 3
         return rows.joinToString("\n") { (left, right) -> "  ${left.padEnd(width)}$right" }
     }
     return listOf(
-        texts.get(Str.USAGE_SYNOPSIS),
-        texts.get(Str.USAGE_ABOUT),
+        synopsis,
+        about,
         columns(examples),
         texts.get(Str.USAGE_OPTIONS) + "\n" + columns(options),
         texts.get(Str.USAGE_SPECIES) + " " + Species.entries.joinToString(" ") { it.id },
@@ -148,9 +161,3 @@ private fun share(option: String, value: String): Double =
 
 private fun fieldOfView(option: String, value: String): Double =
     number(option, value).takeIf { it > 0 && it < 360 } ?: throw UsageException(Str.USAGE_NOT_ANGLE, option, value)
-
-private fun windowsGl(option: String, value: String): WindowsGl =
-    WindowsGl.entries.firstOrNull { it.id == value } ?: throw UsageException(Str.USAGE_NOT_GL, option, value)
-
-private fun camera(option: String, value: String): Int =
-    value.toIntOrNull()?.takeIf { it >= 0 } ?: throw UsageException(Str.USAGE_NOT_CAMERA, option, value)

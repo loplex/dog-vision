@@ -1,6 +1,5 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.WindowsGl
 import cz.loplex.dogvision.gl.Gl
 import org.lwjgl.system.Configuration
 import java.nio.ByteBuffer

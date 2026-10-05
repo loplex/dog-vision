@@ -48,10 +48,11 @@ The root project declares the plugin, so these are on every module's build scrip
   The app, the web page, the window and the command line all speak through it.
 - **`ui`'s Compose Multiplatform 1.12 is Jetpack Compose 1.12**, and its Material 3 1.9 is androidx Material 3 1.4,
   the versions of the app's Compose BOM, so that the app runs one of each.
-- **`cli`'s `main` is the window's too**:
-  [`runCommandLine`](../cli/src/jvmMain/kotlin/cz/loplex/dogvision/cli/Main.kt) answers `--help` and a command line it cannot read itself,
-  converts a photo, and hands anything else to a window given to it.
-- **`gui-core` has neither Compose nor skiko in it**: Java's own AWT is its only toolkit.\
+- **The command line and the windows take options of their own**, and share the view's:
+  [`cli`'s `ViewOptions`](../cli/src/jvmMain/kotlin/cz/loplex/dogvision/cli/Arguments.kt) reads them for both,
+  and [`gui-core`'s `runWindow`](../gui-core/src/jvmMain/kotlin/cz/loplex/dogvision/desktop/WindowArguments.kt) answers a window's `--help` and a command line it cannot read,
+  and opens the window on the rest.
+- **`gui-core` has neither Compose nor skiko in it**: Java's own AWT and Swing are its only toolkits.\
   It holds the GL contexts, the passes' renderer, ffmpeg's feeds,
   and the pixels read back handed to a function that makes the window's image of them.\
   Its `LiveSession` holds what a window shows, so that the Compose window and the Swing one only lay it out.
@@ -188,7 +189,7 @@ graph TD
   `core`, `gl` and `texts`, and no drawing on a plane joins three to three without a crossing.\
   Without `texts` the first graph could be drawn with none, but its layers still cost it one.
 - **`cli` is a program, in bold, and stands among what the programs share**, as `gui-core` uses it:
-  the window's `main` is `cli`'s.
+  the windows read the view's options and a photo through it.
 - **`gui-compose` and `gui-swing` reach `core` and `texts` through `gui-core`**,
   which passes on `cli` and, through it, the two `cli` uses.
 - **`ui` passes on `texts`**, as its `text` and `InfoButton` take an entry of `texts`' `Str`.
@@ -275,8 +276,8 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 - **On Ubuntu 24.04, `./gradlew check`**, the window's GL tests on Mesa's llvmpipe, as the runner has no GPU;
   then the debs and the rpms of `dog-vision-compose`, `dog-vision-swing`, `dog-vision-cli`, `dog-vision-web`
   and `dog-vision-web-sourcemap`, each built in two versions and tried by `test_deb.sh --upgrade` in Ubuntu 20.04
-  and `test_rpm.sh --upgrade` in Fedora 42, each window under Xvfb;
-  and each window's tar.gz, unpacked on the runner, where its command line runs and its window's main converts a photo.
+  and `test_rpm.sh --upgrade` in Fedora 42, each window under Xvfb; and each window's tar.gz, unpacked on the runner,
+  where its command line converts a photo and its window answers `--help`.
 - **On Windows Server 2022, `./gradlew :gui-core:jvmTest`**, over ANGLE on WARP and over WGL on Mesa's llvmpipe,
   which the job puts beside `java.exe`, as Windows's own OpenGL is 1.1.
 - **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions

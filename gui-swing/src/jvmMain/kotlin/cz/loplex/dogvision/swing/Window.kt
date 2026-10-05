@@ -4,10 +4,10 @@ import com.formdev.flatlaf.FlatClientProperties
 import com.formdev.flatlaf.FlatDarkLaf
 import com.formdev.flatlaf.FlatLightLaf
 import com.formdev.flatlaf.util.UIScale
-import cz.loplex.dogvision.cli.Arguments
 import cz.loplex.dogvision.desktop.LiveSession
 import cz.loplex.dogvision.desktop.OpenDialog
 import cz.loplex.dogvision.desktop.Source
+import cz.loplex.dogvision.desktop.WindowArguments
 import cz.loplex.dogvision.desktop.windowIcon
 import cz.loplex.dogvision.texts.Str
 import kotlinx.coroutines.CoroutineScope
@@ -42,14 +42,13 @@ import javax.swing.TransferHandler
 
 /**
  * Opens the Swing window on what [arguments] ask for, as the Compose window does:
- * the file given with --window, a photo or else a video, or the camera --camera names;
- * returns once the window is closed.\
+ * the file given, a photo or else a video, or the camera --camera names; returns once the window is closed.\
  * Another file is opened from the system's dialog, from the o key, or dropped onto the window;
  * F9 or the button at the images' edge hides the controls; q or Escape closes it.\
  * What it shows is a [LiveSession]'s, which the window only lays out.
  */
 @Suppress("SameReturnValue")
-fun showWindow(arguments: Arguments): Int {
+fun showWindow(arguments: WindowArguments): Int {
     val closed = CountDownLatch(1)
     SwingUtilities.invokeAndWait { openWindow(arguments, closed::countDown) }
     closed.await()
@@ -57,7 +56,7 @@ fun showWindow(arguments: Arguments): Int {
 }
 
 /** Opens the window, on the event thread; [onClosed] is told once it is closed and the session with it. */
-private fun openWindow(arguments: Arguments, onClosed: () -> Unit) {
+private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     if (systemPrefersDark()) FlatDarkLaf.setup() else FlatLightLaf.setup()
     smoothTextAtEverySize()
     val session = LiveSession.drawnOnGpu(arguments, ::swingImage)

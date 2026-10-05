@@ -124,13 +124,13 @@ pwsh tools/package_cli_zip_on_windows.ps1
 
 ```sh
 ./gradlew :gui-compose:run                                   # the camera, /dev/video0
-./gradlew :gui-compose:run --args="--window photo.jpg"       # a photo, or a video played over and over
+./gradlew :gui-compose:run --args="photo.jpg"                # a photo, or a video played over and over
 ./gradlew :gui-compose:linuxUberJar                          # in gui-compose/build/compose/jars:
                                                              # dog-vision-compose-linux-x64-0.1.0.jar
 ./gradlew :gui-compose:windowsUberJar                        # in gui-compose/build/compose/jars:
                                                              # dog-vision-compose-windows-x64-0.1.0.jar
 ./gradlew :gui-swing:runJvm                                  # the Swing window, on the camera
-./gradlew :gui-swing:runJvm --args="--window photo.jpg"      # the Swing window, on a photo or a video
+./gradlew :gui-swing:runJvm --args="photo.jpg"               # the Swing window, on a photo or a video
 ./gradlew :gui-swing:linuxUberJar                            # gui-swing/build/jars/dog-vision-swing-linux-x64-0.1.0.jar
 ./gradlew :gui-swing:windowsUberJar                          # gui-swing/build/jars/dog-vision-swing-windows-x64-0.1.0.jar
 ```
@@ -198,8 +198,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 - **The windows' and the command line's deb and rpm run on the system's Java**, 17 or newer,
   which they depend on: the distribution updates it, and a machine with a JRE downloads little more.\
   They come in three packages:
-  - `dog-vision-compose`, the Compose window, which converts a photo given alone as the command line does;
-  - `dog-vision-swing`, the Swing window, which does the same, and installs beside `dog-vision-compose`;
+  - `dog-vision-compose`, the Compose window;
+  - `dog-vision-swing`, the Swing window, which installs beside `dog-vision-compose`;
   - `dog-vision-cli`, the command line alone,
     which needs no display and so only a headless Java, and which both windows recommend.
 - **Their files are where Debian's and Fedora's Java applications have them**:
@@ -318,8 +318,8 @@ in [`build-logic`](../build-logic), as jpackage always puts a runtime into its p
 - **[`tools/test_deb.sh`](../tools/test_deb.sh) installs a deb in a bare container**,
   checks what it does there, and that it is removed with nothing left behind:
   - of `dog-vision-compose`, `dog-vision-swing` and `dog-vision-cli`, installed with the Java apt chooses for it,
-    that each runs from `PATH` and converts [`test_photo.jpg`](../tools/test_photo.jpg);
-  - of each window, also that it opens under Xvfb,
+    that each runs from `PATH`, and that the command line converts [`test_photo.jpg`](../tools/test_photo.jpg);
+  - of each window, also that it opens on that photo under Xvfb,
     installed only after the deb's own dependencies so that its X libraries hide none the deb misses,
     and that skiko, LWJGL and FlatLaf unpacked no natives of their own into the home or `/tmp`;
   - of `dog-vision-web`, which no browser opens there, that its menu entry is valid,

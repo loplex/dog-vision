@@ -1,6 +1,6 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.Arguments
+import cz.loplex.dogvision.cli.ViewOptions
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
@@ -64,7 +64,7 @@ class LiveSessionTest {
     }
 
     private fun session(
-        arguments: Arguments = Arguments(file = File("a.jpg"), window = true),
+        arguments: WindowArguments = WindowArguments(file = File("a.jpg")),
         feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = this.feed,
         installer: () -> FfmpegInstall = { FfmpegInstall.Found },
         downloader: ((Int) -> Unit) -> FfmpegInstall = { FfmpegInstall.Found },
@@ -159,12 +159,12 @@ class LiveSessionTest {
     @Test
     fun aMissingFfmpegIsSaidAndOffered() {
         val missing = Failure(ffmpegMissing = true) { it.get(Str.FFMPEG_MISSING, "ffmpeg") }
-        val offering = session(arguments = Arguments())
+        val offering = session(arguments = WindowArguments())
         feedFailures.last()(missing)
         val texts = Texts.of("en")
         assertEquals(texts.get(Str.FFMPEG_MISSING, "ffmpeg"), offering.state.value.failure?.words(texts))
         assertTrue(offering.state.value.offersFfmpeg)
-        val notOffering = session(arguments = Arguments(), canInstallFfmpeg = false)
+        val notOffering = session(arguments = WindowArguments(), canInstallFfmpeg = false)
         feedFailures.last()(missing)
         assertNotNull(notOffering.state.value.failure)
         assertFalse(notOffering.state.value.offersFfmpeg)
@@ -172,7 +172,7 @@ class LiveSessionTest {
 
     @Test
     fun installingFfmpegStartsTheSourceAgain() {
-        val session = session(arguments = Arguments())
+        val session = session(arguments = WindowArguments())
         feedFailures.last()(Failure(ffmpegMissing = true) { "missing" })
         session.installFfmpeg()
         awaitInstalled(session)
@@ -186,7 +186,7 @@ class LiveSessionTest {
         var session: LiveSession<Unit>? = null
         val getting = Collections.synchronizedList(mutableListOf<Boolean>())
         session = session(
-            arguments = Arguments(),
+            arguments = WindowArguments(),
             feed = { source, renderer, onFailure ->
                 session?.let { getting += it.state.value.gettingFfmpeg }
                 feed(source, renderer, onFailure)
@@ -201,7 +201,7 @@ class LiveSessionTest {
 
     @Test
     fun ffmpegNotInstalledIsSaidAndTheSourceNotStartedAgain() {
-        val session = session(arguments = Arguments(), installer = { FfmpegInstall.Failed("no network") })
+        val session = session(arguments = WindowArguments(), installer = { FfmpegInstall.Failed("no network") })
         session.installFfmpeg()
         awaitInstalled(session)
         assertEquals(listOf("start camera 0"), log)
@@ -211,7 +211,7 @@ class LiveSessionTest {
 
     @Test
     fun noWingetNamesFfmpegsDownloadPageAsALink() {
-        val session = session(arguments = Arguments(), installer = { FfmpegInstall.NoWinget })
+        val session = session(arguments = WindowArguments(), installer = { FfmpegInstall.NoWinget })
         session.installFfmpeg()
         awaitInstalled(session)
         val texts = Texts.of("en")
@@ -225,7 +225,7 @@ class LiveSessionTest {
         val percents = Collections.synchronizedList(mutableListOf<Int?>())
         lateinit var session: LiveSession<Unit>
         session = session(
-            arguments = Arguments(),
+            arguments = WindowArguments(),
             downloader = { onPercent ->
                 for (percent in listOf(0, 50, 100)) {
                     onPercent(percent)
@@ -244,7 +244,7 @@ class LiveSessionTest {
 
     @Test
     fun ffmpegNotDownloadedIsSaidAndTheSourceNotStartedAgain() {
-        val session = session(arguments = Arguments(), downloader = { FfmpegInstall.Failed("no network") })
+        val session = session(arguments = WindowArguments(), downloader = { FfmpegInstall.Failed("no network") })
         session.downloadFfmpeg()
         awaitInstalled(session)
         assertEquals(listOf("start camera 0"), log)
@@ -256,11 +256,11 @@ class LiveSessionTest {
     @Test
     fun wingetIsOfferedBesideTheDownloadOnlyWhereItIsFound() {
         val missing = Failure(ffmpegMissing = true) { "missing" }
-        val withWinget = session(arguments = Arguments())
+        val withWinget = session(arguments = WindowArguments())
         feedFailures.last()(missing)
         assertTrue(withWinget.state.value.offersFfmpeg)
         assertTrue(withWinget.state.value.offersWinget)
-        val withoutWinget = session(arguments = Arguments(), wingetFound = false)
+        val withoutWinget = session(arguments = WindowArguments(), wingetFound = false)
         feedFailures.last()(missing)
         assertTrue(withoutWinget.state.value.offersFfmpeg)
         assertFalse(withoutWinget.state.value.offersWinget)
@@ -288,7 +288,7 @@ class LiveSessionTest {
 
     @Test
     fun resetReturnsToTheCommandLinesView() {
-        val arguments = Arguments(file = File("a.jpg"), window = true, params = Params(species = Species.CAT))
+        val arguments = WindowArguments(File("a.jpg"), view = ViewOptions(Params(species = Species.CAT)))
         val session = session(arguments = arguments)
         session.changeView { it.copy(sideBySide = false, params = it.params.copy(species = Species.HORSE)) }
         assertEquals(Species.HORSE, session.state.value.view.params.species)
@@ -314,7 +314,7 @@ class LiveSessionTest {
     fun aDrawFailureStaysWhenTheSourceChanges() {
         var failDrawing: (String) -> Unit = {}
         val session = LiveSession<Unit>(
-            Arguments(),
+            WindowArguments(),
             { _, onFailure -> renderer.also { failDrawing = onFailure } },
             feed,
             post = { it() },

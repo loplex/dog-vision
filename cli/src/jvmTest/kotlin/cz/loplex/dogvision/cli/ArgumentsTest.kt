@@ -14,18 +14,8 @@ import kotlin.test.assertTrue
 
 class ArgumentsTest {
     @Test
-    fun noArgumentsAskForTheWindowWithTheDefaults() {
-        val arguments = parseArguments(emptyList())
-        assertEquals(Arguments(), arguments)
-        assertFalse(arguments.converts)
-    }
-
-    @Test
-    fun aFileAloneIsConverted() {
-        val arguments = parseArguments(listOf("photo.jpg"))
-        assertEquals(File("photo.jpg"), arguments.file)
-        assertTrue(arguments.converts)
-        assertFalse(parseArguments(listOf("--window", "photo.jpg")).converts)
+    fun noArgumentsAreTheDefaults() {
+        assertEquals(Arguments(), parseArguments(emptyList()))
     }
 
     @Test
@@ -33,21 +23,19 @@ class ArgumentsTest {
         val arguments = parseArguments(
             listOf(
                 "--species", "cat", "--compare=dog", "--difference", "--adaptation", "0.25", "--strength=0.5",
-                "--chroma-scale", "rnl", "--acuity", "--fov", "90", "--camera", "2", "--output-dir", "out", "--gl=wgl",
-                "a.png",
+                "--chroma-scale", "rnl", "--acuity", "--fov", "90", "--output-dir", "out", "a.png",
             ),
         )
         val params = Params(Species.CAT, 0.25, 0.5, ChromaScale.RNL, acuity = true, fieldOfView = 90.0)
-        val expected = Arguments(File("a.png"), false, 2, params, Species.DOG, true, File("out"), WindowsGl.WGL)
+        val expected = Arguments(File("a.png"), ViewOptions(params, Species.DOG, true), File("out"))
         assertEquals(expected, arguments)
     }
 
     @Test
     fun aConversionIsSideBySideOnlyWhenItComparesOrMapsDifferences() {
-        assertFalse(parseArguments(listOf("a.png")).conversionView.sideBySide)
-        assertTrue(parseArguments(listOf("--compare", "cat", "a.png")).conversionView.sideBySide)
-        assertTrue(parseArguments(listOf("--difference", "a.png")).conversionView.sideBySide)
-        assertTrue(parseArguments(listOf("a.png")).windowView.sideBySide)
+        assertFalse(parseArguments(listOf("a.png")).view.conversionView.sideBySide)
+        assertTrue(parseArguments(listOf("--compare", "cat", "a.png")).view.conversionView.sideBySide)
+        assertTrue(parseArguments(listOf("--difference", "a.png")).view.conversionView.sideBySide)
     }
 
     @Test
@@ -59,14 +47,19 @@ class ArgumentsTest {
             listOf("--adaptation"),
             listOf("--chroma-scale", "vivid"),
             listOf("--fov", "0"),
-            listOf("--camera", "1.5"),
-            listOf("--camera", "-1"),
-            listOf("--gl", "vulkan"),
             listOf("--acuity=yes"),
             listOf("--info"),
             listOf("a.png", "b.png"),
         )
         for (args in wrong) assertFailsWith<UsageException>(args.toString()) { parseArguments(args) }
+    }
+
+    @Test
+    fun theWindowsOptionsAreNotTheCommandLines() {
+        for (option in listOf("--window", "--camera=1", "--gl=wgl")) {
+            val error = assertFailsWith<UsageException>(option) { parseArguments(listOf(option, "a.png")) }
+            assertEquals(Str.USAGE_UNKNOWN_OPTION, error.key)
+        }
     }
 
     @Test
@@ -79,15 +72,16 @@ class ArgumentsTest {
     }
 
     @Test
-    fun theUsageNamesEverySpeciesAndOptionInEachLanguage() {
+    fun theUsageNamesEverySpeciesAndOptionOfItsOwnInEachLanguage() {
         val options = listOf(
             "--species", "--compare", "--difference", "--adaptation", "--strength", "--chroma-scale", "--acuity",
-            "--fov", "--window", "--camera", "--output-dir", "--gl", "--help",
+            "--fov", "--output-dir", "--help",
         )
         for (language in Texts.LANGUAGES) {
             val usage = usage(Texts.of(language))
             for (species in Species.entries) assertTrue(" ${species.id}" in usage, "$language: ${species.id}")
             for (option in options) assertTrue(option in usage, "$language: $option")
+            for (option in listOf("--window", "--camera", "--gl")) assertFalse(option in usage, "$language: $option")
         }
     }
 }

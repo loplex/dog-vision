@@ -199,8 +199,8 @@ java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
 
 ```sh
 dog-vision-compose                          # the camera, /dev/video0 on Linux
-dog-vision-compose --window photo.jpg       # a photo, or a video played over and over
-dog-vision-compose --species cat photo.jpg  # converts it, as the command line does
+dog-vision-compose photo.jpg                # a photo, or a video played over and over
+dog-vision-compose --species cat --camera 1 # the cat's view of the second camera
 ```
 
 It runs on Linux and Windows on x86-64.
@@ -215,7 +215,12 @@ It runs on Linux and Windows on x86-64.
   on a Java of its own; on Windows, the MSI installs it with one as well.
 - **Its launcher takes the Java in `JAVA_HOME`**, else the one on the `PATH`,
   else the newest in `/usr/lib/jvm` or `/usr/lib64/jvm`, whichever is first 17 or newer and not headless.
-- **It takes the command line's options**, and converts a photo given without `--window` as the command line does.
+- **It takes options of its own**: the command line's for the view it starts with and goes back to,
+  `--camera` and `--gl`, but not `--output-dir`, as it saves nothing yet.\
+  It converts no file: given one, it shows it.
+- **`--help` lists them**, on the terminal on Linux,
+  and on Windows, where the window has no console, in a window of its own, whose text can be selected and copied.\
+  A command line it cannot read is said the same way.
 - **A photo is scaled down to 1280 pixels** for the view, as the app's is.
 - **Open a photo or a video opens another one** from the system's dialog, which starts in the folder of the file shown;
   the o key opens the dialog too, and a file dropped anywhere on the window opens as well.
@@ -229,7 +234,7 @@ It runs on Linux and Windows on x86-64.
 ### The same window in Swing: `dog-vision-swing`
 
 ```sh
-dog-vision-swing --window photo.jpg   # as dog-vision-compose, with the same options, keys and dialog
+dog-vision-swing photo.jpg   # as dog-vision-compose, with the same options, keys and dialog
 ```
 
 ![The Swing window: the same images and controls as the Compose window's, in Swing's own widgets](images/window-swing.png)

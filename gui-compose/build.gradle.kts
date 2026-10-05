@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // The desktop window in Compose Multiplatform, for Linux and Windows:
 // gui-core's picture of a photo, a video or the camera, with ui's controls beside it.
-// Its main is the command line's as well, so that a photo given alone is converted as cli converts it.
+// It takes gui-core's options of a window, which share cli's view options.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)

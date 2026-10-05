@@ -1,6 +1,5 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.Arguments
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.desktop.FfmpegPrograms.DOWNLOAD_PAGE
 import cz.loplex.dogvision.texts.Str
@@ -29,7 +28,7 @@ import kotlin.concurrent.thread
  * the tests give their own of each, and a [post] that runs what it is given there and then.
  */
 class LiveSession<I>(
-    private val arguments: Arguments,
+    private val arguments: WindowArguments,
     makeRenderer: (onPicture: (Picture<I>) -> Unit, onFailure: (String) -> Unit) -> Renderer,
     private val feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = ::startFeed,
     private val ffmpegInstaller: () -> FfmpegInstall = FfmpegPrograms::install,
@@ -211,7 +210,7 @@ class LiveSession<I>(
 
     companion object {
         /** A session drawn by a [GlRenderer], opened as [arguments] ask on Windows, into images [imageMaker] makes. */
-        fun <I> drawnOnGpu(arguments: Arguments, imageMaker: ImageMaker<I>): LiveSession<I> =
+        fun <I> drawnOnGpu(arguments: WindowArguments, imageMaker: ImageMaker<I>): LiveSession<I> =
             LiveSession(arguments, { onPicture, onFailure ->
                 GlRenderer(arguments.windowsGl, imageMaker, onPicture, onFailure)
             })

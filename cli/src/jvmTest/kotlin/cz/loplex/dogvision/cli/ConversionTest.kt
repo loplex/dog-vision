@@ -28,7 +28,7 @@ class ConversionTest {
         val out = ByteArrayOutputStream()
         val err = ByteArrayOutputStream()
         val status =
-            runCommandLine(args.toList(), Texts.of(language), PrintStream(out, true), PrintStream(err, true)) { 99 }
+            runCommandLine(args.toList(), Texts.of(language), PrintStream(out, true), PrintStream(err, true))
         return Triple(status, out.toString(), err.toString())
     }
 
@@ -89,23 +89,27 @@ class ConversionTest {
     }
 
     @Test
-    fun theWindowAndTheUsageAreNotConversions() {
-        assertEquals(99, run().first)
-        assertEquals(99, run("--window", "photo.jpg").first)
+    fun noPhotoAndTheUsageAreNotConversions() {
+        val (none, _, noneErr) = run()
+        assertEquals(2, none)
+        assertTrue("The window is the desktop app's" in noneErr, noneErr)
         val (help, out, _) = run("--help")
         assertEquals(0, help)
-        assertTrue(out.startsWith("usage: dog-vision"), out)
+        assertTrue(out.startsWith("usage: dog-vision-cli [options] photo"), out)
         val (wrong, _, err) = run("--species", "unicorn")
         assertEquals(2, wrong)
-        assertTrue("error: --species: no species unicorn" in err, err)
+        assertTrue("dog-vision-cli: error: --species: no species unicorn" in err, err)
+        val (window, _, windowErr) = run("--window", "photo.jpg")
+        assertEquals(2, window)
+        assertTrue("error: Unknown option --window" in windowErr, windowErr)
     }
 
     @Test
     fun theCommandLineSpeaksTheLanguageItIsGiven() {
         val (_, help, _) = run("--help", language = "cs")
-        assertTrue(help.startsWith("použití: dog-vision [volby] [soubor]"), help)
+        assertTrue(help.startsWith("použití: dog-vision-cli [volby] fotka"), help)
         val (_, _, wrong) = run("--species", "unicorn", language = "cs")
-        assertTrue("dog-vision: chyba: --species: druh unicorn neexistuje" in wrong, wrong)
+        assertTrue("dog-vision-cli: chyba: --species: druh unicorn neexistuje" in wrong, wrong)
         val input = File(directory, "photo.png").apply { writeBytes(PhotosTest.pngBytes(photo)) }
         val (_, out, _) = run("--difference", "$input", language = "cs")
         assertTrue(out.lines().first().endsWith(" % pixelů se znatelně liší"), out)

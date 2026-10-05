@@ -160,9 +160,12 @@
     <string name="ffmpeg_not_installed">winget ffmpeg nenainstaloval: %1$s</string>
     <string name="no_winget">V těchto Windows není winget. ffmpeg pro Windows lze stáhnout z %1$s</string>
 
-    <!-- What only the command line says; option names, species ids and file names stay as they are typed -->
-    <string name="usage_synopsis">použití: dog-vision [volby] [soubor]</string>
-    <string name="usage_about">Simuluje, jak zvíře vidí barvy, na živé kameře nebo na fotce.</string>
+    <!-- What the command line says, and the windows when started from one;
+         option names, species ids and file names stay as they are typed -->
+    <string name="usage_synopsis">použití: %1$s [volby] fotka</string>
+    <string name="usage_about">Simuluje, jak zvíře vidí barvy, na fotce.</string>
+    <string name="window_usage_synopsis">použití: %1$s [volby] [soubor]</string>
+    <string name="window_usage_about">Simuluje, jak zvíře vidí barvy, na živé kameře, fotce nebo videu.</string>
     <string name="usage_camera">živá kamera v okně</string>
     <string name="usage_photo">převede fotku, zapíše photo.dog.png</string>
     <string name="usage_window">ukáže fotku nebo video v okně</string>
@@ -175,13 +178,12 @@
     <string name="usage_option_chroma_scale">fixed nebo rnl (výchozí %1$s)</string>
     <string name="usage_option_acuity">rozostří na zrakovou ostrost druhu</string>
     <string name="usage_option_fov">kolik stupňů obrázek zabírá na šířku, pro --acuity (výchozí %1$s)</string>
-    <string name="usage_option_window">ukáže soubor v okně místo převodu</string>
     <string name="usage_option_camera">kamera, kterou okno ukáže, číslovaná od 0: na Linuxu /dev/videoN (výchozí %1$s)</string>
     <string name="usage_option_output_dir">zapíše převedený soubor tam místo vedle originálu</string>
     <string name="usage_option_gl">jak okno kreslí na Windows: angle, nebo wgl (výchozí angle, a kde nejde spustit, wgl)</string>
     <string name="usage_option_help">ukáže tuto nápovědu a skončí</string>
     <string name="usage_species">druhy:</string>
-    <string name="usage_error">dog-vision: chyba: %1$s</string>
+    <string name="usage_error">%1$s: chyba: %2$s</string>
     <string name="usage_one_file">Zadat jde jen jeden soubor, ne ještě %1$s</string>
     <string name="usage_needs_value">%1$s potřebuje hodnotu</string>
     <string name="usage_takes_no_value">%1$s nebere žádnou hodnotu</string>

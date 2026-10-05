@@ -19,7 +19,7 @@
 # An rpm of the project's that the rpm requires at its own version is installed with it from the rpm's own folder,
 # as tools/test_deb.sh says.
 #
-# The command line and both windows convert test_photo.jpg, beside this script, as tools/test_deb.sh says.
+# The command line converts test_photo.jpg, beside this script, and both windows show it, as tools/test_deb.sh says.
 #
 # A later rpm is the same build with another version, `-PappVersion=0.1.1`,
 # which `:packaging:packageRpm` writes beside the first.
@@ -114,7 +114,7 @@ window_opens() {
     [ -e /tmp/.X11-unix/X99 ] || { Xvfb :99 -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 & }
     for _ in 1 2 3 4 5 6 7 8 9 10; do [ -e /tmp/.X11-unix/X99 ] && break; sleep 1; done
     rm -rf /tmp/home && mkdir /tmp/home
-    DISPLAY=:99 HOME=/tmp/home "$package" --window /photo/test_photo.jpg >/tmp/window.log 2>&1 &
+    DISPLAY=:99 HOME=/tmp/home "$package" /photo/test_photo.jpg >/tmp/window.log 2>&1 &
     window=$!
     shown=""
     for _ in $(seq 60); do
@@ -197,7 +197,6 @@ check_installed() {
             check "the window is in the desktop menu folder$1" \
                 test -f /usr/share/applications/cz.loplex.dogvision.compose.desktop
             check "dog-vision-compose runs from PATH$1" dog-vision-compose --help
-            check "it converts a JPEG to a PNG$1" converts dog-vision-compose
             command -v Xvfb >/dev/null || install_display
             check "its window opens under Xvfb$1" window_opens
             check "skiko and LWJGL load the rpm's natives$1" unpacks_no_natives
@@ -206,7 +205,6 @@ check_installed() {
             check "the window is in the desktop menu folder$1" \
                 test -f /usr/share/applications/cz.loplex.dogvision.swing.desktop
             check "dog-vision-swing runs from PATH$1" dog-vision-swing --help
-            check "it converts a JPEG to a PNG$1" converts dog-vision-swing
             command -v Xvfb >/dev/null || install_display
             check "its window opens under Xvfb$1" window_opens
             check "LWJGL and FlatLaf unpack no natives$1" unpacks_no_natives

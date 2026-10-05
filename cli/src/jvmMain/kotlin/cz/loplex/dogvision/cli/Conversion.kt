@@ -42,7 +42,7 @@ fun convertPhoto(arguments: Arguments, texts: Texts, out: PrintStream, err: Prin
         err.println(texts.get(Str.PHOTO_NOT_PHOTO, file))
         return 1
     }
-    val view = arguments.conversionView
+    val view = arguments.view.conversionView
     val output = convertedFile(file, view, arguments.outputDir)
     val (width, height) = composedSize(view, photo.width, photo.height)
     // core writes into the image's own pixels, which ImageIO then encodes without a copy.

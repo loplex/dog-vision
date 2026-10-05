@@ -1,6 +1,5 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.WindowsGl
 import cz.loplex.dogvision.core.ScreenLayout
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut

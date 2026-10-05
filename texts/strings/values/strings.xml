@@ -177,9 +177,12 @@
     <string name="ffmpeg_not_installed">winget did not install ffmpeg: %1$s</string>
     <string name="no_winget">This Windows has no winget. ffmpeg for Windows can be downloaded from %1$s</string>
 
-    <!-- What only the command line says; option names, species ids and file names stay as they are typed -->
-    <string name="usage_synopsis">usage: dog-vision [options] [file]</string>
-    <string name="usage_about">Simulates how an animal sees colour, on a live camera or a photo.</string>
+    <!-- What the command line says, and the windows when started from one;
+         option names, species ids and file names stay as they are typed -->
+    <string name="usage_synopsis">usage: %1$s [options] photo</string>
+    <string name="usage_about">Simulates how an animal sees colour, on a photo.</string>
+    <string name="window_usage_synopsis">usage: %1$s [options] [file]</string>
+    <string name="window_usage_about">Simulates how an animal sees colour, on a live camera, a photo or a video.</string>
     <string name="usage_camera">the live camera in the window</string>
     <string name="usage_photo">converts a photo, writes photo.dog.png</string>
     <string name="usage_window">shows a photo or a video in the window</string>
@@ -192,13 +195,12 @@
     <string name="usage_option_chroma_scale">fixed or rnl (default %1$s)</string>
     <string name="usage_option_acuity">blurs to the species\' visual acuity</string>
     <string name="usage_option_fov">degrees the image spans across, for --acuity (default %1$s)</string>
-    <string name="usage_option_window">shows the file in the window instead of converting it</string>
     <string name="usage_option_camera">the camera the window shows, counted from 0: /dev/videoN on Linux (default %1$s)</string>
     <string name="usage_option_output_dir">writes a converted file there instead of next to its original</string>
     <string name="usage_option_gl">how the window draws on Windows: angle, or wgl (default angle, and wgl where it cannot start)</string>
     <string name="usage_option_help">shows this and exits</string>
     <string name="usage_species">species:</string>
-    <string name="usage_error">dog-vision: error: %1$s</string>
+    <string name="usage_error">%1$s: error: %2$s</string>
     <string name="usage_one_file">Only one file can be given, not also %1$s</string>
     <string name="usage_needs_value">%1$s needs a value</string>
     <string name="usage_takes_no_value">%1$s takes no value</string>
