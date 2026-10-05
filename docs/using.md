@@ -3,7 +3,8 @@
 What each program shows and how it is driven.\
 Building them is [Building it](building.md)'s.
 
-- [The Android app](#the-android-app) — the controls, a photo or a video, saving at full size, recording and the language.
+- [The Android app](#the-android-app) — the controls, the camera and its mirroring, a photo or a video,
+  saving at full size, recording and the language.
 - [The web page](#the-web-page) — what a browser needs for the camera, snapshots and recording.
 - [The command line](#the-command-line) — converting a photo, `--species` and the other options.
 - [The desktop window](#the-desktop-window) — `dog-vision-compose` in Compose and `dog-vision-swing` in Swing,
@@ -16,8 +17,10 @@ The app opens on the back camera, with the scene as it is and as a dog sees it.
 ![The app on a phone held upright, with the apples as they are above the apples as a dog sees them,
 and under them the species chosen and the facts about the dog](images/android.png)
 
-- **The button with two arrows switches to the front camera**, and back;
-  the front camera's image is shown mirrored, as a mirror shows a face, and saved and recorded as shown.
+- **The button with two arrows switches to the next camera** the phone lists, the last to the first;
+  it shows only where the phone has two cameras or more.
+- **The front camera's image is shown mirrored**, as a mirror shows a face, and saved and recorded as shown;
+  [The camera and its mirroring](#the-camera-and-its-mirroring) says how to change it.
 - **The images are laid out to show them largest**: side by side on a wide screen,
   one above another on a tall one, each with a caption under it saying what it shows.
 - **The controls are beside the images on a wide screen and under them on a tall one.**\
@@ -31,6 +34,8 @@ The web page and the desktop window show the same ones.
 
 | Control                       | Does                                                     |
 |-------------------------------|----------------------------------------------------------|
+| *Camera*                      | which camera is shown, or *Off*, which shows nothing     |
+| *Mirroring*                   | whether the camera's image is mirrored                   |
 | *Species*                     | picks the animal                                         |
 | *Selected species*            | its cones, their sources, its RNL factors and its acuity |
 | *Adaptation to scene [%]*     | adapts the cones to the scene instead of to daylight     |
@@ -46,10 +51,28 @@ The web page and the desktop window show the same ones.
 
 What each control does to the picture, and from which measurements, is [The model](model.md)'s.
 
-The controls, which camera is shown, and the photo or video shown instead (a video from its start)
+The controls, which camera is shown or that it is off, and the photo or video shown instead (a video from its start)
 stay as they were when Android ends the app in the background to free memory.\
 A photo or a video that cannot be read by then,
 as when it was deleted meanwhile, gives way to the camera, and a message says so.
+
+### The camera and its mirroring
+
+The *Camera* section of the controls is the same in the app, the web page and both desktop windows;
+in the app and the windows it starts closed.
+
+- ***Camera* lists *Off* and every camera**:
+  the app's by where they face, *Back camera*, *Front camera*, and *Camera N* for an external one;
+  the web page's and the desktop window's by the names the browser or the system gives them.
+- ***Off* stops the camera and shows nothing**, until a camera, a photo or a video is chosen.\
+  While a photo or a video is shown, the camera is off already: the list shows *Off*, and choosing it changes nothing.
+- ***Mirroring* is one choice for every camera**: *Mirror*, *Do not mirror*, or *Automatic*, which it starts on.
+- ***Automatic* mirrors a camera that faces the viewer, and not one that faces away**,
+  and says in brackets which it is: *Automatic (front)* or *Automatic (back)*.
+- **Where the camera does not say where it faces, *Automatic* cannot be chosen**,
+  and a choice of it is shown and acts as *Mirror*, as such a camera is most likely a webcam facing the viewer.\
+  A camera that says brings *Automatic* back.
+- **The camera cannot change while the view is recorded**, as the video's size would change; its mirroring can.
 
 ### A photo or a video instead of the camera
 
@@ -134,9 +157,12 @@ the apples as they are and as a dog sees them side by side, the buttons above th
 - **It shows the back camera first**,
   where the device tells them apart, asked for at 1280 x 720 as the app's frames are;
   a camera without 1280 x 720 gives the size it has nearest, such as 640 x 480.
-- **Switch camera goes to the front camera**, and back; it shows only where the browser knows of two cameras or more.
-- **Every camera's image is mirrored** but one that says it faces away from the viewer:
-  a laptop's webcam often says nothing of where it faces.
+- **Switch camera goes to the next camera the browser lists**;
+  it shows only where the browser knows of two cameras or more.
+- **The cameras are listed once one has started**:
+  until the page may use a camera, the browser names none, and the panel's *Camera* lists only *Off*.
+- **A camera says where it faces through its `facingMode`**,
+  which a phone's cameras report and a laptop's webcam often does not; [*Automatic*](#the-camera-and-its-mirroring) follows it.
 - **The camera stops while the page is hidden**, and starts again when it is shown; opening a photo or a video stops it.
 
 #### Caveat: the camera needs a secure context
@@ -229,7 +255,8 @@ It runs on Linux and Windows on x86-64.
   the o key opens the dialog too, and a file dropped anywhere on the window opens as well.
 - **On Linux the dialog is kdialog's on KDE and zenity's elsewhere**, whichever of the two is installed,
   and Java's own where neither is: Java's comes up behind the window on KDE from its second opening on.
-- **Camera goes back to the camera** the command line names.
+- **Camera goes back to the camera** shown last, or else the one the command line names;
+  the panel's [*Camera*](#the-camera-and-its-mirroring) picks another, or *Off*.
 - **F9 or the arrow at the images' edge hides the controls**, and the images take their room; the same again shows them.
 - **q or Escape closes it**, but for while a list is dropped down, which then takes the key.
 - **It has no menus, no settings, no snapshots and no recording yet.**
@@ -277,12 +304,14 @@ The sections below hold for both windows.
   and on Windows the Nth camera ffmpeg lists through DirectShow, counted from 0.
 - **The camera is asked for Motion-JPEG at 1280 x 720**, which a USB webcam gives at 30 frames a second,
   and for whatever it gives where it has none.
-- **The camera's image is mirrored**, as a mirror shows a face,
-  unless the camera is known to face away, as the web page mirrors it.
+- **The panel lists the cameras by the system's names**:
+  on Linux each `/dev/videoN` as its driver names it, but a webcam's second node, which gives metadata, not frames;
+  on Windows the cameras ffmpeg lists through DirectShow.
 - **Only Linux can tell where a camera faces**,
   from the panel the firmware places its USB device or port on, which sysfs gives as `physical_location`;
-  where the firmware places it on none, it is unknown.
-  Neither Video4Linux nor DirectShow says where a camera faces.
+  where the firmware places it on none, it is unknown, and so is every camera's on Windows.\
+  Neither Video4Linux nor DirectShow says where a camera faces,
+  so [*Automatic*](#the-camera-and-its-mirroring) is offered only where the firmware places the camera.
 
 #### On Windows, the window offers to download ffmpeg
 
