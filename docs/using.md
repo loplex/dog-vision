@@ -236,6 +236,7 @@ dog-vision-cli --species cat clip.mp4                           # a video, throu
 ### A video needs ffmpeg
 
 - **ffmpeg and ffprobe read and write a video**, from the `PATH`, or on Windows from where a window downloaded them.\
+  The deb and the rpm recommend ffmpeg, which apt, dnf and zypper install with them unless told not to.\
   Without them a video cannot be converted, as the JVM has no decoder to fall back on.
 - **The .mp4 is written by the best encoder ffmpeg has here**: H.265 (`libx265`, or a GPU's), else H.264, else MPEG-4,
   each tried on three frames first; `libx265` only on a video 50 pixels wide or more.

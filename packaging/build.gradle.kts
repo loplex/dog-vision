@@ -346,7 +346,8 @@ val packageCliDeb = tasks.register<DebPackage>("packageDogVisionCliDeb") {
     depends = version.map {
         listOf("default-jre-headless (>= 2:1.17) | java17-runtime-headless", "$commonPackage (= $it)")
     }
-    recommends = emptyList()
+    // ffmpeg reads and writes a video; a photo needs none.
+    recommends = listOf("ffmpeg")
     license = cliLicences.flatMap { it.copyright }
 }
 artifact(packageCliDeb)
@@ -369,7 +370,8 @@ val packageCliRpm = tasks.register<RpmPackage>("packageDogVisionCliRpm") {
         val java = "(jre-17-headless or jre-21-headless or jre-25-headless)"
         listOf("/bin/sh", java, "$commonPackage = $version-$release")
     }
-    recommends = emptyList()
+    // ffmpeg's command, as the windows' rpms name it, for a video.
+    recommends = listOf("/usr/bin/ffmpeg")
     licenseName = cliLicences.flatMap { it.spdx }.map { it.asFile.readText() }
     thirdPartyLicenses = cliLicences.flatMap { it.notices }
 }

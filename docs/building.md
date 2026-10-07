@@ -208,6 +208,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   - `dog-vision-swing`, the Swing window, which installs beside `dog-vision-compose`;
   - `dog-vision-cli`, the command line alone,
     which needs no display and so only a headless Java, and which both windows recommend;
+    it recommends ffmpeg, which a video needs;
   - `dog-vision-common`, the JARs the command line runs on, which both windows run on as well,
     and which the other three depend on at their own version; it depends on no Java, as it starts nothing.
 - **Their files are where Debian's and Fedora's Java applications have them**:
@@ -348,6 +349,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   of which a Java that can open a window serves the command line too, but not `dog-vision-common`, whose JARs it holds.
 - **`dog-vision-web` or `dog-vision` of its own version, for `dog-vision-web-sourcemap`**,
   as the map describes that one script, which either installs.
+- **ffmpeg, which `dog-vision-cli` recommends** for a video:
+  `ffmpeg` in the deb, `/usr/bin/ffmpeg` in the rpm, as the windows' rpms name it.
 - **Nothing else, and no scripts**:
   the menu entry and the icons are files of the package, which the desktop finds by itself.
 
