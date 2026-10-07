@@ -1,7 +1,5 @@
 package cz.loplex.dogvision.ffmpeg
 
-import cz.loplex.dogvision.texts.Str
-import cz.loplex.dogvision.texts.Texts
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -24,10 +22,14 @@ import java.util.zip.ZipFile
  * where every user of the machine finds it and from where the MSI removes it with the product.
  */
 object FfmpegDownload {
-    /** The release branch, such as 9.0, whose newest build is downloaded. */
-    val BRANCH: String = checkNotNull(javaClass.getResourceAsStream("ffmpeg.properties")) { "no ffmpeg.properties" }
+    private val properties = checkNotNull(javaClass.getResourceAsStream("ffmpeg.properties")) { "no ffmpeg.properties" }
         .use { stream -> Properties().apply { load(stream) } }
-        .getProperty("windowsBranch")
+
+    /** The release branch, such as 9.0, whose newest build is downloaded. */
+    val BRANCH: String = properties.getProperty("windowsBranch")
+
+    /** The app's English name, texts' app_name, as the MSI's name, which names the app's folder under %ProgramData%. */
+    private val APP_NAME: String = properties.getProperty("appName")
 
     /** Where BtbN's newest builds are, a release of their own, with checksums.sha256 beside them. */
     private const val RELEASE = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"
@@ -45,7 +47,7 @@ object FfmpegDownload {
      */
     val folder: File by lazy {
         val programData = System.getenv("ProgramData") ?: "C:\\ProgramData"
-        File(File(programData, Texts.of("en").get(Str.APP_NAME)), "ffmpeg-$BRANCH")
+        File(File(programData, APP_NAME), "ffmpeg-$BRANCH")
     }
 
     /** Where [program], ffmpeg or ffprobe, is once downloaded. */

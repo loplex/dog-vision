@@ -17,9 +17,6 @@ kotlin {
     }
 
     sourceSets {
-        jvmMain.dependencies {
-            implementation(project(":texts"))
-        }
         jvmTest.dependencies {
             implementation(kotlin("test"))
             implementation(project.dependencies.platform(libs.junit.bom))
@@ -33,11 +30,24 @@ tasks.named<Test>("jvmTest") {
     useJUnitPlatform()
 }
 
-// The release branch of ffmpeg's builds for Windows that FfmpegDownload takes, from libs.versions.toml.
+// The app's English name, texts' app_name, read from the file as the MSI reads it, without this module using texts.
+val appName = run {
+    val strings = rootProject.layout.projectDirectory.file("texts/strings/values/strings.xml")
+    val path = strings.asFile.path
+    providers.fileContents(strings).asText.map { text ->
+        checkNotNull(Regex("""<string name="app_name">([^<]+)</string>""").find(text)) { "$path has no app_name" }
+            .groupValues[1]
+    }
+}
+
+// The release branch of ffmpeg's builds for Windows that FfmpegDownload takes, from libs.versions.toml,
+// and the app's name, which names the folder under %ProgramData% it downloads them into.
 val ffmpegProperties = tasks.register<WriteProperties>("ffmpegProperties") {
-    description = "Writes build/generated/ffmpeg/ffmpeg.properties, the branch of ffmpeg the windows download."
+    description = "Writes build/generated/ffmpeg/ffmpeg.properties, the branch of ffmpeg the windows download and " +
+        "the app's name."
     destinationFile = layout.buildDirectory.file("generated/ffmpeg/ffmpeg.properties")
     property("windowsBranch", libs.versions.ffmpeg.windows)
+    property("appName", appName)
 }
 
 tasks.named<ProcessResources>("jvmProcessResources") {

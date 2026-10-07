@@ -126,7 +126,6 @@ graph TD
     subgraph shared [what the programs share]
         ui
         cli
-        ffmpeg
     end
     subgraph base [built on core]
         texts
@@ -138,7 +137,6 @@ graph TD
     web --> texts
     cli ==> texts
     ui ==> texts
-    ffmpeg --> texts
     texts ==> core
     programs ~~~ shared
     classDef program font-weight:bold

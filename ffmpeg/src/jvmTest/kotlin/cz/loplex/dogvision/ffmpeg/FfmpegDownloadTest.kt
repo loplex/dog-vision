@@ -16,13 +16,22 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-/** The zip's line of checksums.sha256 is found, and the zip's bin folder alone unpacked, whole or not at all. */
+/**
+ * The zip's line of checksums.sha256 is found,
+ * and the zip's bin folder alone unpacked, whole or not at all, into the app's folder under %ProgramData%.
+ */
 class FfmpegDownloadTest {
     private val home = createTempDirectory("ffmpeg-download-test")
 
     @AfterTest
     fun deleteHome() {
         home.toFile().deleteRecursively()
+    }
+
+    @Test
+    fun theDownloadGoesIntoTheAppsFolderNamedAsTheMsiNamesIt() {
+        assertEquals("Dog Vision", FfmpegDownload.folder.parentFile.name)
+        assertEquals("ffmpeg-${FfmpegDownload.BRANCH}", FfmpegDownload.folder.name)
     }
 
     @Test
