@@ -64,7 +64,18 @@ The root project declares the plugin, so these are on every module's build scrip
 
 ### Which module uses which
 
-The modules stand in four layers, and a module's code uses only those below it or beside it in its own.\
+The modules stand in six layers, each a band of the graphs,
+and a module's code uses only modules in the layers below its own:
+
+1. the foundations: `core`, the model, and `ffmpeg`, which uses no other module;
+2. what is built on the model: `gl`, `texts` and, for tests, `testing`;
+3. what the command line and the windows share: `jvm-common`;
+4. what the app and the windows are built on: `ui` and `gui-core`;
+5. the programs;
+6. the packages: `packaging`, which takes the programs.
+
+A module may reach past a layer, as `android` reaches `core`.
+
 An arrow points from a module to one it uses:
 
 - **a thick arrow is `api`**: whatever uses the module gets the one it points at too;
@@ -79,41 +90,41 @@ What each module uses, less `texts` and the tests:
 ```mermaid
 graph TD
     subgraph programs [the programs]
-        android
+        cli
         gui-compose
+        android
         gui-swing
         web
-        cli
     end
-    subgraph shared [what the programs share]
-        ui
+    subgraph frames [what the app and the windows are built on]
         gui-core
-        jvm-common
-        ffmpeg
+        ui
     end
-    subgraph base [built on core]
-        testing
+    subgraph jvm [what the command line and the windows share]
+        jvm-common
+    end
+    subgraph services [built on the model]
         gl
     end
-    subgraph model [the model]
+    subgraph foundations [the foundations]
+        ffmpeg
         core
     end
-    jvm-common ==> core
-    android --> gl
     gl --> core
-    gui-core --> gl
-    gui-swing --> gui-core
-    gui-compose --> gui-core
-    testing ==> core
-    gui-core ==> jvm-common
-    gui-core ==> ffmpeg
-    cli --> jvm-common
-    cli --> ffmpeg
     gui-compose --> ui
-    web --> gl
-    android --> core
+    android --> gl
     web --> core
+    gui-compose --> gui-core
+    gui-core ==> ffmpeg
+    jvm-common ==> core
     android --> ui
+    cli --> ffmpeg
+    gui-swing --> gui-core
+    gui-core ==> jvm-common
+    gui-core --> gl
+    web --> gl
+    cli --> jvm-common
+    android --> core
     classDef program font-weight:bold
     class android,gui-compose,gui-swing,web,cli program
 ```
@@ -123,25 +134,28 @@ What uses `texts`:
 ```mermaid
 graph TD
     subgraph programs [the programs]
-        web
         android
+        web
     end
-    subgraph shared [what the programs share]
+    subgraph frames [what the app and the windows are built on]
         ui
+    end
+    subgraph jvm [what the command line and the windows share]
         jvm-common
     end
-    subgraph base [built on core]
+    subgraph services [built on the model]
         texts
     end
-    subgraph model [the model]
+    subgraph foundations [the foundations]
         core
     end
     android --> texts
     web --> texts
-    jvm-common ==> texts
     ui ==> texts
+    jvm-common ==> texts
     texts ==> core
-    programs ~~~ shared
+    programs ~~~ frames
+    frames ~~~ jvm
     classDef program font-weight:bold
     class android,web program
 ```
@@ -154,13 +168,13 @@ graph TD
         android
         web
     end
-    subgraph shared [what the programs share]
+    subgraph frames [what the app and the windows are built on]
         gui-core
     end
-    subgraph base [built on core]
+    subgraph services [built on the model]
         testing
     end
-    subgraph model [the model]
+    subgraph foundations [the foundations]
         core
     end
     android -.-> testing
@@ -168,7 +182,7 @@ graph TD
     gui-core -.-> testing
     testing ==> core
     core -.-> testing
-    programs ~~~ shared
+    programs ~~~ frames
     classDef program font-weight:bold
     class android,web program
 ```
@@ -211,7 +225,8 @@ graph TD
   `core`'s tests use `testing`, which in turn uses `core`;
   Gradle builds `core` itself first, as its code does not use `testing`.
 - **`./gradlew checkModuleGraph` holds the four graphs together to the modules' build files**, and runs in `check`:
-  every arrow declared is drawn in one of them, and none is drawn that is not.
+  every arrow declared is drawn in one of them, and none is drawn that is not.\
+  It holds the layers too: an arrow but a dotted one points into a band below its own.
 
 ### The view is rendered on the GPU, and a photo at full size on the CPU
 

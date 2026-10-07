@@ -190,8 +190,22 @@ val checkModuleGraph = tasks.register("checkModuleGraph") {
             graph.lines().mapNotNull { Regex("""\s*([\w-]+) (==>|-->|-\.->) ([\w-]+)""").matchEntire(it)?.groupValues }
         }
         val drawn = arrows.flatten().map { it.drop(1).joinToString(" ") }.toSet()
+        // The bands, top to bottom, are the layers: a module's code uses only modules in a band below its own.
+        val upward = graphs.zip(arrows).withIndex().flatMap { (i, graphAndArrows) ->
+            val (graph, graphArrows) = graphAndArrows
+            val band = mutableMapOf<String, Int>()
+            var current = -1
+            for (line in graph.lines().map { it.trim() }) {
+                when {
+                    line.startsWith("subgraph ") -> current++
+                    line != "end" && line.matches(Regex("""[\w-]+""")) -> band[line] = current
+                }
+            }
+            graphArrows.filter { it[2] != "-.->" && band.getValue(it[3]) <= band.getValue(it[1]) }
+                .map { "graph ${i + 1}: not to a band below: ${it.drop(1).joinToString(" ")}" }
+        }
         val declared = uses.get()
-        val problems = (declared - drawn).sorted().map { "not drawn: $it" } +
+        val problems = (declared - drawn).sorted().map { "not drawn: $it" } + upward +
             (drawn - declared).sorted().map { "drawn, not declared: $it" } +
             graphs.zip(arrows).withIndex().flatMap { (i, graphAndArrows) ->
                 val (graph, graphArrows) = graphAndArrows
