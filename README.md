@@ -14,7 +14,7 @@ This is a Kotlin port of [dog-vision](https://github.com/loplex/dog-vision-pytho
 |--------------------------------------------------------|--------------------------------------|--------------------------------|
 | [The Android app](docs/using.md#the-android-app)       | Android 8.0 or later, OpenGL ES 3.0  | the camera, a photo or a video |
 | [The web page](docs/using.md#the-web-page)             | a browser with WebGL 2               | the camera, a photo or a video |
-| [The command line](docs/using.md#the-command-line)     | a JVM, 17 or newer                   | a photo, converted to a file   |
+| [The command line](docs/using.md#the-command-line)     | a JVM, 17 or newer; ffmpeg for video | a photo or a video, converted  |
 | [The desktop window](docs/using.md#the-desktop-window) | Linux and Windows on x86-64          | the camera, a photo or a video |
 
 - **The app, the web page and the window draw the view with the same GPU passes**, and the same controls,

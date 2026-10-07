@@ -180,12 +180,13 @@
 
     <!-- What the command line says, and the windows when started from one;
          option names, species ids and file names stay as they are typed -->
-    <string name="usage_synopsis">použití: %1$s [volby] fotka</string>
-    <string name="usage_about">Simuluje, jak zvíře vidí barvy, na fotce.</string>
+    <string name="usage_synopsis">použití: %1$s [volby] soubor</string>
+    <string name="usage_about">Simuluje, jak zvíře vidí barvy, na fotce nebo videu.</string>
     <string name="window_usage_synopsis">použití: %1$s [volby] [soubor]</string>
     <string name="window_usage_about">Simuluje, jak zvíře vidí barvy, na živé kameře, fotce nebo videu.</string>
     <string name="usage_camera">živá kamera v okně</string>
     <string name="usage_photo">převede fotku, zapíše photo.dog.png</string>
+    <string name="usage_video">převede video, zapíše clip.dog.mp4</string>
     <string name="usage_window">ukáže fotku nebo video v okně</string>
     <string name="usage_options">volby:</string>
     <string name="usage_option_species">simulované zvíře (výchozí %1$s)</string>
@@ -215,11 +216,15 @@
     <string name="usage_not_camera">%1$s: %2$s není číslo kamery</string>
     <string name="usage_not_gl">%1$s: %2$s není angle ani wgl</string>
     <string name="photo_unreadable">%1$s nejde přečíst: %2$s</string>
-    <string name="photo_not_photo">%1$s nejde přečíst jako fotku; převod videa zatím není podporovaný</string>
+    <string name="not_photo_or_video">%1$s nejde přečíst jako fotku ani video: %2$s</string>
+    <string name="video_needs_ffmpeg">%1$s nejde přečíst jako fotku; video potřebuje %2$s, který patří k ffmpeg a tady nejde spustit. Nainstalujte ffmpeg tak, aby byl v PATH; na Windows ho umí stáhnout okno.</string>
+    <string name="no_encoder">ffmpeg tu nemá kodér, který by zapsal video %1$s × %2$s</string>
+    <string name="video_no_frames">%1$s nemá žádné snímky</string>
     <string name="photo_unwritable">%1$s nejde zapsat: %2$s</string>
     <string name="photo_written">Zapsáno %1$s</string>
+    <string name="video_written">Zapsáno %1$s: %2$s</string>
     <string name="pixels_differ">%1$s pixelů se znatelně liší</string>
-    <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky</string>
+    <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky a videa</string>
     <!-- What the command line prints for its info option; the formulas and their symbols stay as they are -->
     <string name="info_species">%1$s, maxima čípků %2$s nm</string>
     <string name="info_cone_matrix">Matice čípků M_animal (řádky: čípky od krátkých po dlouhé; sloupce: lineární R, G, B):</string>

@@ -6,7 +6,7 @@ Building them is [Building it](building.md)'s.
 - [The Android app](#the-android-app) — the controls, the camera and its mirroring, a photo or a video,
   saving at full size, recording and the language.
 - [The web page](#the-web-page) — what a browser needs for the camera, snapshots and recording.
-- [The command line](#the-command-line) — converting a photo, `--species` and the other options.
+- [The command line](#the-command-line) — converting a photo or a video, `--species` and the other options, and [ffmpeg for a video](#a-video-needs-ffmpeg).
 - [The desktop window](#the-desktop-window) — `dog-vision-compose` in Compose and `dog-vision-swing` in Swing,
   their GL on Linux and Windows, and ffmpeg for a video or the camera.
 
@@ -201,6 +201,7 @@ dog-vision-cli --species cat --compare dog photo.jpg            # from the deb o
 dog-vision-cli --species cat --compare dog photo.jpg            # from the MSI, on Windows
 dog-vision-cli\dog-vision-cli.exe --species cat photo.jpg       # from the zip, on Windows
 java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
+dog-vision-cli --species cat clip.mp4                           # a video, through ffmpeg
 ```
 
 - **On Linux it installs as a package of its own, `dog-vision-cli`**, from its deb or its rpm,
@@ -216,18 +217,33 @@ java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
 - **Anywhere else, the JAR runs on a Java 17 or newer**: `./gradlew :cli:uberJar` builds it, with everything it needs.
 - **It converts a photo at full size**: it writes a PNG next to the photo, or into `--output-dir`,
   and says what share of the pixels differ when `--difference` asks for the map.
-- **The PNG is named after the photo and the species it shows**:
-  `photo.dog.png`, `photo.cat.png` with `--species cat`, and `photo.horse-vs-cat.png` with `--compare horse` too.
+- **It converts a video at full size, frame by frame**: each frame as a photo is,
+  the scene's mean taken again for each, into an .mp4 with the original's sound; on a terminal it shows how far it is.
+- **The PNG or the .mp4 is named after the file and the species it shows**:
+  `photo.dog.png`, `photo.cat.png` with `--species cat`,
+  `photo.horse-vs-cat.png` with `--compare horse` too, and `clip.dog.mp4` for a video.
 - **It takes options for the view**:
   `--species`, `--compare`, `--difference`, `--adaptation`, `--strength`, `--chroma-scale`, `--acuity` and `--fov`;
   `--help` lists them.\
-  A video and the window are not in it.
+  The window is not in it.
 - **`--info` prints the model derived for `--species`**:
   the cone and simulation matrices, the checks they pass, and the species' facts.
 - **A photo is turned as its EXIF orientation says.**
 - **It speaks the system's language**, English or Czech, as gettext reads it:
   the list in `LANGUAGE`, such as `cs:en`, where it is set, or else `LC_ALL`, `LC_MESSAGES` or `LANG`,
   and on Windows the system's own; so do the windows.
+
+### A video needs ffmpeg
+
+- **ffmpeg and ffprobe read and write a video**, from the `PATH`, or on Windows from where a window downloaded them.\
+  Without them a video cannot be converted, as the JVM has no decoder to fall back on.
+- **The .mp4 is written by the best encoder ffmpeg has here**: H.265 (`libx265`, or a GPU's), else H.264, else MPEG-4,
+  each tried on three frames first; `libx265` only on a video 50 pixels wide or more.
+- **It is tagged BT.709**, the matrix its frames are encoded with, so that a player shows the colours as they were.
+- **The sound is copied** where an .mp4 holds its codec as it is, and re-encoded to AAC where not.
+- **A video of a varying frame rate is read at its average rate**,
+  frames repeated or dropped so that the sound stays in step.
+- **An HDR video is not tone-mapped**; the app tone-maps one.
 
 ## The desktop window
 

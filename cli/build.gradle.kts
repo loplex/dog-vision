@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // The command line on the JVM: its options, a photo read as it is meant to be seen,
-// and the photo converted at full size by core.
+// and the photo converted at full size by core, or a video, frame by frame, through ffmpeg.
 // It needs no toolkit and no GPU.
 // Its view options are the windows' as well, which read them through gui-core.
 plugins {
@@ -40,6 +40,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+        jvmMain.dependencies {
+            implementation(project(":ffmpeg"))
         }
         jvmTest.dependencies {
             implementation(project.dependencies.platform(libs.junit.bom))

@@ -131,7 +131,7 @@ val windowsCliLicences = thirdPartyLicenses("windowsCliLicences", emptyList()) {
 }
 windowsAppImage(
     packageName = "dog-vision-cli",
-    description = "How a dog or another animal sees a photo, from the command line",
+    description = "How a dog or another animal sees a photo or a video, from the command line",
     launchers = cliLauncherFiles,
     runtime = windowsRuntimeImage(
         "the command line's runtime for Windows",
@@ -247,7 +247,7 @@ val composeTree = windowPackages(
         This package is the desktop window, in Compose. The package
         dog-vision-swing is the same window in Swing.
 
-        The command line, which converts a photo, is the package
+        The command line, which converts a photo or a video, is the package
         dog-vision-cli.
     """.trimIndent(),
 )
@@ -280,7 +280,7 @@ val swingTree = windowPackages(
         nor skiko. The package dog-vision-compose is the same window in
         Compose.
 
-        The command line, which converts a photo, is the package
+        The command line, which converts a photo or a video, is the package
         dog-vision-cli.
     """.trimIndent(),
     // FlatLaf loads its natives on Linux only for window decorations of its own,
@@ -319,8 +319,9 @@ val cliDescription = """
     dog-vision shows a photo, a video or the camera with the colours a dog,
     a cat or another animal can tell apart, beside the original.
 
-    This package is the command line, which converts a photo to those
-    colours, as a PNG beside it, with no window and no display.
+    This package is the command line, which converts a photo or a video
+    to those colours, as a PNG or an .mp4 beside it, with no window and
+    no display.
 
     The desktop windows, which show a video or the camera as well, are
     the packages dog-vision-compose and dog-vision-swing.

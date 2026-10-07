@@ -16,9 +16,10 @@ sealed interface FfmpegInstall {
 }
 
 /**
- * Where the feeds run ffmpeg and ffprobe from:
- * the PATH the window started with, or, once they are installed from the window, where they were put;
- * on Windows, where they are on neither, the folder [FfmpegDownload] unpacks them into.
+ * Where a window's feeds and the command line run ffmpeg and ffprobe from:
+ * the PATH the program started with, or, once they are installed from the window, where they were put;
+ * on Windows, where they are on neither, the folder [FfmpegDownload] unpacks them into,
+ * which the command line takes too.
  *
  * Windows has no ffmpeg of its own, so the window offers to download it, as [FfmpegDownload] does,
  * and where winget is on the PATH to install it through winget, the package manager Windows 10 and 11 come with,
@@ -52,7 +53,7 @@ object FfmpegPrograms {
 
     /**
      * What runs [program]: its whole path, where it was found after the window started,
-     * or on Windows where it is downloaded and not on the PATH the window started with; else its name.
+     * or on Windows where it is downloaded and not on the PATH the program started with; else its name.
      */
     fun command(program: String): String = found[program] ?: downloaded(program) ?: program
 
@@ -130,12 +131,12 @@ object FfmpegPrograms {
 
     /**
      * [command] started, its program from where it is run,
-     * with nothing to read on its standard input, which is closed.\
+     * with nothing to read on its standard input, which is closed, unless it reads [input] there.\
      * Throws [FfmpegMissing] if the program cannot be run.
      */
-    fun start(command: List<String>): Process = try {
+    fun start(command: List<String>, input: Boolean = false): Process = try {
         val program = command(command.first())
-        ProcessBuilder(listOf(program) + command.drop(1)).start().apply { outputStream.close() }
+        ProcessBuilder(listOf(program) + command.drop(1)).start().apply { if (!input) outputStream.close() }
     } catch (error: IOException) {
         throw FfmpegMissing(command.first(), error)
     }

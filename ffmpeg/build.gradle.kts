@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // ffmpeg and ffprobe, found and run: on the PATH, where they were installed after a window started,
-// or on Windows where a window downloaded them.
+// or on Windows where a window downloaded them; a video probed, its frames read, and an .mp4 written.
 // Needs no toolkit and no GPU.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)

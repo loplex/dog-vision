@@ -17,32 +17,31 @@ import javax.imageio.ImageIO
 import kotlin.math.roundToInt
 
 /**
- * Where [file] converted to [view] goes, named after it and the species [view] shows:
+ * Where [file] converted to [view] goes,
+ * named after it and the species [view] shows, with the [extension] of what it is written as:
  * photo.jpg as photo.cat.png, or photo.horse-vs-cat.png where it shows a horse beside a cat,
  * next to it or in [outputDir].
  */
-fun convertedFile(file: File, view: View, outputDir: File?): File {
-    val name = file.name.substringBeforeLast('.').ifEmpty { file.name } + ".${shownName(view)}.png"
+fun convertedFile(file: File, view: View, outputDir: File?, extension: String = "png"): File {
+    val name = file.name.substringBeforeLast('.').ifEmpty { file.name } + ".${shownName(view)}.$extension"
     return File(outputDir ?: file.parentFile, name)
 }
 
 /**
- * Converts the photo [Arguments.file] at full size to the view the arguments ask for,
- * and reports on [out] what it wrote, or on [err] why it could not, worded by [texts]; returns the exit status.
+ * Converts the photo or the video [Arguments.file] at full size to the view the arguments ask for,
+ * and reports on [out] what it wrote, or on [err] why it could not, worded by [texts];
+ * a video's conversion shows on [err] how far it is where [err] is a [terminal].\
+ * Returns the exit status.
  */
 @Suppress("MagicNumber", "ReturnCount")
-fun convertPhoto(arguments: Arguments, texts: Texts, out: PrintStream, err: PrintStream): Int {
+fun convertFile(arguments: Arguments, texts: Texts, out: PrintStream, err: PrintStream, terminal: Boolean): Int {
     val file = checkNotNull(arguments.file) { "No file to convert" }
     val photo = try {
         readPhoto(file)
     } catch (error: IOException) {
         err.println(texts.get(Str.PHOTO_UNREADABLE, file, error.message))
         return 1
-    }
-    if (photo == null) {
-        err.println(texts.get(Str.PHOTO_NOT_PHOTO, file))
-        return 1
-    }
+    } ?: return convertVideo(arguments, texts, out, err, terminal)
     val view = arguments.view.conversionView
     val output = convertedFile(file, view, arguments.outputDir)
     val (width, height) = composedSize(view, photo.width, photo.height)

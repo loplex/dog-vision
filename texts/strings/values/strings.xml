@@ -199,12 +199,13 @@
 
     <!-- What the command line says, and the windows when started from one;
          option names, species ids and file names stay as they are typed -->
-    <string name="usage_synopsis">usage: %1$s [options] photo</string>
-    <string name="usage_about">Simulates how an animal sees colour, on a photo.</string>
+    <string name="usage_synopsis">usage: %1$s [options] file</string>
+    <string name="usage_about">Simulates how an animal sees colour, on a photo or a video.</string>
     <string name="window_usage_synopsis">usage: %1$s [options] [file]</string>
     <string name="window_usage_about">Simulates how an animal sees colour, on a live camera, a photo or a video.</string>
     <string name="usage_camera">the live camera in the window</string>
     <string name="usage_photo">converts a photo, writes photo.dog.png</string>
+    <string name="usage_video">converts a video, writes clip.dog.mp4</string>
     <string name="usage_window">shows a photo or a video in the window</string>
     <string name="usage_options">options:</string>
     <string name="usage_option_species">the animal to simulate (default %1$s)</string>
@@ -234,11 +235,15 @@
     <string name="usage_not_camera">%1$s: %2$s is not a camera\'s number</string>
     <string name="usage_not_gl">%1$s: %2$s is neither angle nor wgl</string>
     <string name="photo_unreadable">Cannot read %1$s: %2$s</string>
-    <string name="photo_not_photo">Cannot read %1$s as a photo; converting a video is not supported yet</string>
+    <string name="not_photo_or_video">Cannot read %1$s as a photo or a video: %2$s</string>
+    <string name="video_needs_ffmpeg">Cannot read %1$s as a photo; a video needs %2$s, which comes with ffmpeg and cannot be run here. Install ffmpeg so that it is on the PATH; on Windows, the window can download it.</string>
+    <string name="no_encoder">ffmpeg has no encoder here that writes a video of %1$s x %2$s</string>
+    <string name="video_no_frames">%1$s has no frames</string>
     <string name="photo_unwritable">Cannot write %1$s: %2$s</string>
     <string name="photo_written">Wrote %1$s</string>
+    <string name="video_written">Wrote %1$s: %2$s</string>
     <string name="pixels_differ">%1$s of pixels differ noticeably</string>
-    <string name="no_window">The window is the desktop app\'s; this command line only converts a photo</string>
+    <string name="no_window">The window is the desktop app\'s; this command line only converts a photo or a video</string>
     <!-- What the command line prints for its info option; the formulas and their symbols stay as they are -->
     <string name="info_species">%1$s, cone peaks %2$s nm</string>
     <string name="info_cone_matrix">Cone matrix M_animal (rows: cones, short to long; columns: linear R, G, B):</string>
