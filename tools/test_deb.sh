@@ -112,10 +112,11 @@ is_removed() {
 is_version() {
     [ "$(dpkg-query -W -f='${Version}' "$package")" = "$1" ]
 }
-# The command $1 converts the photo to a PNG beside it, as the command line does with a photo alone.
+# The command $1 converts the photo to a PNG beside it, as the command line does with a photo alone,
+# within two minutes.
 converts() {
     rm -rf /tmp/photo && mkdir /tmp/photo && cp /photo/test_photo.jpg /tmp/photo/ &&
-        "$1" /tmp/photo/test_photo.jpg &&
+        timeout 120 "$1" /tmp/photo/test_photo.jpg &&
         [ "$(od -An -tx1 -N8 /tmp/photo/test_photo.dog.png | tr -d ' \n')" = 89504e470d0a1a0a ]
 }
 # The window $1, dog-vision-compose or dog-vision-swing, shows the photo in a window called Dog
@@ -137,6 +138,10 @@ window_opens() {
         sleep 1
     done
     kill "$window" 2>/dev/null
+    # A window still there ten seconds after SIGTERM is killed, so that the test cannot wait for it
+    # for ever, and said to have stayed.
+    for _ in $(seq 10); do kill -0 "$window" 2>/dev/null || break; sleep 1; done
+    if kill -9 "$window" 2>/dev/null; then echo "note: $1 did not end on SIGTERM" >&3; fi
     wait "$window" 2>/dev/null
     [ -n "$shown" ] || tail -n 20 /tmp/window.log >&3
     [ -n "$shown" ]
@@ -307,6 +312,10 @@ check_removed() {
 }
 
 export DEBIAN_FRONTEND=noninteractive
+# A mirror that stops answering fails each of apt's tries within a minute, and each download is
+# tried four times.
+printf 'Acquire::http::Timeout "60";\nAcquire::https::Timeout "60";\nAcquire::Retries "3";\n' \
+    >/etc/apt/apt.conf.d/99test-timeouts
 apt-get update -qq >/dev/null
 [ -e /usr/share/applications ] && echo "note: the image has /usr/share/applications already"
 
