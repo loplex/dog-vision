@@ -249,7 +249,8 @@ val checkArtifactFolders = tasks.register("checkArtifactFolders") {
     }
 }
 
-// build-logic is a build of its own, which `check` here does not reach otherwise: its ktlint, in each module's `check`.
+// build-logic is a build of its own, which `check` here does not reach otherwise:
+// its ktlint and its tests, in each module's `check`.
 val buildLogicCheck = gradle.includedBuild("build-logic").task(":check")
 subprojects {
     tasks.matching { it.name == "check" }.configureEach {

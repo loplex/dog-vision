@@ -71,7 +71,10 @@ abstract class DebPackage : DefaultTask() {
     @get:Input
     abstract val replaces: ListProperty<String>
 
-    /** The license's text, which the deb installs as /usr/share/doc/<name>/copyright, as Debian's packages do. */
+    /**
+     * The copyright file, which the deb installs as /usr/share/doc/<name>/copyright, as Debian's packages do:
+     * the one [ThirdPartyLicenses] writes in DEP-5, of the project's own licence and of what the package holds besides.
+     */
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val license: RegularFileProperty

@@ -217,6 +217,14 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     `cz.loplex.dogvision.compose.desktop` ("Dog Vision (Kotlin Compose)", "Jak vidí pes (Kotlin Compose)")
     and `cz.loplex.dogvision.swing.desktop` ("Dog Vision (Java Swing)", "Jak vidí pes (Java Swing)"),
     in `/usr/share/applications`.
+- **Each deb's `/usr/share/doc/<package>/copyright` is in Debian's machine-readable format**:
+  - the project's own files under `GPL-3+`, whose text is Debian's `/usr/share/common-licenses/GPL-3`;
+  - a paragraph for each JAR and native library the package holds that is not the project's own,
+    with its holders and licences;
+  - each library's licence as its POM names it, and what a native library holds besides its own code,
+    Skia and the libraries Skia builds in among them, from the table in [`ThirdParty.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/ThirdParty.kt);
+  - Apache-2.0's text is Debian's too;
+    every other licence's text, which names its holder, comes from [`packaging/licenses`](../packaging/licenses).
 - **The web page's deb and rpm, `dog-vision-web`, need no Java**, and have no natives,
   so one package serves every architecture:
   - the page in `/usr/share/dog-vision-web`,

@@ -231,6 +231,7 @@ The test classes' comments say what each of them holds.
 | `./gradlew :gui-core:jvmTest`                  | the window's passes, GL contexts, ffmpeg, session    |
 | `./gradlew :gui-swing:jvmTest`                 | the Swing window's image, theme and a dropped file   |
 | `./gradlew :web:jsTest`                        | the page's passes, snapshot and recording            |
+| `./gradlew :build-logic:test`                  | the licences a package lists, read and written       |
 | `./gradlew :android:connectedDebugAndroidTest` | the renderer, recording and conversion, on a device  |
 | `./gradlew :android:lintDebug`                 | Android Lint alone                                   |
 

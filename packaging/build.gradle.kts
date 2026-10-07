@@ -1,16 +1,19 @@
 @file:Suppress("UnstableApiUsage")
 
+import cz.loplex.dogvision.packaging.APACHE_TEXT
 import cz.loplex.dogvision.packaging.DebDepends
 import cz.loplex.dogvision.packaging.DebPackage
 import cz.loplex.dogvision.packaging.DesktopEntry
 import cz.loplex.dogvision.packaging.JavaLauncher
 import cz.loplex.dogvision.packaging.RpmLibraryRequires
 import cz.loplex.dogvision.packaging.RpmPackage
+import cz.loplex.dogvision.packaging.ThirdPartyPart
 import cz.loplex.dogvision.packaging.WEB_PAGE_USAGE
 import cz.loplex.dogvision.packaging.WINDOWS_LAUNCHER_USAGE
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.debianPackages
 import cz.loplex.dogvision.packaging.jvmRuntimeOf
+import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.windowDebDepends
 import cz.loplex.dogvision.packaging.windowPackages
 import cz.loplex.dogvision.packaging.windowRpmRequires
@@ -140,6 +143,11 @@ val commonDescription = """
     their Java libraries. It does nothing on its own.
 """.trimIndent()
 
+// What its JARs are that is not this project's own.
+val commonLicences = thirdPartyLicenses("dogVisionCommonLicences", listOf(commonJars)) {
+    artifactName = "The package $commonPackage"
+}
+
 val packageCommonDeb = tasks.register<DebPackage>("packageDogVisionCommonDeb") {
     description = "Packs build/distributions/dog-vision-common_<version>_all.deb."
     group = "distribution"
@@ -150,6 +158,7 @@ val packageCommonDeb = tasks.register<DebPackage>("packageDogVisionCommonDeb") {
     longDescription = commonDescription
     depends = emptyList()
     recommends = emptyList()
+    license = commonLicences.flatMap { it.copyright }
 }
 artifact(packageCommonDeb)
 
@@ -168,10 +177,11 @@ artifact(packageCommonRpm)
 
 // The deb and the rpm, dog-vision-compose, on the system's Java.
 val composePackage = "dog-vision-compose"
+val composeJars = jvmRuntimeOf(":gui-compose")
 val composeTree = windowPackages(
     packageName = composePackage,
-    jars = jvmRuntimeOf(":gui-compose"),
-    sharedJars = files(commonJars),
+    jars = composeJars,
+    shared = commonJars,
     sharedPackage = commonPackage,
     // The application's ID, which the Windows MSI does not use.
     applicationId = "cz.loplex.dogvision.compose",
@@ -203,10 +213,11 @@ val swingPackage = "dog-vision-swing"
 // font(:lang=en) is met on openSUSE by xorg-x11-fonts-core, whose bitmap fonts Java does not read.
 val swingRpmRequires = listOf("(dejavu-sans-fonts or dejavu-fonts)")
 
+val swingJars = jvmRuntimeOf(":gui-swing")
 val swingTree = windowPackages(
     packageName = swingPackage,
-    jars = jvmRuntimeOf(":gui-swing"),
-    sharedJars = files(commonJars),
+    jars = swingJars,
+    shared = commonJars,
     sharedPackage = commonPackage,
     // Not the Compose window's cz.loplex.dogvision.compose.
     applicationId = "cz.loplex.dogvision.swing",
@@ -267,6 +278,11 @@ val cliDescription = """
     the packages dog-vision-compose and dog-vision-swing.
 """.trimIndent()
 
+// It holds no JAR, only its launcher: nothing that is not this project's own.
+val cliLicences = thirdPartyLicenses("dogVisionCliLicences", emptyList()) {
+    artifactName = "The package $cliPackage"
+}
+
 val packageCliDeb = tasks.register<DebPackage>("packageDogVisionCliDeb") {
     description = "Packs build/distributions/dog-vision-cli_<version>_all.deb, on the system's Java."
     group = "distribution"
@@ -282,6 +298,7 @@ val packageCliDeb = tasks.register<DebPackage>("packageDogVisionCliDeb") {
         listOf("default-jre-headless (>= 2:1.17) | java17-runtime-headless", "$commonPackage (= $it)")
     }
     recommends = emptyList()
+    license = cliLicences.flatMap { it.copyright }
 }
 artifact(packageCliDeb)
 
@@ -361,6 +378,38 @@ val webDescription = """
     dog-vision-compose and dog-vision-swing.
 """.trimIndent()
 
+// What the page's script holds besides this project's own code: Kotlin's standard library for JavaScript,
+// which the compiler builds in, and webpack's runtime, which bundles it; the source map holds their sources.
+// No JVM configuration names them, so they are listed here, webpack at the version kotlin-js-store locks.
+val webpackVersion = checkNotNull(
+    Regex(""""node_modules/webpack": \{\s*"version": "([^"]+)"""")
+        .find(rootProject.file("kotlin-js-store/package-lock.json").readText()),
+) { "kotlin-js-store/package-lock.json locks no webpack" }.groupValues[1]
+
+fun webParts(file: String) = listOf(
+    ThirdPartyPart(
+        name = "org.jetbrains.kotlin:kotlin-stdlib-js",
+        version = libs.versions.kotlin.get(),
+        licence = "Apache-2.0",
+        holder = "JetBrains",
+        text = APACHE_TEXT,
+        files = listOf(file),
+    ),
+    ThirdPartyPart(
+        name = "webpack",
+        version = webpackVersion,
+        licence = "MIT",
+        holder = "JS Foundation and other contributors",
+        text = "webpack.txt",
+        files = listOf(file),
+    ),
+)
+
+val webLicences = thirdPartyLicenses("dogVisionWebLicences", emptyList()) {
+    artifactName = "The package $webPackage"
+    extraParts = webParts("dog-vision.js")
+}
+
 val packageWebDeb = tasks.register<DebPackage>("packageDogVisionWebDeb") {
     description = "Packs build/distributions/dog-vision-web_<version>_all.deb."
     group = "distribution"
@@ -372,6 +421,7 @@ val packageWebDeb = tasks.register<DebPackage>("packageDogVisionWebDeb") {
     // xdg-open, which the desktop entry runs; the browser is the user's.
     depends = listOf("xdg-utils")
     recommends = emptyList()
+    license = webLicences.flatMap { it.copyright }
 }
 artifact(packageWebDeb)
 
@@ -452,6 +502,16 @@ val allInOneDescription = """
     place. It cannot be installed beside any of them.
 """.trimIndent()
 
+// What the five packages hold that is not this project's own, together.
+val allInOneLicences = thirdPartyLicenses(
+    "dogVisionLicences",
+    listOf(commonJars, composeJars, swingJars),
+    unpacksNatives = true,
+) {
+    artifactName = "The package $allInOnePackage"
+    extraParts = webParts("dog-vision.js")
+}
+
 val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
     description = "Packs build/distributions/dog-vision_<version>_amd64.deb, on the system's Java."
     group = "distribution"
@@ -462,6 +522,7 @@ val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
     longDescription = allInOneDescription
     depends = allInOneDebDepends.flatMap { it.depends }.map { it.asFile.readText().split(", ") }
     recommends = emptyList()
+    license = allInOneLicences.flatMap { it.copyright }
 }
 artifact(packageAllInOneDeb)
 
@@ -513,6 +574,11 @@ val webSourceMapDescription = """
     compiled from.
 """.trimIndent()
 
+val webSourceMapLicences = thirdPartyLicenses("dogVisionWebSourcemapLicences", emptyList()) {
+    artifactName = "The package $webSourceMapPackage"
+    extraParts = webParts("dog-vision.js.map")
+}
+
 val packageWebSourceMapDeb = tasks.register<DebPackage>("packageDogVisionWebSourcemapDeb") {
     description = "Packs build/distributions/dog-vision-web-sourcemap_<version>_all.deb."
     group = "distribution"
@@ -524,6 +590,7 @@ val packageWebSourceMapDeb = tasks.register<DebPackage>("packageDogVisionWebSour
     // The script of its own version, which the map describes, from either package that installs it.
     depends = version.map { listOf("$webPackage (= $it) | $allInOnePackage (= $it)") }
     recommends = emptyList()
+    license = webSourceMapLicences.flatMap { it.copyright }
 }
 artifact(packageWebSourceMapDeb)
 

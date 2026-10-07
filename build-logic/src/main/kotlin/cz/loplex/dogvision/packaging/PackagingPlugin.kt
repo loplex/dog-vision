@@ -18,10 +18,9 @@ class PackagingPlugin : Plugin<Project> {
         val distributions = project.layout.buildDirectory.dir("distributions")
         project.tasks.withType(DebPackage::class.java).configureEach {
             version.convention(appVersion)
-            maintainer.convention("$VENDOR <lopin.git@loplex.cz>")
+            maintainer.convention("$VENDOR <$CONTACT>")
             section.convention("graphics")
             homepage.convention(HOMEPAGE)
-            license.convention(licenseText)
             destinationDirectory.convention(distributions)
         }
         project.tasks.withType(RpmPackage::class.java).configureEach {
@@ -33,11 +32,13 @@ class PackagingPlugin : Plugin<Project> {
             destinationDirectory.convention(distributions)
         }
     }
-
-    private companion object {
-        const val HOMEPAGE = "https://github.com/loplex/dog-vision"
-    }
 }
 
 /** Who makes the packages, their vendor and maintainer. */
 internal const val VENDOR = "Martin Lopatář"
+
+/** Where the vendor is reached. */
+internal const val CONTACT = "lopin.git@loplex.cz"
+
+/** The project's home, which the packages name. */
+internal const val HOMEPAGE = "https://github.com/loplex/dog-vision"

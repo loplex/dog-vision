@@ -3,7 +3,6 @@ package cz.loplex.dogvision.packaging
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 
@@ -29,7 +28,7 @@ val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEG
  * a launcher in /usr/bin, which finds a Java 17 or newer, and the desktop entry and the icons, named [applicationId].\
  * The command line is the package dog-vision-cli, which each recommends.
  *
- * - [sharedJars] are those of [jars] that the package [sharedPackage] installs,
+ * - [shared] resolves the JARs of [jars] that the package [sharedPackage] installs,
  *   in /usr/share/[sharedPackage]/lib, which the packages depend on at their own version and leave out.
  * - [mainClass] is the class the launcher starts, its main the window's.
  * - [jvmOptions] are the launcher's options before org.lwjgl.librarypath's, given the folder of the natives.
@@ -38,12 +37,12 @@ val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEG
  * - [nativesLeftIn] names the JARs, by the start of their names, whose natives are not unpacked.
  * - [rpmRequires] is what the rpm requires besides what every window's does.
  *
- * Returns the task that lays out the files the packages install, less [sharedJars].
+ * Returns the task that lays out the files the packages install, less the shared JARs.
  */
 fun Project.windowPackages(
     packageName: String,
     jars: NamedDomainObjectProvider<out Configuration>,
-    sharedJars: FileCollection,
+    shared: NamedDomainObjectProvider<out Configuration>,
     sharedPackage: String,
     applicationId: String,
     mainClass: String,
@@ -59,6 +58,7 @@ fun Project.windowPackages(
     val work = "linux/$packageName"
     val nativesHome = "/usr/lib/$packageName"
     val linuxJars = files(jars)
+    val sharedJars = files(shared)
     // The names of the JARs in the lib folder that are not their own.
     val linuxJarNames = jars.flatMap { it.incoming.artifacts.resolvedArtifacts }.map(::installedJarNames)
     // The package's name in the tasks' names, DogVisionSwing and dogVisionSwing of dog-vision-swing.
@@ -147,6 +147,11 @@ fun Project.windowPackages(
         depends.set(layout.buildDirectory.file("$work/debDepends.txt"))
     }
 
+    // What the JARs and their natives hold that is not this project's own, the shared JARs left to their package.
+    val licences = thirdPartyLicenses("${prefix}Licences", listOf(jars), listOf(shared), unpacksNatives = true) {
+        artifactName.set("The package $packageName")
+    }
+
     val packageDeb = tasks.register("package${suffix}Deb", DebPackage::class.java) {
         this.description = "Packs build/distributions/${packageName}_<version>_amd64.deb, on the system's Java."
         group = "distribution"
@@ -158,6 +163,7 @@ fun Project.windowPackages(
         depends.set(debDepends.flatMap { it.depends }.map { it.asFile.readText().split(", ") })
         depends.add(this.version.map { "$sharedPackage (= $it)" })
         recommends.set(listOf("dog-vision-cli"))
+        license.set(licences.flatMap { it.copyright })
     }
 
     val packageRpm = tasks.register("package${suffix}Rpm", RpmPackage::class.java) {
