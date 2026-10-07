@@ -79,6 +79,13 @@ abstract class DebPackage : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val license: RegularFileProperty
 
+    /**
+     * The date of the version, as the changelog has it, RFC 5322's:
+     * the last commit's, so that a deb built again of the same commit is the same.
+     */
+    @get:Input
+    abstract val changelogDate: Property<String>
+
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
 
@@ -100,6 +107,11 @@ abstract class DebPackage : DefaultTask() {
         try {
             stage(tree.get().asFile, root)
             place(license.get().asFile.readBytes(), root, "usr/share/doc/${packageName.get()}/copyright")
+            // A native package's changelog, as its version has no Debian revision: one entry, of this version,
+            // compressed as Debian Policy 12.7 asks, gzip -9n, which leaves no name and no time in it.
+            val changelog = "${packageName.get()} (${version.get()}) unstable; urgency=medium\n\n" +
+                "  * Version ${version.get()}.\n\n -- ${maintainer.get()}  ${changelogDate.get()}\n"
+            place(gzip(changelog.toByteArray()), root, "usr/share/doc/${packageName.get()}/changelog.gz")
             val files = root.walkTopDown().filter { it.isFile }.toList()
             val installedSize = files.sumOf { (it.length() + 1023) / 1024 }
             val control = buildString {
@@ -130,5 +142,13 @@ abstract class DebPackage : DefaultTask() {
         } finally {
             root.deleteRecursively()
         }
+    }
+
+    private fun gzip(bytes: ByteArray): ByteArray {
+        val process = ProcessBuilder("gzip", "-9n").start()
+        process.outputStream.use { it.write(bytes) }
+        val compressed = process.inputStream.readBytes()
+        check(process.waitFor() == 0) { "gzip failed: ${process.errorReader().readText()}" }
+        return compressed
     }
 }

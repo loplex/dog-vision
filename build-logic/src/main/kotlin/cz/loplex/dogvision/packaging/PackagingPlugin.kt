@@ -16,11 +16,17 @@ class PackagingPlugin : Plugin<Project> {
         val licenseText = project.rootProject.layout.projectDirectory.file("LICENSE")
         // Gradle's own folder of what a build distributes, base.distsDirectory's.
         val distributions = project.layout.buildDirectory.dir("distributions")
+        // The last commit's date, as RFC 5322 has it, the changelog's.
+        val lastCommit = project.providers.exec {
+            commandLine("git", "log", "-1", "--format=%cd", "--date=format:%a, %d %b %Y %H:%M:%S %z")
+            environment("LC_ALL", "C")
+        }.standardOutput.asText.map { it.trim() }
         project.tasks.withType(DebPackage::class.java).configureEach {
             version.convention(appVersion)
             maintainer.convention("$VENDOR <$CONTACT>")
             section.convention("graphics")
             homepage.convention(HOMEPAGE)
+            changelogDate.convention(lastCommit)
             destinationDirectory.convention(distributions)
         }
         project.tasks.withType(RpmPackage::class.java).configureEach {
