@@ -37,11 +37,21 @@ jobs:
           tasks=(:packaging:packageDeb :packaging:packageRpm)
           ./gradlew "${tasks[@]}"
           ./gradlew "${tasks[@]}" -PappVersion=0.1.1
+      # Every deb held to lintian's tags of a copyright file that is the GPL's full text, and of a missing changelog,
+      # which the build answers; lintian's other tags on the debs are not checked here.
+      - name: Hold the debs to lintian's copyright and changelog tags
+        if: (success() || failure()) && steps.packages.outcome == 'success'
+        run: |
+          sudo apt-get install -y lintian
+          lintian --fail-on error,warning --tags \
+            copyright-file-contains-full-gpl-license,copyright-not-using-common-license-for-gpl,no-changelog \
+            packaging/build/distributions/*.deb
       # Each in a bare Ubuntu 20.04, the oldest release their dependencies are named for,
       # upgraded to the later version; each window opens under Xvfb there, and the page's desktop entry is checked.
       # dog-vision then takes the place of dog-vision-compose and of the source map's dog-vision-web,
       # and dog-vision-cli takes dog-vision's.
       - name: Try the dog-vision-compose deb, then dog-vision in its place
+        if: (success() || failure()) && steps.packages.outcome == 'success'
         run: >-
           tools/test_deb.sh --upgrade packaging/build/distributions/dog-vision-compose_0.1.1_amd64.deb
           --switch packaging/build/distributions/dog-vision_0.1.1_amd64.deb
