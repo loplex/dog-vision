@@ -222,6 +222,8 @@ java -jar dog-vision-cli.jar --species cat --compare dog photo.jpg
   `--species`, `--compare`, `--difference`, `--adaptation`, `--strength`, `--chroma-scale`, `--acuity` and `--fov`;
   `--help` lists them.\
   A video and the window are not in it.
+- **`--info` prints the model derived for `--species`**:
+  the cone and simulation matrices, the checks they pass, and the species' facts.
 - **A photo is turned as its EXIF orientation says.**
 - **It speaks the system's language**, English or Czech, as gettext reads it:
   the list in `LANGUAGE`, such as `cs:en`, where it is set, or else `LC_ALL`, `LC_MESSAGES` or `LANG`,

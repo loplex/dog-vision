@@ -218,6 +218,7 @@
     <string name="usage_option_camera">the camera the window shows, counted from 0: /dev/videoN on Linux (default %1$s)</string>
     <string name="usage_option_output_dir">writes a converted file there instead of next to its original</string>
     <string name="usage_option_gl">how the window draws on Windows: angle, or wgl (default angle, and wgl where it cannot start)</string>
+    <string name="usage_option_info">prints the model derived for --species and its checks, and exits</string>
     <string name="usage_option_help">shows this and exits</string>
     <string name="usage_species">species:</string>
     <string name="usage_error">%1$s: error: %2$s</string>
@@ -238,4 +239,16 @@
     <string name="photo_written">Wrote %1$s</string>
     <string name="pixels_differ">%1$s of pixels differ noticeably</string>
     <string name="no_window">The window is the desktop app\'s; this command line only converts a photo</string>
+    <!-- What the command line prints for its info option; the formulas and their symbols stay as they are -->
+    <string name="info_species">%1$s, cone peaks %2$s nm</string>
+    <string name="info_cone_matrix">Cone matrix M_animal (rows: cones, short to long; columns: linear R, G, B):</string>
+    <string name="info_confusion">Confusion direction n (normalised): %1$s</string>
+    <string name="info_simulation_matrix">Simulation matrix T (linear RGB):</string>
+    <string name="info_checks">Checks:</string>
+    <string name="info_check_grey">grey preserved</string>
+    <string name="info_check_cones">cone-invariant</string>
+    <string name="info_check_neutral_point">neutral point</string>
+    <string name="info_check_rnl_jnds">rnl matches JNDs</string>
+    <string name="info_check_rnl_blue">rnl keeps blue</string>
+    <string name="info_reference">Reference values: the dog\'s neutral point was measured at about 480 nm (Neitz, Geist &amp; Jacobs 1989); a human deuteranope is R\' = G\' = 0.293 R + 0.707 G (Viénot, Brettel &amp; Mollon 1999).</string>
 </resources>

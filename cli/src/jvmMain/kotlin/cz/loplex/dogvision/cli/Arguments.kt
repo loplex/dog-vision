@@ -18,6 +18,8 @@ data class Arguments(
     val view: ViewOptions = ViewOptions(),
     /** Where a converted file goes, in place of next to its original. */
     val outputDir: File? = null,
+    /** Print the model derived for the species, and its checks, in place of converting. */
+    val info: Boolean = false,
     val help: Boolean = false,
 )
 
@@ -109,6 +111,7 @@ fun parseArguments(args: List<String>): Arguments = readCommandLine(args, Argume
     when (option.name) {
         "-h", "--help" -> option.flag().let { copy(help = true) }
         "--output-dir" -> copy(outputDir = File(option.value()))
+        "--info" -> option.flag().let { copy(info = true) }
         else -> view.read(option)?.let { copy(view = it) }
     }
 }
@@ -121,6 +124,7 @@ fun usage(texts: Texts): String = usage(
     listOf("$COMMAND photo.jpg" to texts.get(Str.USAGE_PHOTO)),
     ViewOptions.usage(texts) + listOf(
         "--output-dir DIR" to texts.get(Str.USAGE_OPTION_OUTPUT_DIR),
+        "--info" to texts.get(Str.USAGE_OPTION_INFO),
         "-h, --help" to texts.get(Str.USAGE_OPTION_HELP),
     ),
 )

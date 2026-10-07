@@ -27,7 +27,8 @@ fun systemLanguages(environment: Map<String, String> = System.getenv(), locale: 
 
 /**
  * Reads [args] and does what they ask for, worded by [texts]:
- * prints the usage, or converts a photo, or says that the window is the desktop app's when given no photo.\
+ * prints the usage, or the model derived for the species, or converts a photo,
+ * or says that the window is the desktop app's when given no photo.\
  * Returns the exit status: 2 for a command line that cannot be read, or that gives no photo.
  */
 fun runCommandLine(args: List<String>, texts: Texts, out: PrintStream, err: PrintStream): Int {
@@ -40,6 +41,7 @@ fun runCommandLine(args: List<String>, texts: Texts, out: PrintStream, err: Prin
     }
     return when {
         arguments.help -> 0.also { out.println(usage(texts)) }
+        arguments.info -> 0.also { out.println(info(arguments.view.params, texts)) }
         arguments.file == null -> 2.also { err.println(texts.get(Str.NO_WINDOW)) }
         else -> convertPhoto(arguments, texts, out, err)
     }

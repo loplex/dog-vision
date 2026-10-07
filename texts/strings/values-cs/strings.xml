@@ -199,6 +199,7 @@
     <string name="usage_option_camera">kamera, kterou okno ukáže, číslovaná od 0: na Linuxu /dev/videoN (výchozí %1$s)</string>
     <string name="usage_option_output_dir">zapíše převedený soubor tam místo vedle originálu</string>
     <string name="usage_option_gl">jak okno kreslí na Windows: angle, nebo wgl (výchozí angle, a kde nejde spustit, wgl)</string>
+    <string name="usage_option_info">vypíše model odvozený pro --species a jeho kontroly a skončí</string>
     <string name="usage_option_help">ukáže tuto nápovědu a skončí</string>
     <string name="usage_species">druhy:</string>
     <string name="usage_error">%1$s: chyba: %2$s</string>
@@ -219,4 +220,16 @@
     <string name="photo_written">Zapsáno %1$s</string>
     <string name="pixels_differ">%1$s pixelů se znatelně liší</string>
     <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky</string>
+    <!-- What the command line prints for its info option; the formulas and their symbols stay as they are -->
+    <string name="info_species">%1$s, maxima čípků %2$s nm</string>
+    <string name="info_cone_matrix">Matice čípků M_animal (řádky: čípky od krátkých po dlouhé; sloupce: lineární R, G, B):</string>
+    <string name="info_confusion">Směr záměny n (normalizovaný): %1$s</string>
+    <string name="info_simulation_matrix">Simulační matice T (lineární RGB):</string>
+    <string name="info_checks">Kontroly:</string>
+    <string name="info_check_grey">šedá zachována</string>
+    <string name="info_check_cones">čípky beze změny</string>
+    <string name="info_check_neutral_point">neutrální bod</string>
+    <string name="info_check_rnl_jnds">rnl odpovídá JND</string>
+    <string name="info_check_rnl_blue">rnl drží modrou</string>
+    <string name="info_reference">Srovnávací hodnoty: neutrální bod psa byl naměřen kolem 480 nm (Neitz, Geist &amp; Jacobs 1989); u člověka s deuteranopií je R\' = G\' = 0,293 R + 0,707 G (Viénot, Brettel &amp; Mollon 1999).</string>
 </resources>
