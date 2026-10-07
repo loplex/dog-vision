@@ -169,6 +169,16 @@ class ThirdPartyTest {
     }
 
     @Test
+    fun partsAreReadBackAsWrittenAndOneListedTwiceIsMergedWithItsFiles() {
+        assertEquals(listOf(skia, skiko, stdlib), readParts(writeParts(listOf(skia, skiko, stdlib))))
+        val elsewhere = stdlib.copy(files = listOf("lib/kotlin-stdlib-2.4.20.jar", "kotlin-stdlib-2.4.20.jar"))
+        assertEquals(
+            listOf(stdlib.copy(files = listOf("kotlin-stdlib-2.4.20.jar", "lib/kotlin-stdlib-2.4.20.jar")), skia),
+            mergeParts(listOf(stdlib, skia, elsewhere)),
+        )
+    }
+
+    @Test
     fun theSpdxExpressionNamesEachLicenceOnceAfterTheProjectsOwn() {
         val jpeg =
             ThirdPartyPart(

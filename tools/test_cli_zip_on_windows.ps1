@@ -1,5 +1,6 @@
 # Tries the command line's zip for Windows on a Windows machine:
 # it unpacks the zip into a folder whose name has a space,
+# checks that it holds the launcher, LICENSE, THIRD-PARTY-LICENSES.txt and the runtime's legal folder,
 # puts it on the PATH, and from another folder runs dog-vision-cli with --help,
 # on a photo, which it converts, and with an option it does not know, which exits with 2.
 #
@@ -17,8 +18,10 @@ if (Test-Path $work) {
 }
 Expand-Archive $Zip $work
 $launcher = Join-Path $work "dog-vision-cli\dog-vision-cli.exe"
-if (-not (Test-Path $launcher)) {
-    throw "The zip has no dog-vision-cli\dog-vision-cli.exe"
+foreach ($file in "dog-vision-cli.exe", "LICENSE", "THIRD-PARTY-LICENSES.txt", "runtime\legal\java.base") {
+    if (-not (Test-Path (Join-Path $work "dog-vision-cli\$file"))) {
+        throw "The zip has no dog-vision-cli\$file"
+    }
 }
 $photo = Join-Path $work "test photo.jpg"
 Copy-Item (Join-Path $root "tools\test_photo.jpg") $photo

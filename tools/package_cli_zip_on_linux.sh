@@ -40,7 +40,7 @@ command -v zip >/dev/null || die "Missing commands:
   zip: apt install zip, or dnf install zip"
 
 
-# The image, a copy of it with the licence, and its zip.
+# The image, which has the licences in its folder, a copy of it, and its zip.
 
 # The pattern stays unquoted after =~, where quotes would make it a plain string.
 version_pattern=$'(^|\n)appVersion=([^\n]+)'
@@ -48,12 +48,11 @@ version_pattern=$'(^|\n)appVersion=([^\n]+)'
 version="${BASH_REMATCH[2]}"
 image="$("$root/tools/package_app_image_on_linux.sh" "${image_options[@]}")"
 
-# A copy, with the licence beside it, which the zip holds and the image does not.
+# A copy, which the zip is made of.
 staging="$root/tools/build/staging/cli-zip"
 rm -rf "${staging:?}"
 mkdir -p "$staging"
 cp -a "$image" "$staging/"
-cp "$root/LICENSE" "$staging/dog-vision-cli/"
 output="$root/tools/build/zip"
 mkdir -p "$output"
 zip="$output/dog-vision-cli-$version-windows-x64.zip"

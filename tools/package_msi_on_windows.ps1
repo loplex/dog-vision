@@ -77,9 +77,13 @@ Invoke-Checked (Join-Path $env:JAVA_HOME "bin\jpackage.exe") @(
     "--dest", $images
 )
 
-# Each launcher with its own classpath, in its order.
+# Each launcher with its own classpath, in its order;
+# the licence, and what the image holds that is not this project's own, in its folder.
 Invoke-Checked $gradlew ($gradleOptions + @(":packaging:windowsLauncherConfigs", "-PwindowsAppImage=$image"))
 Copy-Item (Join-Path $packaging "build\windows\launchers\*.cfg") (Join-Path $image "app")
+foreach ($file in "LICENSE", "THIRD-PARTY-LICENSES.txt") {
+    Copy-Item (Join-Path $packaging "build\windows\launchers\$file") $image
+}
 
 
 # candle.exe and light.exe over what windowsWix writes.

@@ -1,7 +1,9 @@
 import cz.loplex.dogvision.packaging.AppImage
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.glNatives
+import cz.loplex.dogvision.packaging.javaRuntimeNote
 import cz.loplex.dogvision.packaging.packagingJdk
+import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.uberJar
 import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
@@ -155,6 +157,12 @@ val appImage = tasks.register<AppImage>("appImage") {
 }
 
 // The app image as it is, to unpack and run anywhere on Linux on x86-64 without installing it.
+// What the archive holds that is not this project's own:
+// the JARs, and the runtime, which keeps its notices in its own legal folder.
+val tarGzNotices = thirdPartyLicenses("tarGzLicences", listOf(configurations.named("jvmRuntimeClasspath"))) {
+    artifactName = "The archive of dog-vision-swing for Linux"
+    notes.add(packagingJdk.map { javaRuntimeNote("lib/runtime", it.metadata.javaRuntimeVersion) })
+}.flatMap { it.notices }
 val packageTarGz = tasks.register<Tar>("packageTarGz") {
     description = "Packs the app image into build/packages/tar/dog-vision-swing-<version>-linux-x64.tar.gz."
     group = "distribution"
@@ -164,5 +172,7 @@ val packageTarGz = tasks.register<Tar>("packageTarGz") {
     // The launchers and the runtime's jspawnhelper, which starts ffmpeg, stay executable.
     eachFile { permissions { unix(if (file.canExecute()) "755" else "644") } }
     from(appImage.flatMap { it.destination })
+    // The licence, and what the archive holds that is not this project's own, in the app's folder.
+    from(files(rootProject.file("LICENSE"), tarGzNotices)) { into("dog-vision-swing") }
 }
 artifact(packageTarGz)

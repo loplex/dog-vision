@@ -20,6 +20,34 @@ data class ThirdPartyPart(
     val files: List<String>,
 ) : Serializable
 
+/** [parts] a line each, their fields apart by tabs and the files by commas, for [readParts] to read back. */
+fun writeParts(parts: List<ThirdPartyPart>): String = parts.joinToString("") { part ->
+    val fields = listOf(part.name, part.version, part.licence, part.holder, part.text, part.files.joinToString(","))
+    check(fields.none { '\t' in it || '\n' in it } && part.files.none { ',' in it }) { "$part cannot be written" }
+    fields.joinToString("\t") + "\n"
+}
+
+/** [parts] with each part listed more than once, as two launchers' lists both hold it, once, in all its files. */
+fun mergeParts(parts: List<ThirdPartyPart>): List<ThirdPartyPart> =
+    parts.groupBy { it.copy(files = emptyList()) }.map { (part, copies) ->
+        part.copy(files = copies.flatMap { it.files }.distinct())
+    }
+
+/** The parts [writeParts] wrote in [text]. */
+fun readParts(text: String): List<ThirdPartyPart> = text.lines().filter { it.isNotEmpty() }.map { line ->
+    val fields = line.split('\t')
+    check(fields.size == 6) { "Not a part: $line" }
+    ThirdPartyPart(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5].split(','))
+}
+
+/**
+ * The note that a Java runtime of Eclipse Temurin's [version] lies in [folder] of an artifact,
+ * with its own licence and notices in its legal folder, which jlink keeps in every runtime it links.
+ */
+fun javaRuntimeNote(folder: String, version: String): String =
+    "The Java runtime in $folder is Eclipse Temurin $version. Its licence, GPL-2.0-only WITH " +
+        "Classpath-exception-2.0, and the notices of what it holds are in $folder/legal."
+
 /** The text of every licence Apache-2.0 alone names, the one of the Apache Software Foundation. */
 const val APACHE_TEXT = "Apache-2.0.txt"
 

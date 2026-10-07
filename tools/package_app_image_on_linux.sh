@@ -150,10 +150,12 @@ wine "$jpackage" \
 image="$destination/$name"
 
 
-# Each launcher with its own classpath, in its order.
+# Each launcher with its own classpath, in its order;
+# the licence, and what the image holds that is not this project's own, in its folder.
 
 "$root/gradlew" --quiet ":packaging:${image_tasks}LauncherConfigs" "-PwindowsAppImage=$image" \
     "${gradle_options[@]}"
 cp "$root/packaging/build/$image_folder/launchers/"*.cfg "$image/app/"
+cp "$root/packaging/build/$image_folder/launchers/"{LICENSE,THIRD-PARTY-LICENSES.txt} "$image/"
 
 echo "$image"

@@ -1,6 +1,8 @@
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.glNatives
+import cz.loplex.dogvision.packaging.javaRuntimeNote
 import cz.loplex.dogvision.packaging.packagingJdk
+import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.uberJar
 import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
@@ -112,6 +114,12 @@ tasks.withType<AbstractJPackageTask>().configureEach {
 }
 
 // The app image as it is, to unpack and run anywhere on Linux on x86-64 without installing it.
+// What the archive holds that is not this project's own:
+// the JARs, and the runtime, which keeps its notices in its own legal folder.
+val tarGzNotices = thirdPartyLicenses("tarGzLicences", listOf(configurations.named("jvmRuntimeClasspath"))) {
+    artifactName = "The archive of dog-vision-compose for Linux"
+    notes.add(packagingJdk.map { javaRuntimeNote("lib/runtime", it.metadata.javaRuntimeVersion) })
+}.flatMap { it.notices }
 val packageTarGz = tasks.register<Tar>("packageTarGz") {
     description = "Packs the app image into " +
         "build/compose/binaries/main/tar/dog-vision-compose-<version>-linux-x64.tar.gz."
@@ -124,6 +132,8 @@ val packageTarGz = tasks.register<Tar>("packageTarGz") {
     // Gradle's archives otherwise give every file the same mode.
     eachFile { permissions { unix(if (file.canExecute()) "755" else "644") } }
     from(tasks.named<AbstractJPackageTask>("createDistributable").flatMap { it.destinationDir })
+    // The licence, and what the archive holds that is not this project's own, in the app's folder.
+    from(files(rootProject.file("LICENSE"), tarGzNotices)) { into("dog-vision-compose") }
 }
 artifact(packageTarGz)
 

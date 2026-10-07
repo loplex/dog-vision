@@ -5,7 +5,8 @@
 # that :packaging's windowsCliJpackage task writes, with the JARs that cli's windowsLauncher task writes
 # and the runtime that :packaging's windowsCliRuntime task links from Temurin's jmods for Windows,
 # and this then copies the launcher's .cfg that :packaging's windowsCliLauncherConfigs task writes,
-# with the classpath in its order; the zip holds that image and the licence.
+# with the classpath in its order, and the licences it writes beside it, LICENSE and THIRD-PARTY-LICENSES.txt;
+# the zip holds that image.
 # It is written to tools\build\zip, which git ignores.
 # tools/package_cli_zip_on_linux.sh builds the same zip through Wine.
 #
@@ -59,10 +60,13 @@ Invoke-Checked (Join-Path $env:JAVA_HOME "bin\jpackage.exe") @(
 )
 
 $app = Join-Path $image "dog-vision-cli"
-# The launcher with its classpath in its order.
+# The launcher with its classpath in its order;
+# the licence, and what the zip holds that is not this project's own, in its folder.
 Invoke-Checked (Join-Path $root "gradlew.bat") @("--quiet", ":packaging:windowsCliLauncherConfigs", "-PwindowsAppImage=$app")
 Copy-Item (Join-Path $cliFiles "launchers\*.cfg") (Join-Path $app "app")
-Copy-Item (Join-Path $root "LICENSE") $app
+foreach ($file in "LICENSE", "THIRD-PARTY-LICENSES.txt") {
+    Copy-Item (Join-Path $cliFiles "launchers\$file") $app
+}
 $output = Join-Path $root "tools\build\zip"
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $zip = Join-Path $output "dog-vision-cli-$version-windows-x64.zip"

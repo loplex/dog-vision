@@ -44,6 +44,11 @@ abstract class ThirdPartyLicenses : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NAME_ONLY)
     abstract val poms: ConfigurableFileCollection
 
+    /** Parts other tasks of this type have listed, in their [parts], as an MSI takes those of each launcher. */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val includedParts: ConfigurableFileCollection
+
     /** What no POM describes, such as the Kotlin/JS standard library in a web page. */
     @get:Input
     abstract val extraParts: ListProperty<ThirdPartyPart>
@@ -74,6 +79,10 @@ abstract class ThirdPartyLicenses : DefaultTask() {
     @get:OutputFile
     abstract val spdx: RegularFileProperty
 
+    /** Every part, for another task of this type to include, as [writeParts] writes them. */
+    @get:OutputFile
+    abstract val parts: RegularFileProperty
+
     init {
         extraParts.convention(emptyList())
         notes.convention(emptyList())
@@ -86,15 +95,17 @@ abstract class ThirdPartyLicenses : DefaultTask() {
         val pomOf = pomPaths.get().associate { it.substringBefore('|') to File(it.substringAfter('|')) }
         // Each module's JARs as pairs of the file's name and the name it is installed under, empty where it is not.
         val modules = jars.get().map { it.split('|') }.groupBy({ it[0] }, { it[1] to it[2] })
-        val parts = modules.flatMap { (id, files) ->
-            val (group, module, version) = id.split(':')
-            val embedded = files.flatMap { (file, _) ->
-                EMBEDDED_PARTS.filter { (pattern, _) -> pattern.matches(file) }.flatMap { it.second }
-            }
-            val installed = files.map { it.second }.filter { it.isNotEmpty() } + embedded.flatMap { it.files }
-            val pom = checkNotNull(pomOf[id]) { "No POM of $id was resolved" }
-            listOf(pomPart(group, module, version, pom, installed.distinct())) + embedded
-        } + extraParts.get()
+        val parts = mergeParts(
+            modules.flatMap { (id, files) ->
+                val (group, module, version) = id.split(':')
+                val embedded = files.flatMap { (file, _) ->
+                    EMBEDDED_PARTS.filter { (pattern, _) -> pattern.matches(file) }.flatMap { it.second }
+                }
+                val installed = files.map { it.second }.filter { it.isNotEmpty() } + embedded.flatMap { it.files }
+                val pom = checkNotNull(pomOf[id]) { "No POM of $id was resolved" }
+                listOf(pomPart(group, module, version, pom, installed.distinct())) + embedded
+            } + includedParts.files.sortedBy { it.path }.flatMap { readParts(it.readText()) } + extraParts.get(),
+        )
         val texts = texts.get().asFile
         notices.get().asFile.writeText(thirdPartyNotices(artifactName.get(), OWN_SPDX, parts, texts, notes.get()))
         copyright.get().asFile.writeText(
@@ -109,6 +120,7 @@ abstract class ThirdPartyLicenses : DefaultTask() {
             ),
         )
         spdx.get().asFile.writeText(spdxExpression(OWN_SPDX, parts))
+        this.parts.get().asFile.writeText(writeParts(parts))
     }
 }
 
@@ -183,6 +195,7 @@ fun Project.thirdPartyLicenses(
         notices.set(folder.map { it.file(THIRD_PARTY) })
         copyright.set(folder.map { it.file("copyright") })
         spdx.set(folder.map { it.file("license.spdx") })
+        parts.set(folder.map { it.file("parts.licences") })
         configure()
     }
 }

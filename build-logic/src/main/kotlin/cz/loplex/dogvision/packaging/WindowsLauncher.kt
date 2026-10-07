@@ -157,7 +157,9 @@ const val WINDOWS_LAUNCHER_USAGE = "dog-vision-windows-launcher"
  * as [WindowsLauncherFiles] says, and the variant of the module that hands :packaging those files:
  * the launcher starts [mainClass] from [ownJar], on [classpath] after it,
  * with [javaOptions], in a console where [console], on a runtime with [runtimeModules].\
- * No file of the launcher's is in a folder of the JARs that [leftOut] names.
+ * No file of the launcher's is in a folder of the JARs that [leftOut] names.\
+ * The variant hands over too what [classpath] holds that is not this project's own,
+ * [name].licences, for the app image's licences.
  */
 fun Project.windowsLauncher(
     name: String,
@@ -183,12 +185,17 @@ fun Project.windowsLauncher(
         this.runtimeModules.set(runtimeModules)
         destination.set(layout.buildDirectory.dir("windows/launcher"))
     }
+    val licences = thirdPartyLicenses("windowsLauncherLicences", listOf(classpath)) {
+        artifactName.set("The launcher $name")
+        parts.set(layout.buildDirectory.file("third-party/windowsLauncherLicences/$name.licences"))
+    }
     configurations.consumable("windowsLauncherElements") {
         attributes { attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, WINDOWS_LAUNCHER_USAGE)) }
         outgoing.artifact(files.flatMap { it.destination.dir("jars") })
         for (suffix in listOf("properties", "classpath", "modules")) {
             outgoing.artifact(files.flatMap { it.destination.file("$name.$suffix") })
         }
+        outgoing.artifact(licences.flatMap { it.parts })
     }
     return files
 }

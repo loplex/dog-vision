@@ -28,16 +28,18 @@ internal fun windowsFolder(name: String) = if (name.isEmpty()) "windows" else "w
  * Without it:
  *
  * - windowsJpackage: build/windows/jpackage, what jpackage makes the image of, as [WindowsJpackageFiles] says.
- * - windowsLauncherConfigs:
- *   build/windows/launchers, the .cfg of the launchers of the image that -PwindowsAppImage names,
- *   each with the classpath its launcher's .classpath names,
- *   as [WindowsLauncherConfigs] says, which the scripts copy into the image.
+ * - windowsLauncherConfigs: build/windows/launchers,
+ *   the .cfg of the launchers of the image that -PwindowsAppImage names,
+ *   each with the classpath its launcher's .classpath names, as [WindowsLauncherConfigs] says,
+ *   which the scripts copy into the image; and LICENSE and [notices],
+ *   what the image holds that is not this project's own, which they copy into the image's folder.
  */
 fun Project.windowsAppImage(
     packageName: String,
     description: String,
     launchers: FileCollection,
     runtime: TaskProvider<RuntimeImage>,
+    notices: Provider<RegularFile>,
     name: String = "",
 ): TaskProvider<WindowsJpackageFiles> {
     val folder = windowsFolder(name)
@@ -47,6 +49,8 @@ fun Project.windowsAppImage(
         group = "distribution"
         image.set(builtAppImage())
         classpaths.from(launchers.asFileTree.matching { include("**/*.classpath") })
+        license.set(rootProject.layout.projectDirectory.file("LICENSE"))
+        this.notices.set(notices)
         destination.set(layout.buildDirectory.dir("$folder/launchers"))
     }
     return tasks.register("windows${name}Jpackage", WindowsJpackageFiles::class.java) {

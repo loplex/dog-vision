@@ -1,4 +1,5 @@
 # Installs the MSI, upgrades it to a later one and removes it, checking each step:
+# LICENSE, THIRD-PARTY-LICENSES.txt and the runtime's legal folder,
 # the windows' launchers with their shortcuts in the Start menu and on the desktop,
 # the command line's with none but the installation folder on the system's PATH,
 # and the web page with a shortcut in the Start menu to its index.html,
@@ -106,6 +107,9 @@ function Test-Installed([string]$Expected, [string[]]$Parts = $launchers) {
     Test-Check "one $product is installed" ($installed.Count -eq 1)
     Test-Check "the installed version is $Expected" (@($installed | Where-Object DisplayVersion -eq $Expected).Count -eq 1)
     Test-Check "the runtime is installed" (Test-Path (Join-Path $installDir "runtime\lib\modules"))
+    foreach ($file in "LICENSE", "THIRD-PARTY-LICENSES.txt", "runtime\legal\java.base") {
+        Test-Check "$file is installed" (Test-Path (Join-Path $installDir $file))
+    }
     foreach ($launcher in $launchers) {
         $present = Test-Path (Join-Path $installDir $launcher)
         if ($launcher -in $Parts) {

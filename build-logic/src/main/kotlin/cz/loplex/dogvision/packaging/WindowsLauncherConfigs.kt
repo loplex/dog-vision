@@ -4,6 +4,8 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
@@ -17,7 +19,8 @@ import java.io.File
  * a Windows app image as jpackage made it of [WindowsJpackageFiles],
  * with the classpath the launcher's .cfg among [classpaths] names, in its order:
  * jpackage puts every JAR of its input on each launcher's, the launcher's own first.\
- * The scripts in tools copy them over jpackage's.
+ * The scripts in tools copy them over jpackage's.\
+ * Beside them [license] and [notices], which the scripts copy into the image's folder.
  */
 abstract class WindowsLauncherConfigs : DefaultTask() {
     @get:Internal
@@ -32,6 +35,16 @@ abstract class WindowsLauncherConfigs : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NAME_ONLY)
     abstract val classpaths: ConfigurableFileCollection
+
+    /** The project's licence, LICENSE. */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val license: RegularFileProperty
+
+    /** What the image holds that is not this project's own, as [ThirdPartyLicenses] writes it. */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val notices: RegularFileProperty
 
     @get:OutputDirectory
     abstract val destination: DirectoryProperty
@@ -66,6 +79,8 @@ abstract class WindowsLauncherConfigs : DefaultTask() {
         }
         val jars = app.listFiles().orEmpty().filter { it.name.endsWith(".jar") }.map { it.name }.toSet()
         check(onClasspaths == jars) { "JARs of $app on no launcher's classpath: ${jars - onClasspaths}" }
+        license.get().asFile.copyTo(File(out, "LICENSE"))
+        notices.get().asFile.copyTo(File(out, THIRD_PARTY))
     }
 }
 
