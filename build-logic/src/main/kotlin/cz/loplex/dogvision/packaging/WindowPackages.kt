@@ -184,6 +184,8 @@ fun Project.windowPackages(
         )
         requires.add(this.version.zip(release) { version, release -> "$sharedPackage = $version-$release" })
         recommends.set(listOf("dog-vision-cli"))
+        licenseName.set(licences.flatMap { it.spdx }.map { it.asFile.readText() })
+        thirdPartyLicenses.set(licences.flatMap { it.notices })
     }
     artifact(packageDeb)
     artifact(packageRpm)

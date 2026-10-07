@@ -48,7 +48,10 @@ abstract class RpmPackage : DefaultTask() {
     @get:Input
     abstract val url: Property<String>
 
-    /** The license's SPDX identifier. */
+    /**
+     * The SPDX expression of the package's own licence and of those of what it bundles,
+     * as [ThirdPartyLicenses] writes it.
+     */
     @get:Input
     abstract val licenseName: Property<String>
 
@@ -80,6 +83,11 @@ abstract class RpmPackage : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val license: RegularFileProperty
 
+    /** What the package bundles and under which licences, as [ThirdPartyLicenses] writes it, a %license beside it. */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val thirdPartyLicenses: RegularFileProperty
+
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
 
@@ -104,6 +112,7 @@ abstract class RpmPackage : DefaultTask() {
             root.mkdirs()
             stage(tree.get().asFile, root)
             license.get().asFile.copyTo(top.resolve("SOURCES/LICENSE"))
+            thirdPartyLicenses.get().asFile.copyTo(top.resolve("SOURCES/$THIRD_PARTY"))
             val owned = folderNames.get()
             val entries = root.walkTopDown().drop(1).sortedBy { it.path }.mapNotNull { file ->
                 val path = "/" + file.relativeTo(root).invariantSeparatorsPath
@@ -137,13 +146,13 @@ abstract class RpmPackage : DefaultTask() {
                     appendLine(longDescription.get().trim())
                     appendLine()
                     appendLine("%prep")
-                    appendLine("cp %{_sourcedir}/LICENSE .")
+                    appendLine("cp %{_sourcedir}/LICENSE %{_sourcedir}/$THIRD_PARTY .")
                     appendLine()
                     appendLine("%install")
                     appendLine("cp -a %{_sourcedir}/root/. %{buildroot}/")
                     appendLine()
                     appendLine("%files")
-                    appendLine("%license LICENSE")
+                    appendLine("%license LICENSE $THIRD_PARTY")
                     for (entry in entries) appendLine(entry)
                 },
             )

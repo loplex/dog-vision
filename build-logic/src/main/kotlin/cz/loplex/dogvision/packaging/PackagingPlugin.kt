@@ -27,7 +27,6 @@ class PackagingPlugin : Plugin<Project> {
             version.convention(appVersion)
             release.convention("1")
             url.convention(HOMEPAGE)
-            licenseName.convention("GPL-3.0-or-later")
             license.convention(licenseText)
             destinationDirectory.convention(distributions)
         }

@@ -225,6 +225,9 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     Skia and the libraries Skia builds in among them, from the table in [`ThirdParty.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/ThirdParty.kt);
   - Apache-2.0's text is Debian's too;
     every other licence's text, which names its holder, comes from [`packaging/licenses`](../packaging/licenses).
+- **Each rpm names the same licences**: its `License` is the SPDX expression of the project's own and theirs,
+  and `THIRD-PARTY-LICENSES.txt`, which lists each part with every licence's full text,
+  is a `%license` beside `LICENSE` in `/usr/share/licenses/<package>`.
 - **The web page's deb and rpm, `dog-vision-web`, need no Java**, and have no natives,
   so one package serves every architecture:
   - the page in `/usr/share/dog-vision-web`,
