@@ -70,34 +70,56 @@ subprojects {
     }
 }
 
-// ktlint leaves a line that holds a comment and nothing else as long as it is,
-// so every line of Kotlin is held to .editorconfig's max_line_length here, in each module's `check`.
-val maxLineLength = file(".editorconfig").readLines()
-    .dropWhile { it.trim() != "[*.{kt,kts}]" }.drop(1)
+// ktlint leaves a line that holds a comment and nothing else as long as it is, and nothing measures Markdown,
+// so every line of either is held to .editorconfig's max_line_length for it here, in each module's `check`.
+fun maxLineLength(section: String) = file(".editorconfig").readLines()
+    .dropWhile { it.trim() != section }.drop(1)
     .takeWhile { !it.startsWith("[") }
     .firstNotNullOf { Regex("""max_line_length\s*=\s*(\d+)""").matchEntire(it.trim())?.groupValues?.get(1)?.toInt() }
 val checkLineLength = tasks.register("checkLineLength") {
-    description = "Fails on a line of Kotlin longer than .editorconfig's max_line_length, comments included."
+    description = "Fails on a line of Kotlin or Markdown longer than .editorconfig's max_line_length for it."
     val root = rootDir
-    val limit = maxLineLength
+    val kotlinLimit = maxLineLength("[*.{kt,kts}]")
+    val markdownLimit = maxLineLength("[*.md]")
     // What git tracks, and the new files it does not ignore, as tools/check_links.py reads them.
-    val sources = files(
+    fun listed(vararg patterns: String) = files(
         providers.exec {
-            commandLine("git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "*.kt", "*.kts")
+            commandLine("git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", *patterns)
         }.standardOutput.asText.map { listed ->
             listed.split('\u0000').filter { it.isNotEmpty() && File(root, it).isFile }
         },
     )
-    inputs.files(sources)
-    inputs.property("maxLineLength", limit)
+    val kotlin = listed("*.kt", "*.kts")
+    val markdown = listed("*.md")
+    inputs.files(kotlin, markdown)
+    inputs.property("kotlinLimit", kotlinLimit)
+    inputs.property("markdownLimit", markdownLimit)
     doLast {
-        val tooLong = sources.files.sorted().flatMap { source ->
+        fun tooLong(source: File, number: Int, line: String, limit: Int, counted: String = "characters") =
+            line.codePointCount(0, line.length).let {
+                if (it > limit) "${source.relativeTo(root)}:$number: $it > $limit $counted" else null
+            }
+        val kotlinTooLong = kotlin.files.sorted().flatMap { source ->
+            source.readLines().mapIndexedNotNull { i, line -> tooLong(source, i + 1, line, kotlinLimit) }
+        }
+        // Neither a code block's line nor a table's row can be broken, so they are left as long as they are;
+        // nor can a link's target, so a line is measured as though its targets were not there.
+        val fence = Regex("""^\s*(```|~~~)""")
+        val tableRow = Regex("""^\s*\|""")
+        val target = Regex("""(?<=\]\()[^)]*(?=\))|https?://\S+""")
+        val markdownTooLong = markdown.files.sorted().flatMap { source ->
+            var inCode = false
             source.readLines().mapIndexedNotNull { i, line ->
-                val length = line.codePointCount(0, line.length)
-                if (length > limit) "${source.relativeTo(root)}:${i + 1}: $length > $limit characters" else null
+                if (fence.containsMatchIn(line)) inCode = !inCode
+                if (inCode || fence.containsMatchIn(line) || tableRow.containsMatchIn(line)) {
+                    null
+                } else {
+                    tooLong(source, i + 1, line.replace(target, ""), markdownLimit, "characters but links' targets")
+                }
             }
         }
-        if (tooLong.isNotEmpty()) throw GradleException(tooLong.joinToString("\n"))
+        val failures = kotlinTooLong + markdownTooLong
+        if (failures.isNotEmpty()) throw GradleException(failures.joinToString("\n"))
     }
 }
 

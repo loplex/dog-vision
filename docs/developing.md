@@ -266,8 +266,10 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 - `./gradlew ktlintCheck` checks it, and `./gradlew ktlintFormat` fixes what it can;
   `build-logic`'s own are `:build-logic:ktlintCheck` and `:build-logic:ktlintFormat`,
   and each module's `check` runs `build-logic`'s;
-- `./gradlew checkLineLength` holds every line to 120 characters, comments included:
-  ktlint does not measure a line that is a comment and nothing else.
+- `./gradlew checkLineLength` holds every line of Kotlin to 120 characters, comments included:
+  ktlint does not measure a line that is a comment and nothing else.\
+  It holds the Markdown's lines to 120 as well,
+  but for code blocks and tables, and without the links' targets, none of which can be broken.
 
 ### detekt looks for likely bugs and code smells
 
