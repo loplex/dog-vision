@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.awt.EventQueue
 import java.io.File
 import java.io.IOException
-import java.util.Locale
 import kotlin.concurrent.thread
 
 /**
@@ -45,7 +44,7 @@ class LiveSession<I>(
     private val canInstallFfmpeg: Boolean = onWindows,
     wingetFound: Boolean = canInstallFfmpeg && FfmpegPrograms.wingetOnPath(),
     private val post: (() -> Unit) -> Unit = { EventQueue.invokeLater(it) },
-    private val systemLanguage: () -> String = { Locale.getDefault().toLanguageTag() },
+    private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.cli.systemLanguages() },
 ) : AutoCloseable {
     /**
      * What the window shows besides the picture:
@@ -316,7 +315,8 @@ class LiveSession<I>(
         mutableState.value = mutableState.value.change()
     }
 
-    private fun textsIn(language: String): Texts = Texts.forLanguages(listOf(language.ifEmpty(systemLanguage)))
+    private fun textsIn(language: String): Texts =
+        Texts.forLanguages(if (language.isEmpty()) systemLanguages() else listOf(language))
 
     companion object {
         /** A session drawn by a [GlRenderer], opened as [arguments] ask on Windows, into images [imageMaker] makes. */

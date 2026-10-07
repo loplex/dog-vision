@@ -52,7 +52,7 @@ class ControlsTest {
         cameraLister = { cameras },
         inBackground = { it() },
         post = { it() },
-        systemLanguage = { "en" },
+        systemLanguages = { listOf("en") },
     )
 
     private val controls = Controls(session)
