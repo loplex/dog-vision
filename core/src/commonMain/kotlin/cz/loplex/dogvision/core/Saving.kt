@@ -1,4 +1,4 @@
-// Named after what it is for, saving's names, rather than after its one class.
+// Named after what it is for, what is saved: its names and its picture, rather than after its one class.
 @file:Suppress("MatchingDeclarationName")
 
 package cz.loplex.dogvision.core
@@ -25,5 +25,30 @@ fun snapshotName(view: View, time: ClockTime, suffix: String = "", extension: St
  */
 fun shownName(view: View): String =
     view.compare?.takeIf { view.sideBySide }?.let { "${it.id}-vs-${view.params.species.id}" } ?: view.params.species.id
+
+/** The images of a view put together as it shows them, side by side or one above another, as the app's stitch does. */
+fun stitch(images: List<Image>, arrangement: Arrangement): Image {
+    val width = images.first().width
+    val height = images.first().height
+    val whole = if (arrangement ==
+        Arrangement.ROW
+    ) {
+        Image(width * images.size, height)
+    } else {
+        Image(width, height * images.size)
+    }
+    images.forEachIndexed { i, image ->
+        val (x, y) = if (arrangement == Arrangement.ROW) width * i to 0 else 0 to height * i
+        for (row in 0 until height) {
+            image.pixels.copyInto(
+                whole.pixels,
+                (y + row) * whole.width + x,
+                row * width,
+                (row + 1) * width,
+            )
+        }
+    }
+    return whole
+}
 
 private fun pad(value: Int) = value.toString().padStart(2, '0')

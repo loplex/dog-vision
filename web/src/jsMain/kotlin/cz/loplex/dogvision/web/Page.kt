@@ -7,6 +7,7 @@ import cz.loplex.dogvision.core.ScreenLayout
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
 import cz.loplex.dogvision.core.snapshotName
+import cz.loplex.dogvision.core.stitch
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.switchKey
