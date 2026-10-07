@@ -1,10 +1,11 @@
 package cz.loplex.dogvision.cli
 
+import cz.loplex.dogvision.common.UsageException
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
+import cz.loplex.dogvision.texts.systemTexts
 import java.io.Console
 import java.io.PrintStream
-import java.util.Locale
 import kotlin.system.exitProcess
 
 /** The command line: it converts a photo or a video, and says that the window is the desktop app's. */
@@ -22,20 +23,6 @@ fun onTerminal(): Boolean {
     val console = System.console() ?: return false
     return runCatching { Console::class.java.getMethod("isTerminal").invoke(console) as Boolean }.getOrDefault(true)
 }
-
-/** The texts in the system's language, as [systemLanguages] lists it, or in English if there are none for it. */
-fun systemTexts(): Texts = Texts.forLanguages(systemLanguages())
-
-/**
- * The languages the system asks for, most wanted first, as gettext reads them:
- * the list in [environment]'s LANGUAGE, colon-separated, where it is set, or else [locale],
- * which the JVM takes from LC_ALL, LC_MESSAGES or LANG, or from Windows' language.\
- * Each is a language tag such as "cs-CZ".
- */
-fun systemLanguages(environment: Map<String, String> = System.getenv(), locale: Locale = Locale.getDefault()) =
-    environment["LANGUAGE"].orEmpty().split(':').filter { it.isNotEmpty() }
-        .map { it.substringBefore('.').substringBefore('@').replace('_', '-') }
-        .ifEmpty { listOf(locale.toLanguageTag()) }
 
 /**
  * Reads [args] and does what they ask for, worded by [texts]:

@@ -1,6 +1,5 @@
-package cz.loplex.dogvision.cli
+package cz.loplex.dogvision.texts
 
-import cz.loplex.dogvision.texts.Texts
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals

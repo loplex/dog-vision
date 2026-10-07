@@ -23,8 +23,8 @@ import javax.inject.Inject
 
 /**
  * Makes jpackage's app image of [jars] in [destination]/[imageName]: a native launcher that starts [mainClass],
- * the JARs, and a runtime of its own that jlink links from [jdkHome] with [modules] alone,
- * as Compose's createDistributable makes the Compose window's, for a module Compose's plugin is not applied to.\
+ * the JARs, and a runtime of its own that jlink links from [jdkHome] with [modules] and those [moduleLists] name alone,
+ * as Compose's createDistributable makes one, where Compose's plugin is not applied.\
  * Each of [launchers] is another launcher, from its properties file.
  */
 abstract class AppImage : DefaultTask() {
@@ -57,6 +57,11 @@ abstract class AppImage : DefaultTask() {
 
     @get:Input
     abstract val modules: ListProperty<String>
+
+    /** Files that name further modules, one a line, as a launcher's .modules that [windowsLauncher] writes. */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val moduleLists: ConfigurableFileCollection
 
     @get:Input
     abstract val javaOptions: ListProperty<String>
@@ -103,11 +108,14 @@ abstract class AppImage : DefaultTask() {
             "--name", imageName.get(),
             "--app-version", appVersion.get(),
             "--icon", icon.get().asFile.path,
-            "--add-modules", modules.get().joinToString(","),
+            "--add-modules", runtimeModules().joinToString(","),
             "--dest", destination.get().asFile.path,
         )
         for (option in javaOptions.get()) command += listOf("--java-options", option)
         for ((launcher, properties) in launchers.get()) command += listOf("--add-launcher", "$launcher=$properties")
         exec.exec { commandLine(command) }
     }
+
+    private fun runtimeModules(): List<String> =
+        (modules.get() + moduleLists.files.sorted().flatMap { it.readLines() }.filter(String::isNotBlank)).distinct()
 }

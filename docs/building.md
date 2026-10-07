@@ -33,20 +33,18 @@ A module's build script marks each task that makes one of its artifacts with [`a
 which adds it to the module's `packageAll`.\
 Each artifact lands here:
 
-| Program        | Artifacts                    | Folder                                        |
-|----------------|------------------------------|-----------------------------------------------|
-| Android app    | the debug APK                | `android/build/outputs/apk/debug`             |
-| web page       | the page                     | `web/build/dist/js/productionExecutable`      |
-| web page       | the deb, the rpm             | `packaging/build/distributions`               |
-| command line   | the JAR                      | `cli/build/jars`                              |
-| command line   | the deb, the rpm             | `packaging/build/distributions`               |
-| JVM programs   | the shared deb, rpm          | `packaging/build/distributions`               |
-| Compose window | the JARs, Linux's, Windows's | `gui-compose/build/compose/jars`              |
-| Compose window | the deb, the rpm             | `packaging/build/distributions`               |
-| Compose window | the tar.gz                   | `gui-compose/build/compose/binaries/main/tar` |
-| Swing window   | the JARs, Linux's, Windows's | `gui-swing/build/jars`                        |
-| Swing window   | the deb, the rpm             | `packaging/build/distributions`               |
-| Swing window   | the tar.gz                   | `gui-swing/build/packages/tar`                |
+| Program        | Artifacts                    | Folder                                       |
+|----------------|------------------------------|----------------------------------------------|
+| Android app    | the debug APK                | `android/build/outputs/apk/debug`            |
+| web page       | the page                     | `web/build/dist/js/productionExecutable`     |
+| web page       | the deb, the rpm             | `packaging/build/distributions`              |
+| command line   | the JAR                      | `cli/build/jars`                             |
+| command line   | the deb, the rpm             | `packaging/build/distributions`              |
+| JVM programs   | the shared deb, rpm          | `packaging/build/distributions`              |
+| Compose window | the JARs, Linux's, Windows's | `gui-compose/build/compose/jars`             |
+| Compose window | the deb, the rpm, the tar.gz | `packaging/build/distributions`              |
+| Swing window   | the JARs, Linux's, Windows's | `gui-swing/build/jars`                       |
+| Swing window   | the deb, the rpm, the tar.gz | `packaging/build/distributions`              |
 
 `./gradlew checkArtifactFolders` holds the folders to the tasks, and runs in `check`:
 every file a task of `packageAll` declares, but its work files, lies in one of them, and each of them holds one.
@@ -152,25 +150,26 @@ pwsh tools/package_cli_zip_on_windows.ps1
 ## The desktop packages
 
 ```sh
-./gradlew :packaging:packageDeb      # packaging/build/distributions: dog-vision-compose_0.1.0_amd64.deb,
-                                     # dog-vision-swing_0.1.0_amd64.deb, dog-vision-cli_0.1.0_all.deb,
-                                     # dog-vision-common_0.1.0_all.deb, dog-vision-web_0.1.0_all.deb,
-                                     # dog-vision-web-sourcemap_0.1.0_all.deb, dog-vision_0.1.0_amd64.deb
-./gradlew :packaging:packageRpm      # packaging/build/distributions: dog-vision-compose-0.1.0-1.x86_64.rpm,
-                                     # dog-vision-swing-0.1.0-1.x86_64.rpm, dog-vision-cli-0.1.0-1.noarch.rpm,
-                                     # dog-vision-common-0.1.0-1.noarch.rpm, dog-vision-web-0.1.0-1.noarch.rpm,
-                                     # dog-vision-web-sourcemap-0.1.0-1.noarch.rpm, dog-vision-0.1.0-1.x86_64.rpm
-./gradlew :gui-compose:packageTarGz  # gui-compose/build/compose/binaries/main/tar/dog-vision-compose-0.1.0-linux-x64.tar.gz
-./gradlew :gui-swing:packageTarGz    # gui-swing/build/packages/tar/dog-vision-swing-0.1.0-linux-x64.tar.gz
+./gradlew :packaging:packageDeb  # packaging/build/distributions: dog-vision-compose_0.1.0_amd64.deb,
+                                 # dog-vision-swing_0.1.0_amd64.deb, dog-vision-cli_0.1.0_all.deb,
+                                 # dog-vision-common_0.1.0_all.deb, dog-vision-web_0.1.0_all.deb,
+                                 # dog-vision-web-sourcemap_0.1.0_all.deb, dog-vision_0.1.0_amd64.deb
+./gradlew :packaging:packageRpm  # packaging/build/distributions: dog-vision-compose-0.1.0-1.x86_64.rpm,
+                                 # dog-vision-swing-0.1.0-1.x86_64.rpm, dog-vision-cli-0.1.0-1.noarch.rpm,
+                                 # dog-vision-common-0.1.0-1.noarch.rpm, dog-vision-web-0.1.0-1.noarch.rpm,
+                                 # dog-vision-web-sourcemap-0.1.0-1.noarch.rpm, dog-vision-0.1.0-1.x86_64.rpm
+./gradlew :packaging:packageTarGz
+                                 # packaging/build/distributions: dog-vision-compose-0.1.0-linux-x64.tar.gz,
+                                 # dog-vision-swing-0.1.0-linux-x64.tar.gz
 tools/fetch_msi_tools_on_linux.sh
-                                     # once: what the MSI is built with, into tools/cache
+                                 # once: what the MSI is built with, into tools/cache
 tools/make_wine_prefix_on_linux.sh
-                                     # once: its Wine prefix, ~/.local/share/wineprefixes/mono_msi_builder
+                                 # once: its Wine prefix, ~/.local/share/wineprefixes/mono_msi_builder
 tools/package_app_image_on_linux.sh
-                                     # the folders the MSI and the zip hold: tools/build/app-image/dog-vision-compose, …
-tools/package_msi_on_linux.sh        # tools/build/msi/dog-vision-0.1.0.msi
+                                 # the folders the MSI and the zip hold: tools/build/app-image/dog-vision-compose, …
+tools/package_msi_on_linux.sh    # tools/build/msi/dog-vision-0.1.0.msi
 pwsh tools/package_msi_on_windows.ps1
-                                     # on Windows: the same
+                                 # on Windows: the same
 ```
 
 Each deb and rpm alone is a task of `:packaging` named after it:
@@ -190,8 +189,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   so that build needs the network: jpackage runs from it, and it is the tar.gzs' runtime.\
   Its jlink links the MSI's runtime as well, from Temurin's jmods for Windows,
   which Gradle downloads too, of the release `temurin-windows-jmods` in [`libs.versions.toml`](../gradle/libs.versions.toml) gives.\
-  The Compose window's tar.gz comes from Compose's own jpackage task,
-  the Swing window's from [`AppImage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/AppImage.kt) in `build-logic`, as Compose's plugin is not applied to it.\
+  Both tar.gzs come from [`AppImage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/AppImage.kt) in `build-logic`, which `packaging` runs for each window,
+  as it takes both the window and the command line, whose launcher each tar.gz holds beside the window's.\
   The deb and the rpm take none, as they run on the system's Java.
 - **The tar.gz needs nothing more**, and neither do the JARs.
 - **The version, 0.1.0 in the names above, is `appVersion` in [`gradle.properties`](../gradle.properties)**,

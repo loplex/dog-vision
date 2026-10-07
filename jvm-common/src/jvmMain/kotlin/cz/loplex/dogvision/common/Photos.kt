@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.cli
+package cz.loplex.dogvision.common
 
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.exifTurn

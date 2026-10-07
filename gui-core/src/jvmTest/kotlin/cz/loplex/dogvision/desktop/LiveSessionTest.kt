@@ -1,6 +1,6 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.ViewOptions
+import cz.loplex.dogvision.common.ViewOptions
 import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.Image

@@ -134,8 +134,8 @@ jobs:
       - name: Build the tar.gz and try it
         if: success() || failure()
         run: |
-          ./gradlew :gui-compose:packageTarGz
-          tar -xzf gui-compose/build/compose/binaries/main/tar/dog-vision-compose-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          ./gradlew :packaging:packageDogVisionComposeTarGz
+          tar -xzf packaging/build/distributions/dog-vision-compose-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
           "$RUNNER_TEMP/dog-vision-compose/bin/dog-vision-compose" --help
           cp tools/test_photo.jpg "$RUNNER_TEMP"
           "$RUNNER_TEMP/dog-vision-compose/bin/dog-vision-cli" "$RUNNER_TEMP/test_photo.jpg"
@@ -144,8 +144,8 @@ jobs:
       - name: Build the dog-vision-swing tar.gz and try it
         if: success() || failure()
         run: |
-          ./gradlew :gui-swing:packageTarGz
-          tar -xzf gui-swing/build/packages/tar/dog-vision-swing-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          ./gradlew :packaging:packageDogVisionSwingTarGz
+          tar -xzf packaging/build/distributions/dog-vision-swing-0.1.0-linux-x64.tar.gz -C "$RUNNER_TEMP"
           "$RUNNER_TEMP/dog-vision-swing/bin/dog-vision-swing" --help
           mkdir "$RUNNER_TEMP/swing" && cp tools/test_photo.jpg "$RUNNER_TEMP/swing"
           "$RUNNER_TEMP/dog-vision-swing/bin/dog-vision-cli" "$RUNNER_TEMP/swing/test_photo.jpg"

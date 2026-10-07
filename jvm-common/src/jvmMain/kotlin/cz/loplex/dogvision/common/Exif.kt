@@ -1,7 +1,7 @@
 // The markers, offsets and tags of JPEG's and TIFF's formats, as EXIF lays them out.
 @file:Suppress("MagicNumber")
 
-package cz.loplex.dogvision.cli
+package cz.loplex.dogvision.common
 
 /**
  * The EXIF orientation a JPEG's APP1 segment gives,

@@ -1,5 +1,6 @@
 package cz.loplex.dogvision.cli
 
+import cz.loplex.dogvision.common.readPhoto
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.compose

@@ -1,8 +1,8 @@
 package cz.loplex.dogvision.swing
 
-import cz.loplex.dogvision.cli.systemTexts
 import cz.loplex.dogvision.desktop.runWindow
 import cz.loplex.dogvision.desktop.sayFromWindow
+import cz.loplex.dogvision.texts.systemTexts
 import kotlin.system.exitProcess
 
 /** The Swing window's name, which its usage and its mistakes say. */

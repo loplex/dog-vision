@@ -5,10 +5,10 @@ import cz.loplex.dogvision.packaging.windowsLauncher
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// The command line on the JVM: its options, a photo read as it is meant to be seen,
-// and the photo converted at full size by core, or a video, frame by frame, through ffmpeg.
+// The command line on the JVM: its options, and a photo converted at full size by core,
+// or a video, frame by frame, through ffmpeg.
 // It needs no toolkit and no GPU.
-// Its view options are the windows' as well, which read them through gui-core.
+// The view's options and the reading of a photo it shares with the windows, in jvm-common.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kover)
@@ -35,8 +35,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(project(":core"))
-            api(project(":texts"))
+            implementation(project(":jvm-common"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

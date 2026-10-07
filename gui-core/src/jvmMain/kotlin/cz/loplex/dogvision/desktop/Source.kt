@@ -1,6 +1,6 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.readPhoto
+import cz.loplex.dogvision.common.readPhoto
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.ffmpeg.FfmpegMissing
 import cz.loplex.dogvision.texts.Str

@@ -47,7 +47,7 @@ class LiveSession<I>(
     private val canInstallFfmpeg: Boolean = onWindows,
     wingetFound: Boolean = canInstallFfmpeg && FfmpegPrograms.wingetOnPath(),
     private val post: (() -> Unit) -> Unit = { EventQueue.invokeLater(it) },
-    private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.cli.systemLanguages() },
+    private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.texts.systemLanguages() },
 ) : AutoCloseable {
     /**
      * What the window shows besides the picture:

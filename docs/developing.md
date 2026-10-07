@@ -20,6 +20,7 @@ Building the programs is [Building it](building.md)'s.
 | [`android`](../android)           | the Android app                            | Android             |
 | [`web`](../web)                   | the web page                               | JavaScript          |
 | [`cli`](../cli)                   | the command line                           | the JVM             |
+| [`jvm-common`](../jvm-common)     | what the command line and windows share    | the JVM             |
 | [`gui-core`](../gui-core)         | what the desktop windows share             | the JVM             |
 | [`ffmpeg`](../ffmpeg)             | ffmpeg and ffprobe, found and run          | the JVM             |
 | [`gui-compose`](../gui-compose)   | the desktop window, in Compose             | the JVM             |
@@ -50,7 +51,7 @@ The root project declares the plugin, so these are on every module's build scrip
 - **`ui`'s Compose Multiplatform 1.12 is Jetpack Compose 1.12**, and its Material 3 1.9 is androidx Material 3 1.4,
   the versions of the app's Compose BOM, so that the app runs one of each.
 - **The command line and the windows take options of their own**, and share the view's:
-  [`cli`'s `ViewOptions`](../cli/src/jvmMain/kotlin/cz/loplex/dogvision/cli/Arguments.kt) reads them for both,
+  [`jvm-common`'s `ViewOptions`](../jvm-common/src/jvmMain/kotlin/cz/loplex/dogvision/common/Options.kt) reads them for both,
   and [`gui-core`'s `runWindow`](../gui-core/src/jvmMain/kotlin/cz/loplex/dogvision/desktop/WindowArguments.kt) answers a window's `--help` and a command line it cannot read,
   and opens the window on the rest.
 - **`gui-core` has neither Compose nor skiko in it**: Java's own AWT and Swing are its only toolkits.\
@@ -82,11 +83,12 @@ graph TD
         gui-compose
         gui-swing
         web
+        cli
     end
     subgraph shared [what the programs share]
         ui
         gui-core
-        cli
+        jvm-common
         ffmpeg
     end
     subgraph base [built on core]
@@ -96,15 +98,16 @@ graph TD
     subgraph model [the model]
         core
     end
-    cli ==> core
+    jvm-common ==> core
     android --> gl
     gl --> core
     gui-core --> gl
     gui-swing --> gui-core
     gui-compose --> gui-core
     testing ==> core
-    gui-core ==> cli
+    gui-core ==> jvm-common
     gui-core ==> ffmpeg
+    cli --> jvm-common
     cli --> ffmpeg
     gui-compose --> ui
     web --> gl
@@ -125,7 +128,7 @@ graph TD
     end
     subgraph shared [what the programs share]
         ui
-        cli
+        jvm-common
     end
     subgraph base [built on core]
         texts
@@ -135,12 +138,12 @@ graph TD
     end
     android --> texts
     web --> texts
-    cli ==> texts
+    jvm-common ==> texts
     ui ==> texts
     texts ==> core
     programs ~~~ shared
     classDef program font-weight:bold
-    class android,web,cli program
+    class android,web program
 ```
 
 What uses `testing`, in tests alone:
@@ -192,13 +195,13 @@ graph TD
 ```
 
 - **`texts` has a graph of its own, as with it in the first one lines have to cross**, however the modules are placed:
-  `android`, `web`, and `cli` with `gui-core`, are three that each reach the same three,
+  `android`, `web`, and `jvm-common` with `gui-core`, are three that each reach the same three,
   `core`, `gl` and `texts`, and no drawing on a plane joins three to three without a crossing.\
-  Without `texts` the first graph could be drawn with none, but its layers still cost it one.
-- **`cli` is a program, in bold, and stands among what the programs share**, as `gui-core` uses it:
-  the windows read the view's options and a photo through it.
-- **`gui-compose` and `gui-swing` reach `core` and `texts` through `gui-core`**,
-  which passes on `cli` and, through it, the two `cli` uses.
+  Without `texts` the first graph could be drawn with none.
+- **`jvm-common` holds what the command line and the windows share**:
+  the view's options, which each reads from its command line, and a photo read as it is meant to be seen.
+- **`gui-compose`, `gui-swing` and `cli` reach `core` and `texts` through what they share**:
+  the windows through `gui-core`, which passes on `jvm-common`, and `cli` through `jvm-common`, which passes on the two.
 - **`ui` passes on `texts`**, as its `text` and `InfoButton` take an entry of `texts`' `Str`.
 - **`packaging` has no code of its own**: it takes from the module that has them the JARs a Linux package installs,
   through `jvmRuntimeOf`, as a module takes a library's,
@@ -232,9 +235,10 @@ The test classes' comments say what each of them holds.
 |------------------------------------------------|------------------------------------------------------|
 | `./gradlew :core:jvmTest`                      | the model, against the reference values              |
 | `./gradlew :core:allTests`                     | the same, and the JVM and Node.js agreeing           |
-| `./gradlew :texts:allTests`                    | every language having every string, and plurals      |
+| `./gradlew :texts:allTests`                    | every language's strings, plurals, system languages  |
 | `./gradlew :ui:jvmTest`                        | the shared controls, in Compose's test scene         |
-| `./gradlew :cli:jvmTest`                       | the options, EXIF, photo and video, the figures      |
+| `./gradlew :jvm-common:jvmTest`                | EXIF, and a photo read upright                       |
+| `./gradlew :cli:jvmTest`                       | the options, photo and video, the figures            |
 | `./gradlew :gui-core:jvmTest`                  | the window's passes, GL contexts, ffmpeg, session    |
 | `./gradlew :ffmpeg:jvmTest`                    | finding ffmpeg, its download, video read and written |
 | `./gradlew :gui-swing:jvmTest`                 | the Swing window's image, theme and a dropped file   |
@@ -303,8 +307,8 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 ### The JVM tests' coverage is measured, not required
 
 - **`./gradlew koverHtmlReport` writes which lines and branches the JVM tests reach**,
-  for `cli`, `core`, `ffmpeg`, `gl`, `gui-compose`, `gui-core`, `gui-swing`, `texts` and `ui`, in one report:
-  `build/reports/kover/html/index.html`.
+  for `cli`, `core`, `ffmpeg`, `gl`, `gui-compose`, `gui-core`, `gui-swing`, `jvm-common`, `texts` and `ui`,
+  in one report: `build/reports/kover/html/index.html`.
 - **Nothing fails on coverage**: the report is there to find what no test reaches.
 - **The web page's and the app's tests are not measured**:
   they run in a browser and on a device, which [Kover](https://github.com/Kotlin/kotlinx-kover) does not reach.

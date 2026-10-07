@@ -18,6 +18,7 @@ import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.windowDebDepends
 import cz.loplex.dogvision.packaging.windowPackages
 import cz.loplex.dogvision.packaging.windowRpmRequires
+import cz.loplex.dogvision.packaging.windowTarGz
 import cz.loplex.dogvision.packaging.windowsAppImage
 import cz.loplex.dogvision.packaging.windowsMsi
 import cz.loplex.dogvision.packaging.windowsRuntimeImage
@@ -29,6 +30,8 @@ import cz.loplex.dogvision.packaging.windowsRuntimeImage
 // - the deb and the rpm of the web page, the folder web hands this module through webPage,
 //   opened in the system's browser, and those of its script's source map;
 // - the deb and the rpm dog-vision, of all of those but the source map's in one, which conflict with each of theirs;
+// - the tar.gz of each window,
+//   its app image with a runtime of its own and dog-vision-cli's launcher beside the window's;
 // - the MSI for Windows on x86-64, of the Compose window, the Swing window and the command line,
 //   each a launcher of one app image, on one runtime, and of the web page;
 //   and the command line's zip, of its launcher alone.
@@ -288,6 +291,42 @@ val swingTree = windowPackages(
     nativesLeftIn = listOf("flatlaf-"),
     rpmRequires = swingRpmRequires,
 )
+
+// The tar.gz of each window, on a runtime of the modules its launcher and dog-vision-cli's need,
+// as each module's launcher for Windows names them.
+fun launcherModules(vararg modules: String) = launcherFiles.get().incoming.artifactView {
+    componentFilter { it is ProjectComponentIdentifier && it.projectPath in modules }
+}.files.filter { it.name.endsWith(".modules") }
+artifact(
+    windowTarGz(
+        packageName = composePackage,
+        module = ":gui-compose",
+        jars = composeJars,
+        cliJars = commonJars,
+        mainClass = "cz.loplex.dogvision.desktop.MainKt",
+        // As Compose's launchers pass them, but for the resources folder, which the window has no use for:
+        // the first has its application give Swing the system's look,
+        // the second has skiko take its natives from beside the JARs.
+        javaOptions = listOf("-Dcompose.application.configure.swing.globals=true", $$"-Dskiko.library.path=$APPDIR"),
+        nativesBeside = listOf("skiko-awt-runtime-linux-"),
+        moduleLists = launcherModules(":gui-compose", ":cli"),
+    ),
+)
+artifact(
+    windowTarGz(
+        packageName = swingPackage,
+        module = ":gui-swing",
+        jars = swingJars,
+        cliJars = commonJars,
+        mainClass = "cz.loplex.dogvision.swing.MainKt",
+        moduleLists = launcherModules(":gui-swing", ":cli"),
+    ),
+)
+tasks.register("packageTarGz") {
+    description = "Packs every tar.gz into build/distributions."
+    group = "distribution"
+    dependsOn(tasks.withType<Tar>())
+}
 
 // The deb and the rpm, dog-vision-cli, on the system's Java: a launcher in /usr/bin,
 // which finds a Java 17 or newer and starts the command line from dog-vision-common's JARs.

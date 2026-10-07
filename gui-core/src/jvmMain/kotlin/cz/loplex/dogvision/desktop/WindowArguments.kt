@@ -1,9 +1,9 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.UsageException
-import cz.loplex.dogvision.cli.ViewOptions
-import cz.loplex.dogvision.cli.readCommandLine
-import cz.loplex.dogvision.cli.usage
+import cz.loplex.dogvision.common.UsageException
+import cz.loplex.dogvision.common.ViewOptions
+import cz.loplex.dogvision.common.readCommandLine
+import cz.loplex.dogvision.common.usage
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts

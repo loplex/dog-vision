@@ -1,6 +1,6 @@
 package cz.loplex.dogvision.desktop
 
-import cz.loplex.dogvision.cli.systemTexts
+import cz.loplex.dogvision.texts.systemTexts
 import kotlin.system.exitProcess
 
 /** The Compose window's name, which its usage and its mistakes say. */

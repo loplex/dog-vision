@@ -16,7 +16,19 @@ plugins {
 // Nothing fails on coverage.
 // The web page's tests run in a browser, and the app's on a device, where Kover measures nothing.
 dependencies {
-    val measured = listOf(":cli", ":core", ":ffmpeg", ":gl", ":gui-compose", ":gui-core", ":gui-swing", ":texts", ":ui")
+    val measured =
+        listOf(
+            ":cli",
+            ":core",
+            ":ffmpeg",
+            ":gl",
+            ":gui-compose",
+            ":gui-core",
+            ":gui-swing",
+            ":jvm-common",
+            ":texts",
+            ":ui",
+        )
     measured.forEach { kover(project(it)) }
 }
 

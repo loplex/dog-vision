@@ -1,18 +1,15 @@
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.glNatives
-import cz.loplex.dogvision.packaging.javaRuntimeNote
 import cz.loplex.dogvision.packaging.packagingJdk
-import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.uberJar
 import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
 import cz.loplex.dogvision.packaging.windowsRuntime
-import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // The desktop window in Compose Multiplatform, for Linux and Windows:
 // gui-core's picture of a photo, a video or the camera, with ui's controls beside it.
-// It takes gui-core's options of a window, which share cli's view options.
+// It takes gui-core's options of a window, which share jvm-common's view options with the command line.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kover)
@@ -53,11 +50,10 @@ windowsRuntime(listOf(libs.compose.multiplatform.desktop.windows.x64))
 /** The icons, the second launcher's properties and what else the packages take. */
 val packaging = layout.projectDirectory.dir("packaging")
 
-/** The JDK the tar.gz's runtime is linked from and jpackage runs from, Temurin, which build-logic says why. */
+/** The JDK Compose runs the window on, Temurin, as the packages' runtimes are, which build-logic says why. */
 val packagingJdk = packagingJdk()
 
-// createDistributable writes jpackage's app image, with a runtime of its own, which packageTarGz packs;
-// Windows's MSI is :packaging's.
+// The window as Compose runs it; its packages, the tar.gz and Windows's MSI among them, are :packaging's.
 compose.desktop {
     application {
         mainClass = mainClassName
@@ -104,38 +100,6 @@ val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
     )
 }
 artifact(linuxUberJar)
-
-// dog-vision-cli beside dog-vision-compose in the app image: Compose runs jpackage for it from the JARs.
-tasks.withType<AbstractJPackageTask>().configureEach {
-    val launcher = packaging.file("dog-vision-cli.properties")
-    freeArgs.addAll("--add-launcher", "dog-vision-cli=${launcher.asFile}")
-    // freeArgs holds only its path, so that the app image is made again when the file changes.
-    inputs.file(launcher)
-}
-
-// The app image as it is, to unpack and run anywhere on Linux on x86-64 without installing it.
-// What the archive holds that is not this project's own:
-// the JARs, and the runtime, which keeps its notices in its own legal folder.
-val tarGzNotices = thirdPartyLicenses("tarGzLicences", listOf(configurations.named("jvmRuntimeClasspath"))) {
-    artifactName = "The archive of dog-vision-compose for Linux"
-    notes.add(packagingJdk.map { javaRuntimeNote("lib/runtime", it.metadata.javaRuntimeVersion) })
-}.flatMap { it.notices }
-val packageTarGz = tasks.register<Tar>("packageTarGz") {
-    description = "Packs the app image into " +
-        "build/compose/binaries/main/tar/dog-vision-compose-<version>-linux-x64.tar.gz."
-    group = "compose desktop"
-    val version = compose.desktop.application.nativeDistributions.packageVersion
-    archiveFileName = "dog-vision-compose-$version-linux-x64.tar.gz"
-    destinationDirectory = layout.buildDirectory.dir("compose/binaries/main/tar")
-    compression = Compression.GZIP
-    // The launchers and the runtime's jspawnhelper, which starts ffmpeg, stay executable:
-    // Gradle's archives otherwise give every file the same mode.
-    eachFile { permissions { unix(if (file.canExecute()) "755" else "644") } }
-    from(tasks.named<AbstractJPackageTask>("createDistributable").flatMap { it.destinationDir })
-    // The licence, and what the archive holds that is not this project's own, in the app's folder.
-    from(files(rootProject.file("LICENSE"), tarGzNotices)) { into("dog-vision-compose") }
-}
-artifact(packageTarGz)
 
 // Built on any machine, as jpackage's installers are not: Windows's natives and ANGLE in place of this machine's.
 val windowsUberJarNotices =

@@ -1,9 +1,5 @@
-import cz.loplex.dogvision.packaging.AppImage
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.glNatives
-import cz.loplex.dogvision.packaging.javaRuntimeNote
-import cz.loplex.dogvision.packaging.packagingJdk
-import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.uberJar
 import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
@@ -64,14 +60,8 @@ tasks.named<Test>("jvmTest") {
 // Only windowsUberJar and windowsLauncher take it.
 windowsRuntime()
 
-/** The packages' version, as the other modules' packages have it. */
+/** The version in the JARs' names, as the packages have it. */
 val packageVersion = providers.gradleProperty("appVersion")
-
-/** The Compose window's icons and its second launcher's properties, which this window's packages take as they are. */
-val packaging = rootProject.layout.projectDirectory.dir("gui-compose/packaging")
-
-/** The JARs the window runs from: its own, and everything it needs, this machine's natives among them. */
-val runtimeJars = files(tasks.named<Jar>("jvmJar"), configurations.named("jvmRuntimeClasspath"))
 
 /** The window's own JAR, which each uber JAR below merges with the JARs the window needs. */
 val windowJar = tasks.named<Jar>("jvmJar").flatMap { it.archiveFile }
@@ -121,10 +111,7 @@ val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
 }
 artifact(windowsUberJar)
 
-/** The JDK the tar.gz's runtime is linked from and jpackage runs from, Temurin, which build-logic says why. */
-val packagingJdk = packagingJdk()
-
-/** The modules of the tar.gz's runtime and the MSI's: what jdeps --print-module-deps finds the JARs using. */
+/** The modules of the runtime of the MSI and of the tar.gz: what jdeps --print-module-deps finds the JARs using. */
 val runtimeModules = listOf("java.base", "java.desktop", "java.instrument", "jdk.unsupported")
 
 // dog-vision-swing.exe beside the Compose window's dog-vision-compose.exe in the MSI,
@@ -137,42 +124,3 @@ windowsLauncher(
     runtimeModules = runtimeModules,
     leftOut = listOf(armAngle),
 )
-
-// jpackage's app image with a runtime of its own, and dog-vision-cli beside dog-vision-swing, as the Compose window's.
-val appImage = tasks.register<AppImage>("appImage") {
-    description = "Makes build/app-image/dog-vision-swing, jpackage's app image with a runtime of its own."
-    group = "distribution"
-    jdkHome = packagingJdk.map { it.metadata.installationPath.asFile.path }
-    jars.from(runtimeJars)
-    mainJar = tasks.named<Jar>("jvmJar").flatMap { it.archiveFileName }
-    mainClass = mainClassName
-    imageName = "dog-vision-swing"
-    appVersion = packageVersion
-    modules = runtimeModules
-    javaOptions = emptyList()
-    icon = packaging.file("dog-vision.png")
-    launchers = mapOf("dog-vision-cli" to packaging.file("dog-vision-cli.properties").asFile)
-    destination = layout.buildDirectory.dir("app-image")
-    input = layout.buildDirectory.dir("app-image-input")
-}
-
-// The app image as it is, to unpack and run anywhere on Linux on x86-64 without installing it.
-// What the archive holds that is not this project's own:
-// the JARs, and the runtime, which keeps its notices in its own legal folder.
-val tarGzNotices = thirdPartyLicenses("tarGzLicences", listOf(configurations.named("jvmRuntimeClasspath"))) {
-    artifactName = "The archive of dog-vision-swing for Linux"
-    notes.add(packagingJdk.map { javaRuntimeNote("lib/runtime", it.metadata.javaRuntimeVersion) })
-}.flatMap { it.notices }
-val packageTarGz = tasks.register<Tar>("packageTarGz") {
-    description = "Packs the app image into build/packages/tar/dog-vision-swing-<version>-linux-x64.tar.gz."
-    group = "distribution"
-    archiveFileName = "dog-vision-swing-${packageVersion.get()}-linux-x64.tar.gz"
-    destinationDirectory = layout.buildDirectory.dir("packages/tar")
-    compression = Compression.GZIP
-    // The launchers and the runtime's jspawnhelper, which starts ffmpeg, stay executable.
-    eachFile { permissions { unix(if (file.canExecute()) "755" else "644") } }
-    from(appImage.flatMap { it.destination })
-    // The licence, and what the archive holds that is not this project's own, in the app's folder.
-    from(files(rootProject.file("LICENSE"), tarGzNotices)) { into("dog-vision-swing") }
-}
-artifact(packageTarGz)

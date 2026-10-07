@@ -1,5 +1,7 @@
 package cz.loplex.dogvision.cli
 
+import cz.loplex.dogvision.common.UsageException
+import cz.loplex.dogvision.common.ViewOptions
 import cz.loplex.dogvision.core.ChromaScale
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
