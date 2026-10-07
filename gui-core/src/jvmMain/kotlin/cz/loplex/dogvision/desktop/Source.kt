@@ -2,6 +2,7 @@ package cz.loplex.dogvision.desktop
 
 import cz.loplex.dogvision.cli.readPhoto
 import cz.loplex.dogvision.core.Image
+import cz.loplex.dogvision.ffmpeg.FfmpegMissing
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.io.File

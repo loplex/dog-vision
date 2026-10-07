@@ -9,6 +9,8 @@ import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
+import cz.loplex.dogvision.ffmpeg.FfmpegInstall
+import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.io.File

@@ -5,7 +5,10 @@ import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.View
-import cz.loplex.dogvision.desktop.FfmpegPrograms.DOWNLOAD_PAGE
+import cz.loplex.dogvision.ffmpeg.FfmpegDownload
+import cz.loplex.dogvision.ffmpeg.FfmpegInstall
+import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
+import cz.loplex.dogvision.ffmpeg.FfmpegPrograms.DOWNLOAD_PAGE
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import kotlinx.coroutines.flow.MutableStateFlow

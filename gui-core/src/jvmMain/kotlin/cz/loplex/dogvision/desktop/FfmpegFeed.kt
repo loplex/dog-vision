@@ -1,5 +1,7 @@
 package cz.loplex.dogvision.desktop
 
+import cz.loplex.dogvision.ffmpeg.FfmpegMissing
+import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -23,7 +25,7 @@ class FfmpegFeed private constructor(
     private val onFrame: (Frame) -> Unit,
     private val onEnd: (String) -> Unit,
 ) : AutoCloseable {
-    private val process = start(command)
+    private val process = FfmpegPrograms.start(command)
 
     @Volatile
     private var closed = false
@@ -172,7 +174,7 @@ class FfmpegFeed private constructor(
         private fun readsAFrame(options: List<String>, input: String, output: List<String> = emptyList()): Boolean {
             val command = listOf("ffmpeg", "-v", "error") + options + listOf("-i", input, "-frames:v", "1") +
                 output + listOf("-f", "null", "-")
-            val process = start(command)
+            val process = FfmpegPrograms.start(command)
             // Read as text, as the other pipes are: readAllBytes asks a pipe for its position, which Wine refuses.
             process.inputStream.bufferedReader().readText()
             process.errorStream.bufferedReader().readText()
@@ -184,7 +186,8 @@ class FfmpegFeed private constructor(
          * Throws [FfmpegMissing] if ffmpeg cannot be run.
          */
         internal fun directShowCameras(): List<DirectShowCamera> {
-            val process = start(listOf("ffmpeg", "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy"))
+            val command = listOf("ffmpeg", "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy")
+            val process = FfmpegPrograms.start(command)
             // The list comes on the standard error, and ffmpeg ends with an error as the dummy input opens nothing.
             val listed = process.errorStream.bufferedReader().readText()
             process.waitFor()
@@ -263,7 +266,7 @@ class FfmpegFeed private constructor(
                 "-of", "default=noprint_wrappers=1",
                 input,
             )
-            val process = start(command)
+            val process = FfmpegPrograms.start(command)
             val output = process.inputStream.bufferedReader().readText()
             val errors = process.errorStream.bufferedReader().readText()
             val status = process.waitFor()
@@ -278,18 +281,6 @@ class FfmpegFeed private constructor(
             val rotation = values["rotation"]?.toDoubleOrNull()?.let { abs(it.toInt()) % 180 } ?: 0
             return if (rotation == 90) height to width else width to height
         }
-
-        /**
-         * [command] started, its program from where [FfmpegPrograms] runs it,
-         * with nothing to read on its standard input, which is closed.\
-         * Throws [FfmpegMissing] if the program cannot be run.
-         */
-        internal fun start(command: List<String>): Process = try {
-            val program = FfmpegPrograms.command(command.first())
-            ProcessBuilder(listOf(program) + command.drop(1)).start().apply { outputStream.close() }
-        } catch (error: IOException) {
-            throw FfmpegMissing(command.first(), error)
-        }
     }
 }
 
@@ -301,7 +292,3 @@ internal data class DirectShowCamera(val name: String, val alternativeName: Stri
     /** What ffmpeg opens it by: its alternative name where it has one, else its name. */
     val device: String get() = alternativeName ?: name
 }
-
-/** ffmpeg's [program], ffmpeg or ffprobe, which cannot be run, as where it is not installed or not on the PATH. */
-class FfmpegMissing(val program: String, cause: IOException) :
-    IOException("Cannot run $program: ${cause.message}", cause)

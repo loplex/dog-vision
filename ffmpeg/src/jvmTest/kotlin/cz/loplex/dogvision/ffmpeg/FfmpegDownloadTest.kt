@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.ffmpeg
 
 import java.io.IOException
 import java.nio.file.Files

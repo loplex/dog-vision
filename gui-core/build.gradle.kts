@@ -21,6 +21,7 @@ kotlin {
     sourceSets {
         jvmMain.dependencies {
             api(project(":cli"))
+            api(project(":ffmpeg"))
             implementation(project(":gl"))
             implementation(libs.lwjgl.asProvider())
             implementation(libs.lwjgl.egl)
@@ -45,20 +46,9 @@ tasks.named<Test>("jvmTest") {
     useJUnitPlatform()
 }
 
-// The release branch of ffmpeg's builds for Windows that FfmpegDownload takes, from libs.versions.toml.
-val ffmpegProperties = tasks.register<WriteProperties>("ffmpegProperties") {
-    description = "Writes build/generated/ffmpeg/ffmpeg.properties, the branch of ffmpeg the windows download."
-    destinationFile = layout.buildDirectory.file("generated/ffmpeg/ffmpeg.properties")
-    property("windowsBranch", libs.versions.ffmpeg.windows)
-}
-
-// The windows' icon, the packages' own, as a resource beside windowIcon, so that the file is kept in one place,
-// and ffmpeg's branch beside it.
+// The windows' icon, the packages' own, as a resource beside windowIcon, so that the file is kept in one place.
 tasks.named<ProcessResources>("jvmProcessResources") {
     from(rootProject.layout.projectDirectory.file("gui-compose/packaging/dog-vision.png")) {
-        into("cz/loplex/dogvision/desktop")
-    }
-    from(ffmpegProperties) {
         into("cz/loplex/dogvision/desktop")
     }
 }

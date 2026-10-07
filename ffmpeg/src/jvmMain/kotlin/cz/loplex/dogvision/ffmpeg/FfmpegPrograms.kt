@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.ffmpeg
 
 import java.io.File
 import java.io.IOException
@@ -127,4 +127,23 @@ object FfmpegPrograms {
     /** The last line of [output] with words in it, past the progress bars and spinners that winget draws. */
     internal fun lastSaid(output: String): String? =
         output.split('\r', '\n').map(String::trim).lastOrNull { line -> line.any(Char::isLetter) }
+
+    /**
+     * [command] started, its program from where it is run,
+     * with nothing to read on its standard input, which is closed.\
+     * Throws [FfmpegMissing] if the program cannot be run.
+     */
+    fun start(command: List<String>): Process = try {
+        val program = command(command.first())
+        ProcessBuilder(listOf(program) + command.drop(1)).start().apply { outputStream.close() }
+    } catch (error: IOException) {
+        throw FfmpegMissing(command.first(), error)
+    }
 }
+
+/** ffmpeg's [program], ffmpeg or ffprobe, which cannot be run, as where it is not installed or not on the PATH. */
+class FfmpegMissing(val program: String, cause: IOException) :
+    IOException("Cannot run $program: ${cause.message}", cause)
+
+/** Whether this is Windows, which has no ffmpeg of its own. */
+internal val onWindows = System.getProperty("os.name").startsWith("Windows")

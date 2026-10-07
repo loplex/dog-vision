@@ -21,6 +21,7 @@ Building the programs is [Building it](building.md)'s.
 | [`web`](../web)                   | the web page                               | JavaScript          |
 | [`cli`](../cli)                   | the command line                           | the JVM             |
 | [`gui-core`](../gui-core)         | what the desktop windows share             | the JVM             |
+| [`ffmpeg`](../ffmpeg)             | ffmpeg and ffprobe, found and run          | the JVM             |
 | [`gui-compose`](../gui-compose)   | the desktop window, in Compose             | the JVM             |
 | [`gui-swing`](../gui-swing)       | the desktop window, in Swing               | the JVM             |
 | [`packaging`](../packaging)       | the debs, the rpms, the MSI and the zip    | Linux, Windows      |
@@ -56,6 +57,8 @@ The root project declares the plugin, so these are on every module's build scrip
   It holds the GL contexts, the passes' renderer, ffmpeg's feeds,
   and the pixels read back handed to a function that makes the window's image of them.\
   Its `LiveSession` holds what a window shows, so that the Compose window and the Swing one only lay it out.
+- **`ffmpeg` finds ffmpeg and ffprobe and starts them**:
+  on the PATH, where they were installed after a window started, or on Windows where a window downloaded them.
 
 ### Which module uses which
 
@@ -83,6 +86,7 @@ graph TD
         ui
         gui-core
         cli
+        ffmpeg
     end
     subgraph base [built on core]
         testing
@@ -99,6 +103,7 @@ graph TD
     gui-compose --> gui-core
     testing ==> core
     gui-core ==> cli
+    gui-core ==> ffmpeg
     gui-compose --> ui
     web --> gl
     android --> core
@@ -119,6 +124,7 @@ graph TD
     subgraph shared [what the programs share]
         ui
         cli
+        ffmpeg
     end
     subgraph base [built on core]
         texts
@@ -130,6 +136,7 @@ graph TD
     web --> texts
     cli ==> texts
     ui ==> texts
+    ffmpeg --> texts
     texts ==> core
     programs ~~~ shared
     classDef program font-weight:bold
@@ -229,6 +236,7 @@ The test classes' comments say what each of them holds.
 | `./gradlew :ui:jvmTest`                        | the shared controls, in Compose's test scene         |
 | `./gradlew :cli:jvmTest`                       | the options, EXIF, a conversion, the figures         |
 | `./gradlew :gui-core:jvmTest`                  | the window's passes, GL contexts, ffmpeg, session    |
+| `./gradlew :ffmpeg:jvmTest`                    | finding ffmpeg, starting it, its download            |
 | `./gradlew :gui-swing:jvmTest`                 | the Swing window's image, theme and a dropped file   |
 | `./gradlew :web:jsTest`                        | the page's passes, snapshot and recording            |
 | `./gradlew :build-logic:test`                  | the licences a package lists, read and written       |
@@ -293,7 +301,7 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 ### The JVM tests' coverage is measured, not required
 
 - **`./gradlew koverHtmlReport` writes which lines and branches the JVM tests reach**,
-  for `cli`, `core`, `gl`, `gui-compose`, `gui-core`, `gui-swing`, `texts` and `ui`, in one report:
+  for `cli`, `core`, `ffmpeg`, `gl`, `gui-compose`, `gui-core`, `gui-swing`, `texts` and `ui`, in one report:
   `build/reports/kover/html/index.html`.
 - **Nothing fails on coverage**: the report is there to find what no test reaches.
 - **The web page's and the app's tests are not measured**:
@@ -315,8 +323,9 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
   where its command line converts a photo and its window answers `--help`.
 - **On Ubuntu 24.04, `./gradlew packageAll`** as the first build of a fresh tree, apart from the checks:
   a task that reads another's output while Gradle plans the build fails only where that output is not built yet.
-- **On Windows Server 2022, `./gradlew :gui-core:jvmTest`**, over ANGLE on WARP and over WGL on Mesa's llvmpipe,
-  which the job puts beside `java.exe`, as Windows's own OpenGL is 1.1.
+- **On Windows Server 2022, `./gradlew :gui-core:jvmTest :ffmpeg:jvmTest`**:
+  the GL tests over ANGLE on WARP and over WGL on Mesa's llvmpipe, which the job puts beside `java.exe`,
+  as Windows's own OpenGL is 1.1, and ffmpeg's, for how a program is started on Windows.
 - **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions
   and tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.
 - **On Windows Server 2022, the command line's zip**,

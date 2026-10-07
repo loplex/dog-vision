@@ -1,12 +1,18 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.ffmpeg
 
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
-/** ffmpeg is looked for on a Windows PATH as Windows words it, and winget's words are read past its progress bars. */
+/**
+ * ffmpeg is looked for on a Windows PATH as Windows words it, winget's words are read past its progress bars,
+ * and a program is started with nothing on its input, or said to be missing.
+ */
 class FfmpegProgramsTest {
     @TempDir
     lateinit var directory: File
@@ -51,5 +57,23 @@ class FfmpegProgramsTest {
     @Test
     fun aProgramNotFoundIsRunByItsName() {
         assertEquals("dog-vision-no-such-ffmpeg", FfmpegPrograms.command("dog-vision-no-such-ffmpeg"))
+    }
+
+    @Test
+    fun aProgramThatCannotRunIsSaidToBeMissing() {
+        val error = assertFailsWith<FfmpegMissing> { FfmpegPrograms.start(listOf("dog-vision-no-such-ffmpeg")) }
+        assertEquals("dog-vision-no-such-ffmpeg", error.program)
+    }
+
+    /**
+     * cat copies its standard input until it ends, so it ends at once with nothing to copy;
+     * Windows's sort, which Windows finds in its system folder before the PATH, reads it to its end as well.
+     */
+    @Test
+    fun aProgramStartedReadsNothing() {
+        val program = if (onWindows) "sort" else "cat"
+        val process = FfmpegPrograms.start(listOf(program))
+        assertTrue(process.waitFor(5, TimeUnit.SECONDS), "$program still waits for its input")
+        assertEquals("", process.inputStream.bufferedReader().readText())
     }
 }

@@ -202,7 +202,8 @@ jobs:
           }
       # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU.
       # Mesa would take its Direct3D 12 driver, which needs Mesa's dxil.dll, over llvmpipe.
-      - run: ./gradlew :gui-core:jvmTest
+      # ffmpeg's own tests run here too, for how a program is started on Windows.
+      - run: ./gradlew :gui-core:jvmTest :ffmpeg:jvmTest
         env:
           GALLIUM_DRIVER: llvmpipe
       - if: always()
@@ -213,6 +214,8 @@ jobs:
             gui-core/build/reports/
             gui-core/build/test-results/
             gui-core/hs_err_pid*.log
+            ffmpeg/build/reports/
+            ffmpeg/build/test-results/
 
   windows-msi:
     name: Windows MSI

@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.ffmpeg
 
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
