@@ -2,6 +2,7 @@ import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.glNatives
 import cz.loplex.dogvision.packaging.packagingJdk
 import cz.loplex.dogvision.packaging.uberJar
+import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
 import cz.loplex.dogvision.packaging.windowsRuntime
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
@@ -81,6 +82,12 @@ val armAngle = "nucleus/native/win32-aarch64"
 
 // The JAR with this machine's natives, in place of Compose's packageUberJarForCurrentOS,
 // which merges the JARs without the checks of uberJar.
+val linuxUberJarNotices =
+    uberJarLicences(
+        "linuxUberJarLicences",
+        "dog-vision-compose-linux-x64-${compose.desktop.application.nativeDistributions.packageVersion}.jar",
+        configurations.named("jvmRuntimeClasspath"),
+    )
 val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
     description = "Assembles build/compose/jars/dog-vision-compose-linux-x64-<version>.jar, the window for this " +
         "machine."
@@ -91,6 +98,7 @@ val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
         mainClassName,
         windowJar,
         configurations.named("jvmRuntimeClasspath"),
+        linuxUberJarNotices,
     )
 }
 artifact(linuxUberJar)
@@ -120,6 +128,12 @@ val packageTarGz = tasks.register<Tar>("packageTarGz") {
 artifact(packageTarGz)
 
 // Built on any machine, as jpackage's installers are not: Windows's natives and ANGLE in place of this machine's.
+val windowsUberJarNotices =
+    uberJarLicences(
+        "windowsUberJarLicences",
+        "dog-vision-compose-windows-x64-${compose.desktop.application.nativeDistributions.packageVersion}.jar",
+        configurations.named("windowsRuntime"),
+    )
 val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
     description = "Assembles build/compose/jars/dog-vision-compose-windows-x64-<version>.jar, the window for " +
         "Windows."
@@ -130,6 +144,7 @@ val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
         mainClassName,
         windowJar,
         configurations.named("windowsRuntime"),
+        windowsUberJarNotices,
         excludes = listOf("$armAngle/**"),
     )
 }

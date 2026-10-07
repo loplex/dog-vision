@@ -1,5 +1,6 @@
 import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.uberJar
+import cz.loplex.dogvision.packaging.uberJarLicences
 import cz.loplex.dogvision.packaging.windowsLauncher
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -67,6 +68,8 @@ tasks.register<JavaExec>("renderFigures") {
 }
 
 // One JAR with core and the Kotlin standard library in it, which `java -jar` runs alone on a JDK 17 or newer.
+val uberJarNotices =
+    uberJarLicences("uberJarLicences", "dog-vision-cli.jar", configurations.named("jvmRuntimeClasspath"))
 val uberJar = tasks.register<Jar>("uberJar") {
     description = "Assembles build/jars/dog-vision-cli.jar, the command line with everything it needs."
     group = "distribution"
@@ -76,6 +79,7 @@ val uberJar = tasks.register<Jar>("uberJar") {
         mainClassName,
         tasks.named<Jar>("jvmJar").flatMap { it.archiveFile },
         configurations.named("jvmRuntimeClasspath"),
+        uberJarNotices,
     )
 }
 artifact(uberJar)

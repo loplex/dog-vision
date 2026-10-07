@@ -1,6 +1,9 @@
 package cz.loplex.dogvision.packaging
 
 import org.gradle.api.GradleException
+import org.gradle.api.NamedDomainObjectProvider
+import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCopyDetails
@@ -24,12 +27,16 @@ import javax.inject.Inject
  *   JetBrains' forwarding JARs, such as org.jetbrains.compose.runtime's runtime-desktop,
  *   hold one of the same name as the library they forward to, androidx.compose.runtime's.
  * - Any other path held twice has to be the same bytes each time, and is taken once; the task fails where it is not.
+ *
+ * [notices], what it holds that is not this project's own and under which licences,
+ * goes in as META-INF/THIRD-PARTY-LICENSES.txt, as [uberJarLicences] writes it.
  */
 fun Jar.uberJar(
     fileName: String,
     mainClass: String,
     ownJar: Provider<RegularFile>,
     classpath: Provider<out Iterable<File>>,
+    notices: Provider<RegularFile>,
     excludes: List<String> = emptyList(),
 ) {
     archiveFileName.set(fileName)
@@ -45,6 +52,7 @@ fun Jar.uberJar(
             }
         },
     )
+    from(notices) { into("META-INF") }
     val leftOut = UBER_JAR_EXCLUDES + excludes
     exclude(leftOut)
     // Gradle fingerprints the zip files, not what the patterns leave of them,
@@ -56,6 +64,17 @@ fun Jar.uberJar(
     doFirst { duplicates.clear() }
     eachFile { duplicates.check(this) }
 }
+
+/**
+ * Registers [name], the licences of the uber JAR [fileName] of [classpath], whose notices [uberJar] takes:
+ * the natives stay in their JARs, as the uber JAR holds them.
+ */
+fun Project.uberJarLicences(
+    name: String,
+    fileName: String,
+    classpath: NamedDomainObjectProvider<out Configuration>,
+): Provider<RegularFile> = thirdPartyLicenses(name, listOf(classpath)) { artifactName.set("The JAR $fileName") }
+    .flatMap { it.notices }
 
 /** What an uber JAR leaves out of every JAR it merges, as [uberJar] says why. */
 private val UBER_JAR_EXCLUDES = listOf(
