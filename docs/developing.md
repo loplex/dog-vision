@@ -60,7 +60,7 @@ The root project declares the plugin, so these are on every module's build scrip
   Its `LiveSession` holds what a window shows, so that the Compose window and the Swing one only lay it out.
 - **`ffmpeg` finds ffmpeg and ffprobe and starts them**:
   on the PATH, where they were installed after a window started, or on Windows where a window downloaded them.\
-  Through them it probes a video, reads its frames and writes an .mp4, for the command line.
+  Through them it probes a video, reads its frames and writes an .mp4, for a conversion.
 
 ### Which module uses which
 
@@ -118,12 +118,12 @@ graph TD
     gui-core ==> ffmpeg
     jvm-common ==> core
     android --> ui
-    cli --> ffmpeg
     gui-swing --> gui-core
     gui-core ==> jvm-common
     gui-core --> gl
     web --> gl
     cli --> jvm-common
+    jvm-common ==> ffmpeg
     android --> core
     classDef program font-weight:bold
     class android,gui-compose,gui-swing,web,cli program
@@ -213,7 +213,8 @@ graph TD
   `core`, `gl` and `texts`, and no drawing on a plane joins three to three without a crossing.\
   Without `texts` the first graph could be drawn with none.
 - **`jvm-common` holds what the command line and the windows share**:
-  the view's options, which each reads from its command line, and a photo read as it is meant to be seen.
+  the view's options, which each reads from its command line,
+  a photo read as it is meant to be seen, and a photo or a video converted at full size.
 - **`gui-compose`, `gui-swing` and `cli` reach `core` and `texts` through what they share**:
   the windows through `gui-core`, which passes on `jvm-common`, and `cli` through `jvm-common`, which passes on the two.
 - **`ui` passes on `texts`**, as its `text` and `InfoButton` take an entry of `texts`' `Str`.
@@ -252,7 +253,7 @@ The test classes' comments say what each of them holds.
 | `./gradlew :core:allTests`                     | the same, and the JVM and Node.js agreeing           |
 | `./gradlew :texts:allTests`                    | every language's strings, plurals, system languages  |
 | `./gradlew :ui:jvmTest`                        | the shared controls, in Compose's test scene         |
-| `./gradlew :jvm-common:jvmTest`                | EXIF, and a photo read upright                       |
+| `./gradlew :jvm-common:jvmTest`                | EXIF, photos read, converted files, progress, cancel |
 | `./gradlew :cli:jvmTest`                       | the options, photo and video, the figures            |
 | `./gradlew :gui-core:jvmTest`                  | the window's passes, GL contexts, ffmpeg, session    |
 | `./gradlew :ffmpeg:jvmTest`                    | finding ffmpeg, its download, video read and written |
@@ -266,7 +267,7 @@ The test classes' comments say what each of them holds.
   the app's, the web page's and the window's alike, through [`testing`](../testing)'s reference pattern.
 - **`:gui-core:jvmTest` draws on this machine's GPU**,
   through EGL on Linux and through ANGLE and WGL on Windows, and runs the machine's `ffmpeg`.
-- **`:cli:jvmTest` and `:ffmpeg:jvmTest` run the machine's `ffmpeg` too**,
+- **`:cli:jvmTest`, `:jvm-common:jvmTest` and `:ffmpeg:jvmTest` run the machine's `ffmpeg` too**,
   to make the videos they convert, read and write.
 - **`:web:jsTest` runs in headless Chrome, which renders WebGL 2 in software**,
   with SwiftShader, as [`karma.config.d/webgl.js`](../web/karma.config.d/webgl.js) tells it to.\

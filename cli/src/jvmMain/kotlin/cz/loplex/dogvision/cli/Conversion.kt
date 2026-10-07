@@ -1,65 +1,80 @@
 package cz.loplex.dogvision.cli
 
-import cz.loplex.dogvision.common.readPhoto
-import cz.loplex.dogvision.core.Image
-import cz.loplex.dogvision.core.View
-import cz.loplex.dogvision.core.compose
-import cz.loplex.dogvision.core.composedSize
-import cz.loplex.dogvision.core.meanLinearRgb
-import cz.loplex.dogvision.core.shownName
+import cz.loplex.dogvision.common.Conversion
+import cz.loplex.dogvision.common.ConversionException
+import cz.loplex.dogvision.common.Converted
+import cz.loplex.dogvision.ffmpeg.Sound
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
-import java.awt.image.BufferedImage
-import java.awt.image.DataBufferInt
-import java.io.File
-import java.io.IOException
 import java.io.PrintStream
-import javax.imageio.ImageIO
 import kotlin.math.roundToInt
 
 /**
- * Where [file] converted to [view] goes,
- * named after it and the species [view] shows, with the [extension] of what it is written as:
- * photo.jpg as photo.cat.png, or photo.horse-vs-cat.png where it shows a horse beside a cat,
- * next to it or in [outputDir].
+ * Converts the photo or the video [Arguments.file] at full size to the view the arguments ask for,
+ * as [Conversion] does, and reports on [out] what it wrote, or on [err] why it could not, worded by [texts];
+ * a video's conversion shows on [err] how far it is where [err] is a [terminal].\
+ * Interrupted, as by Ctrl+C, it removes the unfinished file.\
+ * Returns the exit status.
  */
-fun convertedFile(file: File, view: View, outputDir: File?, extension: String = "png"): File {
-    val name = file.name.substringBeforeLast('.').ifEmpty { file.name } + ".${shownName(view)}.$extension"
-    return File(outputDir ?: file.parentFile, name)
+fun convertFile(arguments: Arguments, texts: Texts, out: PrintStream, err: PrintStream, terminal: Boolean): Int {
+    val file = checkNotNull(arguments.file) { "No file to convert" }
+    val conversion = Conversion(file, arguments.view.conversionView, arguments.outputDir)
+    val interrupted = Thread(conversion::cancel)
+    Runtime.getRuntime().addShutdownHook(interrupted)
+    val progress = Progress(texts, err, terminal)
+    val converted = try {
+        conversion.run(progress::show)
+    } catch (error: ConversionException) {
+        progress.end()
+        err.println(error.message(texts))
+        return 1
+    } finally {
+        try {
+            Runtime.getRuntime().removeShutdownHook(interrupted)
+        } catch (_: IllegalStateException) {
+            // The JVM is shutting down, which ran the hook: the conversion stopped for it, and the hook is done.
+        }
+    }
+    progress.end()
+    // Null where it was cancelled, which only the shutdown of the JVM does here.
+    converted?.let { written(it, texts).forEach(out::println) }
+    return if (converted == null) 1 else 0
+}
+
+/** What [converted] says it wrote, worded by [texts]: a photo's share of pixels its map marks, and the file. */
+@Suppress("MagicNumber")
+private fun written(converted: Converted, texts: Texts): List<String> = when (converted) {
+    is Converted.Photo -> listOfNotNull(
+        converted.differenceShare?.let {
+            texts.get(Str.PIXELS_DIFFER, texts.get(Str.PERCENT, (it * 100).roundToInt()))
+        },
+        texts.get(Str.PHOTO_WRITTEN, converted.file),
+    )
+
+    is Converted.Video -> listOf(videoWritten(converted, texts))
+}
+
+private fun videoWritten(video: Converted.Video, texts: Texts): String {
+    val sound = if (video.sound == Sound.KEPT) Str.WRITTEN_WITH_SOUND else Str.WRITTEN_WITHOUT_SOUND
+    return texts.get(Str.VIDEO_WRITTEN, video.file, texts.get(sound, video.encoder.format, video.encoder.name))
 }
 
 /**
- * Converts the photo or the video [Arguments.file] at full size to the view the arguments ask for,
- * and reports on [out] what it wrote, or on [err] why it could not, worded by [texts];
- * a video's conversion shows on [err] how far it is where [err] is a [terminal].\
- * Returns the exit status.
+ * How far a conversion is, as "Converting: 42%" on [err],
+ * rewritten in place each time the share changes; only where [err] is a [terminal].
  */
-@Suppress("MagicNumber", "ReturnCount")
-fun convertFile(arguments: Arguments, texts: Texts, out: PrintStream, err: PrintStream, terminal: Boolean): Int {
-    val file = checkNotNull(arguments.file) { "No file to convert" }
-    val photo = try {
-        readPhoto(file)
-    } catch (error: IOException) {
-        err.println(texts.get(Str.PHOTO_UNREADABLE, file, error.message))
-        return 1
-    } ?: return convertVideo(arguments, texts, out, err, terminal)
-    val view = arguments.view.conversionView
-    val output = convertedFile(file, view, arguments.outputDir)
-    val (width, height) = composedSize(view, photo.width, photo.height)
-    // core writes into the image's own pixels, which ImageIO then encodes without a copy.
-    val composed = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    val pixels = (composed.raster.dataBuffer as DataBufferInt).data
-    val share = compose(photo, view, Image(width, height, pixels), { meanLinearRgb(photo) })
-    try {
-        output.parentFile?.mkdirs()
-        if (!ImageIO.write(composed, "png", output)) throw IOException("no PNG writer")
-    } catch (error: IOException) {
-        err.println(texts.get(Str.PHOTO_UNWRITABLE, output, error.message))
-        return 1
+private class Progress(private val texts: Texts, private val err: PrintStream, private val terminal: Boolean) {
+    private var shown = false
+
+    fun show(percent: Int) {
+        if (!terminal) return
+        shown = true
+        err.print("\r" + texts.get(Str.CONVERTING, texts.get(Str.PERCENT, percent)))
+        err.flush()
     }
-    if (share != null) {
-        out.println(texts.get(Str.PIXELS_DIFFER, texts.get(Str.PERCENT, (share * 100).roundToInt())))
+
+    /** Ends the line the share was shown on, if it was. */
+    fun end() {
+        if (shown) err.println()
     }
-    out.println(texts.get(Str.PHOTO_WRITTEN, output))
-    return 0
 }
