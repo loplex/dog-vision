@@ -1,4 +1,5 @@
-# The checks on Linux and the Linux packages, installed, upgraded and removed;
+# The checks on Linux and the Linux packages, installed, upgraded and removed,
+# and every artifact Linux builds, built at once on a fresh tree;
 # on Windows what Linux cannot show: the windows' GL contexts, ANGLE's and WGL's,
 # the one MSI of both windows and the command line, built with WiX and installed, upgraded and removed,
 # and the command line's zip, built with jpackage and run.
@@ -146,6 +147,22 @@ jobs:
           path: |
             **/build/reports/
             **/hs_err_pid*.log
+
+  # Every artifact Linux can build, the uber JARs among them, as the first build of a fresh tree:
+  # a task that reads another's output while Gradle plans the build fails only where that output is not built yet,
+  # and the Linux job's check has built it before that job packages.
+  package-all:
+    name: Linux packageAll
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - run: sudo apt-get update && sudo apt-get install -y rpm
+      - run: ./gradlew packageAll
 
   windows-gl:
     name: Windows GL tests
