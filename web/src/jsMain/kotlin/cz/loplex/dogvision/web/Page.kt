@@ -20,6 +20,7 @@ import cz.loplex.dogvision.texts.switchKey
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.khronos.webgl.Uint8Array
+import org.khronos.webgl.WebGLRenderingContext
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLCanvasElement
@@ -62,7 +63,7 @@ private class Photo(val width: Int, val height: Int, val pixels: Uint8Array)
 @Suppress("TooManyFunctions")
 class Page(private var texts: Texts) {
     private val stage = element<HTMLElement>("stage")
-    private val canvas = element<HTMLCanvasElement>("view")
+    private var canvas = element<HTMLCanvasElement>("view")
     private val captions = element<HTMLElement>("captions")
     private val prompt = element<HTMLElement>("prompt")
     private val notice = element<HTMLElement>("notice")
@@ -75,11 +76,11 @@ class Page(private var texts: Texts) {
     private val panel = element<HTMLElement>("controls")
     private val menu = MenuList(element("menu"), element("menu-list"))
 
-    private val gl: WebGL2RenderingContext? = canvas.getContext(
-        "webgl2",
-        js("({ alpha: true, antialias: false, depth: false, stencil: false })"),
-    )?.unsafeCast<WebGL2RenderingContext>()
+    private var gl: WebGL2RenderingContext? = webGl2(canvas)
     private var passes: Passes? = null
+
+    /** Whether [canvas] was made anew since the page last drew, so that a context that fails at once is not renewed. */
+    private var renewed = false
     private var photo: Photo? = null
 
     /**
@@ -158,17 +159,7 @@ class Page(private var texts: Texts) {
             open.disabled = true
             return
         }
-        canvas.addEventListener("webglcontextlost", { event ->
-            // Asks the browser to restore the context, which it does only for a page that prevents this.
-            event.preventDefault()
-            passes = null
-        })
-        canvas.addEventListener("webglcontextrestored", {
-            // The camera's next frame is uploaded as it comes.
-            passes = Passes(gl).also { passes -> photo?.let { passes.upload(it.width, it.height, it.pixels) } }
-            composed = null
-            invalidate()
-        })
+        listenForLoss(canvas, gl)
         open.addEventListener("change", {
             open.files?.get(0)?.let(::openFile)
             open.value = ""
@@ -378,7 +369,7 @@ class Page(private var texts: Texts) {
     private fun show(photo: Photo) {
         closeLive()
         this.photo = photo
-        passes?.upload(photo.width, photo.height, photo.pixels)
+        rendering { passes?.upload(photo.width, photo.height, photo.pixels) }
         showSource()
     }
 
@@ -439,11 +430,13 @@ class Page(private var texts: Texts) {
      * in the browser's rendering of this frame.
      */
     private fun showFrame(video: HTMLVideoElement, mirrored: Boolean, rotation: Int = 0) {
-        val passes = passes ?: return
-        if (!live || !passes.upload(video, mirrored, rotation)) return
-        recording?.upload(video, mirrored, rotation)
-        newFrame = true
-        draw()
+        rendering {
+            val passes = passes ?: return@rendering
+            if (!live || !passes.upload(video, mirrored, rotation)) return@rendering
+            recording?.upload(video, mirrored, rotation)
+            newFrame = true
+            draw()
+        }
     }
 
     /**
@@ -533,9 +526,69 @@ class Page(private var texts: Texts) {
         window.requestAnimationFrame {
             drawScheduled = false
             controls.show(view, recording != null, cameraChoice)
-            draw()
+            rendering(::draw)
             menu.show(menus(), texts)
         }
+    }
+
+    /** Restores the passes on [canvas] when the browser restores its context [gl], after losing it. */
+    private fun listenForLoss(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
+        canvas.addEventListener("webglcontextlost", { event ->
+            // Asks the browser to restore the context, which it does only for a page that prevents this.
+            event.preventDefault()
+            passes = null
+        })
+        canvas.addEventListener("webglcontextrestored", {
+            // The camera's next frame is uploaded as it comes.
+            restart(Passes(gl))
+        })
+    }
+
+    /** Draws with [passes], made for a context new or restored: the photo uploaded again, and composed anew. */
+    private fun restart(passes: Passes) {
+        this.passes = passes
+        photo?.let { passes.upload(it.width, it.height, it.pixels) }
+        composed = null
+        invalidate()
+    }
+
+    /**
+     * Runs [render], which uses the canvas's context;
+     * where it fails because the context renders into nothing, though it says it is not lost,
+     * the canvas is made anew with a context of its own.
+     * Firefox on Android leaves a page's context so after its GPU process was killed,
+     * with no `webglcontextlost`, and `checkFramebufferStatus` 0, which only an error or a lost context gives.
+     */
+    private fun rendering(render: () -> Unit) {
+        try {
+            render()
+            renewed = false
+        } catch (error: IllegalStateException) {
+            val gl = gl
+            val broken = gl != null && !gl.isContextLost() &&
+                gl.checkFramebufferStatus(WebGLRenderingContext.FRAMEBUFFER) == 0
+            if (!broken || renewed || !renewCanvas()) throw error
+        }
+    }
+
+    /** Puts a new canvas, with a context and passes of its own, in place of [canvas]; false if it gets neither. */
+    @Suppress("ReturnCount")
+    private fun renewCanvas(): Boolean {
+        val fresh = document.createElement("canvas") as HTMLCanvasElement
+        fresh.id = canvas.id
+        val context = webGl2(fresh) ?: return false
+        val passes = try {
+            Passes(context)
+        } catch (_: IllegalStateException) {
+            return false
+        }
+        canvas.replaceWith(fresh)
+        canvas = fresh
+        gl = context
+        renewed = true
+        listenForLoss(fresh, context)
+        restart(passes)
+        return true
     }
 
     /** Whether there is a photo, or a frame of the camera or the video, to show. */
@@ -661,6 +714,12 @@ private fun Photo(image: HTMLImageElement): Photo {
     val data = context.getImageData(0.0, 0.0, width.toDouble(), height.toDouble()).data
     return Photo(width, height, Uint8Array(data.buffer, data.byteOffset, data.length))
 }
+
+/** A WebGL 2 context of [canvas], with no depth, stencil or antialiasing, which the passes do not use; null if none. */
+private fun webGl2(canvas: HTMLCanvasElement): WebGL2RenderingContext? = canvas.getContext(
+    "webgl2",
+    js("({ alpha: true, antialias: false, depth: false, stencil: false })"),
+)?.unsafeCast<WebGL2RenderingContext>()
 
 private fun <T : HTMLElement> element(id: String): T =
     checkNotNull(document.getElementById(id)) { "The page has no element $id" }.unsafeCast<T>()
