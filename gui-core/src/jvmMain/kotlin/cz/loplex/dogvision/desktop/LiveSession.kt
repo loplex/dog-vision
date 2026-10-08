@@ -9,6 +9,7 @@ import cz.loplex.dogvision.ffmpeg.FfmpegDownload
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms.DOWNLOAD_PAGE
+import cz.loplex.dogvision.texts.PanelActions
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +49,8 @@ class LiveSession<I>(
     wingetFound: Boolean = canInstallFfmpeg && FfmpegPrograms.wingetOnPath(),
     private val post: (() -> Unit) -> Unit = { EventQueue.invokeLater(it) },
     private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.texts.systemLanguages() },
-) : AutoCloseable {
+) : PanelActions,
+    AutoCloseable {
     /**
      * What the window shows besides the picture:
      * [source], the [camera] choice, [view], [language], a tag or "" for the system's, and [texts] in it;
@@ -158,7 +160,7 @@ class LiveSession<I>(
      * Shows [camera] in place of what is shown, one of those [State.camera] offers;
      * null turns the camera off, and does nothing while a file is shown, which is shown with the camera off already.
      */
-    fun chooseCamera(camera: CameraOption?) {
+    override fun chooseCamera(camera: CameraOption?) {
         if (camera == null) {
             if (mutableState.value.source is Source.Camera) start(Source.None)
         } else {
@@ -168,16 +170,16 @@ class LiveSession<I>(
     }
 
     /** Mirrors a camera's frames as [mirroring] says, the frame shown at once. */
-    fun setMirroring(mirroring: Mirroring) = changeCamera { copy(mirroring = mirroring) }
+    override fun setMirroring(mirroring: Mirroring) = changeCamera { copy(mirroring = mirroring) }
 
     /** Changes the view as [change] makes it of the view shown. */
-    fun changeView(change: (View) -> View) = setView(change(mutableState.value.view))
+    override fun changeView(change: (View) -> View) = setView(change(mutableState.value.view))
 
     /** Goes back to the view the command line asked for, as the window started with. */
-    fun reset() = setView(arguments.windowView)
+    override fun reset() = setView(arguments.windowView)
 
     /** Words the window in [language], a language tag, or in the system's language for "". */
-    fun setLanguage(language: String) = change { copy(language = language, texts = textsIn(language)) }
+    override fun setLanguage(language: String) = change { copy(language = language, texts = textsIn(language)) }
 
     /** Hides the panel of controls if it is shown, and shows it if not, as F9 does. */
     fun togglePanel() = change { copy(panelShown = !panelShown) }

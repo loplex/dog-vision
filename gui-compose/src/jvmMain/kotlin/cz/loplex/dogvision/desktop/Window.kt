@@ -43,6 +43,8 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
@@ -58,11 +60,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.FrameWindowScope
+import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import cz.loplex.dogvision.texts.Menu
+import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
+import cz.loplex.dogvision.texts.press
 import cz.loplex.dogvision.ui.Controls
 import cz.loplex.dogvision.ui.EXPAND_ICON
 import cz.loplex.dogvision.ui.LocalOpenLists
@@ -83,8 +92,9 @@ private val GAP = 6.dp
 /**
  * Opens the window on what [arguments] ask for: the file given, a photo or else a video,
  * or the camera --camera names; returns once the window is closed.\
- * Another file is opened from the system's dialog, from the o key, or dropped onto the window;
- * F9 or the button at the images' edge hides the controls, and q or Escape closes it.\
+ * Its menus hold what the panel holds, and their keys press them:
+ * Ctrl+O opens another file from the system's dialog, F9 or the button at the images' edge hides the controls,
+ * and Ctrl+Q closes it; a file dropped onto the window opens too.\
  * What it shows is a [LiveSession]'s, which the window only lays out.
  */
 @Suppress("SameReturnValue")
@@ -99,6 +109,7 @@ fun showWindow(arguments: WindowArguments): Int {
         val icon = remember { BitmapPainter(windowIcon().toComposeImageBitmap()) }
         val open = { dialogs.open(state.texts, state.source, session::openFile) }
         val lists = remember { OpenLists() }
+        val menus = session.menus(state, open = { open() }, quit = ::exitApplication)
         CompositionLocalProvider(LocalTexts provides state.texts, LocalOpenLists provides lists) {
             Window(
                 onCloseRequest = ::exitApplication,
@@ -106,16 +117,20 @@ fun showWindow(arguments: WindowArguments): Int {
                 icon = icon,
                 state = rememberWindowState(width = 1280.dp, height = 800.dp),
                 onKeyEvent = { event ->
-                    val down = event.type == KeyEventType.KeyDown && lists.count == 0
+                    val key = MENU_KEYS[event.key]?.takeIf { it.withCtrl == event.isCtrlPressed }
                     when {
-                        down && (event.key == Key.Escape || event.key == Key.Q) -> exitApplication().let { true }
-                        down && event.key == Key.O -> true.also { open() }
-                        down && event.key == Key.F9 -> true.also { session.togglePanel() }
-                        else -> false
+                        event.type != KeyEventType.KeyDown -> false
+
+                        // A list dropped down takes the keys;
+                        // a menu's key is kept from the menu bar, which would take it otherwise.
+                        lists.count != 0 -> key != null
+
+                        else -> key?.let(menus::press) ?: false
                     }
                 },
             ) {
                 dialogs.parent = window
+                WindowMenuBar(menus)
                 MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                     Surface {
                         Screen(session, state, onOpen = { open() })
@@ -126,6 +141,55 @@ fun showWindow(arguments: WindowArguments): Int {
     }
     return 0
 }
+
+/** The keys of the menus' entries, as Compose names them. */
+private val MENU_KEYS = MenuKey.entries.associateBy { key ->
+    when (key) {
+        MenuKey.OPEN -> Key.O
+        MenuKey.QUIT -> Key.Q
+        MenuKey.CONTROLS -> Key.F9
+        MenuKey.RESET -> Key.Zero
+        MenuKey.SIDE_BY_SIDE -> Key.M
+        MenuKey.DIFFERENCE -> Key.D
+    }
+}
+
+/** [menus] as the window's menu bar, each key shown beside its entry. */
+@Composable
+private fun FrameWindowScope.WindowMenuBar(menus: List<Menu>) {
+    MenuBar {
+        menus.forEach { menu -> Menu(menu.label) { Entries(menu.entries) } }
+    }
+}
+
+@Composable
+private fun MenuScope.Entries(entries: List<MenuEntry>) {
+    entries.forEach { entry ->
+        when (entry) {
+            is MenuEntry.Action ->
+                Item(entry.label, enabled = entry.enabled, shortcut = shortcutOf(entry.key), onClick = entry.onSelect)
+
+            is MenuEntry.Check -> CheckboxItem(
+                entry.label,
+                entry.checked,
+                enabled = entry.enabled,
+                shortcut = shortcutOf(entry.key),
+                onCheckedChange = entry.onSelect,
+            )
+
+            is MenuEntry.Choice ->
+                RadioButtonItem(entry.label, entry.selected, enabled = entry.enabled, onClick = entry.onSelect)
+
+            is MenuEntry.Submenu -> Menu(entry.label, enabled = entry.enabled) { Entries(entry.entries) }
+
+            MenuEntry.Separator -> Separator()
+        }
+    }
+}
+
+/** The shortcut [key] shows beside its entry, if it has one. */
+private fun shortcutOf(key: MenuKey?): KeyShortcut? =
+    key?.let { menuKey -> KeyShortcut(MENU_KEYS.entries.first { it.value == menuKey }.key, ctrl = menuKey.withCtrl) }
 
 /** The system's dialogs, over the window [parent] once it is shown. */
 private class Dialogs {

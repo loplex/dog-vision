@@ -8,8 +8,12 @@ import cz.loplex.dogvision.desktop.LiveSession
 import cz.loplex.dogvision.desktop.OpenDialog
 import cz.loplex.dogvision.desktop.Source
 import cz.loplex.dogvision.desktop.WindowArguments
+import cz.loplex.dogvision.desktop.menus
 import cz.loplex.dogvision.desktop.windowIcon
+import cz.loplex.dogvision.texts.Menu
+import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
+import cz.loplex.dogvision.texts.press
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,15 +40,13 @@ import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JFrame
 import javax.swing.JPanel
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 import javax.swing.TransferHandler
 
 /**
  * Opens the Swing window on what [arguments] ask for, as the Compose window does:
  * the file given, a photo or else a video, or the camera --camera names; returns once the window is closed.\
- * Another file is opened from the system's dialog, from the o key, or dropped onto the window;
- * F9 or the button at the images' edge hides the controls; q or Escape closes it.\
+ * Its menus and keys are the Compose window's, and a file dropped onto the window opens too.\
  * What it shows is a [LiveSession]'s, which the window only lays out.
  */
 @Suppress("SameReturnValue")
@@ -94,8 +96,18 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     frame.contentPane.add(preview, BorderLayout.CENTER)
     frame.contentPane.add(east, BorderLayout.EAST)
 
+    var menus = emptyList<Menu>()
+    var shownMenus: List<Any>? = null
+
     @Suppress("MagicNumber")
     fun show(state: LiveSession.State) {
+        menus = session.menus(state, open = { openFromDialog(frame, dialog, session) }, quit = frame::dispose)
+        val shown = shownOf(menus)
+        if (shown != shownMenus) {
+            shownMenus = shown
+            frame.jMenuBar = menuBar(menus)
+            frame.rootPane.revalidate()
+        }
         frame.title = state.texts.get(Str.APP_NAME)
         open.text = state.texts.get(Str.OPEN_MEDIA)
         camera.text = state.texts.get(Str.SHOW_CAMERA)
@@ -115,13 +127,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     scope.launch { session.state.collect(::show) }
     scope.launch { session.picture.collect { preview.picture = it } }
 
-    keys(
-        frame.rootPane,
-        "O" to { openFromDialog(frame, dialog, session) },
-        "F9" to session::togglePanel,
-        "Q" to frame::dispose,
-        "ESCAPE" to frame::dispose,
-    )
+    keys(frame.rootPane) { menus }
     frame.transferHandler = FileDrop(session::openFile)
     frame.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
     frame.addWindowListener(
@@ -146,18 +152,20 @@ private fun openFromDialog(frame: JFrame, dialog: OpenDialog, session: LiveSessi
 }
 
 /**
- * Runs each action when its key is pressed anywhere in the window [root] is of,
- * as the Compose window's onKeyEvent, but for while a list is dropped down, which then takes the key.
+ * Presses the [menus] with their keys anywhere in the window [root] is of,
+ * as the Compose window's onKeyEvent, but for while a list is dropped down, which then takes the key.\
+ * A menu's key is taken here even then,
+ * so that the menu bar's accelerator, which Swing would give it next, does not act on it.
  */
-private fun keys(root: JComponent, vararg actions: Pair<String, () -> Unit>) {
-    for ((key, action) in actions) {
-        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key), key)
+private fun keys(root: JComponent, menus: () -> List<Menu>) {
+    for (key in MenuKey.entries) {
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(key.keyStroke, key.name)
         root.actionMap.put(
-            key,
+            key.name,
             object : AbstractAction() {
-                override fun actionPerformed(event: ActionEvent) = action()
-
-                override fun isEnabled() = !listDroppedDown()
+                override fun actionPerformed(event: ActionEvent) {
+                    if (!listDroppedDown()) menus().press(key)
+                }
             },
         )
     }

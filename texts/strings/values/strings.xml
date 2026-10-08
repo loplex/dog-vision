@@ -114,6 +114,11 @@
     <string name="show_camera">Camera</string>
     <string name="hide_panel">Hide the controls (F9)</string>
     <string name="show_panel">Show the controls (F9)</string>
+    <string name="controls">Controls</string>
+    <string name="open_media_menu">Open a photo or a video…</string>
+    <string name="menu_file">File</string>
+    <string name="quit">Quit</string>
+    <string name="degrees">%1$s°</string>
     <string name="switch_camera">Switch between the back and the front camera</string>
     <string name="next_camera">Switch to the next camera</string>
     <string name="media_failed">Cannot open %1$s as a photo or a video</string>

@@ -11,8 +11,11 @@ import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
+import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
+import cz.loplex.dogvision.texts.press
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.Collections
@@ -490,6 +493,30 @@ class LiveSessionTest {
         feedRenderers.last().show(frame, live = false)
         assertEquals(listOf("start a.jpg", "frame"), log)
         assertEquals(Mirroring.MIRROR, session.state.value.camera.mirroring)
+    }
+
+    @Test
+    fun theWindowsMenusOpenQuitAndHoldThePanelAndItsToggle() {
+        val session = session()
+        var opened = 0
+        var quit = 0
+        fun menus() = session.menus(session.state.value, open = { opened++ }, quit = { quit++ })
+        assertEquals(
+            listOf("File", "Camera", "Species", "Simulation", "Acuity", "View", "Language"),
+            menus().map { it.label },
+        )
+        assertTrue(menus().press(MenuKey.OPEN))
+        assertTrue(menus().press(MenuKey.QUIT))
+        assertEquals(1 to 1, opened to quit)
+        assertTrue(menus().press(MenuKey.CONTROLS))
+        assertFalse(session.state.value.panelShown)
+        assertTrue(menus().press(MenuKey.SIDE_BY_SIDE))
+        assertFalse(session.state.value.view.sideBySide)
+        val camera = menus().first().entries.filterIsInstance<MenuEntry.Action>().single { it.key == null }
+        camera.onSelect()
+        assertTrue(session.state.value.source is Source.Camera)
+        session.setLanguage("cs")
+        assertEquals("Soubor", menus().first().label)
     }
 
     private companion object {

@@ -101,6 +101,11 @@
     <string name="show_camera">Kamera</string>
     <string name="hide_panel">Skrýt ovládání (F9)</string>
     <string name="show_panel">Zobrazit ovládání (F9)</string>
+    <string name="controls">Ovládání</string>
+    <string name="open_media_menu">Otevřít fotku nebo video…</string>
+    <string name="menu_file">Soubor</string>
+    <string name="quit">Ukončit</string>
+    <string name="degrees">%1$s°</string>
     <string name="switch_camera">Přepnout mezi zadní a přední kamerou</string>
     <string name="next_camera">Přepnout na další kameru</string>
     <string name="media_failed">%1$s nejde otevřít jako fotka ani jako video</string>
