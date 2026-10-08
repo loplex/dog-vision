@@ -47,17 +47,21 @@ class SettingsTest {
             assertEquals(Settings(), readSettings(file), text)
         }
         file.writeText("""{"output_dir": "/shots", "convert_to_output_dir": true}""")
-        assertEquals(Settings(File("/shots")), readSettings(file))
+        assertEquals(Settings(File("/shots"), convertToOutputDir = true), readSettings(file))
+        for (flag in listOf("\"true\"", "1", "null", "false")) {
+            file.writeText("""{"convert_to_output_dir": $flag}""")
+            assertEquals(Settings(), readSettings(file), flag)
+        }
     }
 
     @Test
     fun aWriteKeepsWhatElseTheFileHoldsAndLeavesNothingBeside() {
-        file.writeText("""{"convert_to_output_dir": true, "output_dir": "/old"}""")
-        writeSettings(file, Settings(File("/shots")))
+        file.writeText("""{"theme": "dark", "output_dir": "/old"}""")
+        writeSettings(file, Settings(File("/shots"), convertToOutputDir = true))
         val json = Json.parseToJsonElement(file.readText()) as JsonObject
-        assertEquals(JsonPrimitive(true), json["convert_to_output_dir"])
+        assertEquals(JsonPrimitive("dark"), json["theme"])
         assertEquals(JsonPrimitive(File("/shots").path), json["output_dir"])
-        assertEquals(Settings(File("/shots")), readSettings(file))
+        assertEquals(Settings(File("/shots"), convertToOutputDir = true), readSettings(file))
         assertEquals(listOf(file.name), directory.list()?.toList())
     }
 

@@ -310,11 +310,16 @@ It runs on Linux and Windows on x86-64.
   it is worded in the window's language, which Java itself has no Czech for.\
   Where the Compose window takes GTK's look, as on GNOME, part of it stays in English,
   as GTK's look reads words of its own.
-- **The folder chosen is kept in `settings.json`**:
+- **Ctrl+E or *File* → *Convert file* converts the file shown at full size**, with the view as the window shows it,
+  as `dog-vision-cli` converts a file: next to it, as `photo.dog.png` or `clip.cat.mp4`,
+  or into the output folder where *File* → *Converted files into the output folder* is checked.\
+  *File* → *Cancel the conversion* stops it and removes the unfinished file, and so does closing the window;
+  a video needs ffmpeg.
+- **The folder chosen, and where a converted file goes, are kept in `settings.json`**:
   in `$XDG_CONFIG_HOME/dog-vision`, or `~/.config/dog-vision` where that is not set, on Linux,
   and in `%APPDATA%\dog-vision` on Windows.
 - **The status bar under the images says what is shown**, the file's name or the camera's,
-  and what the window did last: where a snapshot went, or why it could not be saved.
+  how far a conversion is, and what the window did last: where a snapshot went, or why it could not be saved.
 - **Ctrl+R or *File* → *Record video* records the view** into an .mp4 in the output folder,
   named as a snapshot is, until the same again stops it or the window closes:
   its images as a snapshot has them, 30 frames a second, each shown for as long as the window showed it, and no sound.\

@@ -160,11 +160,13 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
 private class StatusBar :
     JPanel(FlowLayout(FlowLayout.LEFT, UIScale.scale(STATUS_GAP), UIScale.scale(STATUS_PADDING))) {
     private val source = JLabel().also(::add)
+    private val conversion = JLabel().also(::add)
     private val recording = JLabel().also(::add)
     private val status = JLabel().also(::add)
 
     fun show(state: LiveSession.State) {
         source.text = state.sourceName(state.texts)
+        conversion.text = state.conversionStatus?.invoke(state.texts).orEmpty()
         recording.text = state.recordingStatus?.invoke(state.texts).orEmpty()
         status.text = state.status?.invoke(state.texts).orEmpty()
     }

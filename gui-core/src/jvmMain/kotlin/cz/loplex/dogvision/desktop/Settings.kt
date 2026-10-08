@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
@@ -12,9 +13,10 @@ import java.nio.file.StandardCopyOption
 
 /**
  * What the windows keep from one run to the next, in [settingsFile]:
- * [outputDir], where snapshots and recordings go, null for [picturesFolder].
+ * [outputDir], where snapshots and recordings go, null for [picturesFolder],
+ * and [convertToOutputDir], whether a converted file goes there too, in place of next to its original.
  */
-data class Settings(val outputDir: File? = null)
+data class Settings(val outputDir: File? = null, val convertToOutputDir: Boolean = false)
 
 /**
  * settings.json in the folder each system keeps a program's settings in: dog-vision in %APPDATA% on Windows,
@@ -39,8 +41,9 @@ internal fun configHome(environment: Map<String, String>, home: String): File =
 
 /**
  * The settings [file] holds, and the defaults for what it does not:
- * a file that is missing, cannot be read or is no JSON object gives them all,
- * and an output folder that is no string, or an empty one, is none.
+ * a file that is missing, cannot be read or is no JSON object gives them all;
+ * an output folder that is no string, or an empty one, is none;
+ * and a converted file goes to the output folder only where `convert_to_output_dir` is true.
  */
 fun readSettings(file: File): Settings {
     val json = try {
@@ -51,7 +54,8 @@ fun readSettings(file: File): Settings {
         null
     } ?: return Settings()
     val outputDir = (json[OUTPUT_DIR] as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { it.isNotEmpty() }
-    return Settings(outputDir?.let(::File))
+    val convert = (json[CONVERT_TO_OUTPUT_DIR] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull == true
+    return Settings(outputDir?.let(::File), convert)
 }
 
 /**
@@ -68,7 +72,10 @@ fun writeSettings(file: File, settings: Settings) {
         null
     }
     val written: Map<String, JsonElement> =
-        kept.orEmpty() + (OUTPUT_DIR to (settings.outputDir?.path?.let(::JsonPrimitive) ?: JsonNull))
+        kept.orEmpty() + mapOf(
+            OUTPUT_DIR to (settings.outputDir?.path?.let(::JsonPrimitive) ?: JsonNull),
+            CONVERT_TO_OUTPUT_DIR to JsonPrimitive(settings.convertToOutputDir),
+        )
     val folder = file.absoluteFile.parentFile
     if (!folder.isDirectory && !folder.mkdirs()) throw IOException("Cannot make $folder")
     val temporary = File.createTempFile("settings-", ".json", folder)
@@ -81,5 +88,6 @@ fun writeSettings(file: File, settings: Settings) {
 }
 
 private const val OUTPUT_DIR = "output_dir"
+private const val CONVERT_TO_OUTPUT_DIR = "convert_to_output_dir"
 
 private val PRETTY = Json { prettyPrint = true }

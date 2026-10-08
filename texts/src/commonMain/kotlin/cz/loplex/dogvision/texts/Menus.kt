@@ -25,6 +25,9 @@ enum class MenuKey(val key: String, val withCtrl: Boolean = true) {
     /** Record, as recorders take it. */
     RECORD("R"),
 
+    /** Export, as drawing programs take it: the file converted. */
+    CONVERT("E"),
+
     /** The controls at the side, as KDE's programs show and hide their side panel. */
     CONTROLS("F9", withCtrl = false),
 

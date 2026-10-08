@@ -19,6 +19,7 @@ import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press
 import org.junit.jupiter.api.io.TempDir
+import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.Collections
@@ -758,6 +759,44 @@ class LiveSessionTest {
         Thread.sleep(SETTLE_MILLIS)
         session.close()
         assertEquals(listOf("dog-dog-20261008-090507.mp4"), finished.toList())
+    }
+
+    @Test
+    fun theFileShownIsConvertedNextToItOrIntoTheOutputFolder() {
+        val photo = File(directory, "photo.png")
+        val pixels = BufferedImage(4, 2, BufferedImage.TYPE_INT_RGB)
+        ImageIO.write(pixels, "png", photo)
+        val out = File(directory, "out")
+        val session = session(WindowArguments(file = photo, outputDir = out))
+        val texts = Texts.of("en")
+        assertTrue(session.menus(session.state.value, {}, {}, {}).press(MenuKey.CONVERT))
+        val beside = File(directory, "photo.dog.png")
+        assertTrue(beside.isFile)
+        assertFalse(session.state.value.converting)
+        assertEquals("Wrote $beside", session.state.value.conversionStatus?.invoke(texts))
+        session.setConvertToOutputDir(true)
+        assertTrue(readSettings(settings).convertToOutputDir)
+        session.convertSource()
+        assertTrue(File(out, "photo.dog.png").isFile)
+        assertTrue(session().state.value.convertToOutputDir)
+    }
+
+    @Test
+    fun aFileThatCannotBeConvertedSaysWhy() {
+        val text = File(directory, "notes.txt").apply { writeText("no photo") }
+        val session = session(WindowArguments(file = text))
+        session.convertSource()
+        val status = session.state.value.conversionStatus?.invoke(Texts.of("en")).orEmpty()
+        assertTrue(status.startsWith("Cannot ") && "notes.txt" in status, status)
+        assertFalse(File(directory, "notes.dog.png").exists())
+    }
+
+    @Test
+    fun theCameraIsNotConverted() {
+        val session = session(WindowArguments())
+        assertFalse(session.menus(session.state.value, {}, {}, {}).press(MenuKey.CONVERT))
+        session.convertSource()
+        assertNull(session.state.value.conversionStatus)
     }
 
     private companion object {

@@ -1,5 +1,8 @@
 package cz.loplex.dogvision.desktop
 
+import cz.loplex.dogvision.common.Conversion
+import cz.loplex.dogvision.common.ConversionException
+import cz.loplex.dogvision.common.Converted
 import cz.loplex.dogvision.core.Arrangement
 import cz.loplex.dogvision.core.CameraChoice
 import cz.loplex.dogvision.core.CameraOption
@@ -14,6 +17,7 @@ import cz.loplex.dogvision.ffmpeg.FfmpegDownload
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms.DOWNLOAD_PAGE
+import cz.loplex.dogvision.ffmpeg.Sound
 import cz.loplex.dogvision.texts.PanelActions
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
@@ -27,6 +31,8 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.util.Timer
 import java.util.TimerTask
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 import kotlin.concurrent.thread
 
@@ -104,6 +110,12 @@ class LiveSession<I>(
         val recording: Boolean = false,
         /** How the recording under way or the last one stands, worded as [status] is. */
         val recordingStatus: ((Texts) -> String)? = null,
+        /** Whether a converted file goes into the output folder, in place of next to its original. */
+        val convertToOutputDir: Boolean = false,
+        /** Whether the file shown is being converted. */
+        val converting: Boolean = false,
+        /** How the conversion under way or the last one stands, worded as [status] is. */
+        val conversionStatus: ((Texts) -> String)? = null,
         private val canInstallFfmpeg: Boolean = false,
         private val wingetFound: Boolean = false,
     ) {
@@ -146,6 +158,7 @@ class LiveSession<I>(
             canInstallFfmpeg = canInstallFfmpeg,
             wingetFound = wingetFound,
             outputDir = (arguments.outputDir ?: settings.outputDir ?: defaultOutputDir()).absoluteFile,
+            convertToOutputDir = settings.convertToOutputDir,
         ),
     )
     val state: StateFlow<State> = mutableState.asStateFlow()
@@ -268,19 +281,107 @@ class LiveSession<I>(
     fun setOutputDir(folder: File) {
         val absolute = folder.absoluteFile
         settings = settings.copy(outputDir = absolute)
-        val failure = try {
-            writeSettings(settingsFile, settings)
-            null
-        } catch (error: IOException) {
-            error
-        }
+        val failure = saveSettings()
         val status: (Texts) -> String = if (failure == null) {
             { it.get(Str.OUTPUT_FOLDER_SET, absolute) }
         } else {
-            { it.get(Str.SETTINGS_UNSAVED, failure.message) }
+            { it.get(Str.SETTINGS_UNSAVED, failure) }
         }
         change { copy(outputDir = absolute, status = status) }
     }
+
+    /** The conversion under way, and what says it has ended. */
+    private var conversion: Conversion? = null
+    private var conversionEnded: CountDownLatch? = null
+
+    /**
+     * Converts the file shown at full size to the view shown, as the command line converts a file,
+     * in the background: next to it, or into the output folder where [State.convertToOutputDir] says so;
+     * the conversion status says how far it is, then what it wrote or why it could not.\
+     * Nothing while the camera is shown or a conversion runs.
+     */
+    fun convertSource() {
+        val state = mutableState.value
+        val file = (state.source as? Source.Media)?.file ?: return
+        if (conversion != null) return
+        val job = Conversion(file, state.view, state.outputDir.takeIf { state.convertToOutputDir })
+        val ended = CountDownLatch(1)
+        conversion = job
+        conversionEnded = ended
+        change { copy(converting = true, conversionStatus = converting(0)) }
+        inBackground {
+            val result = runCatching {
+                job.run { percent ->
+                    post {
+                        if (conversion ===
+                            job
+                        ) {
+                            change { copy(conversionStatus = converting(percent)) }
+                        }
+                    }
+                }
+            }
+            ended.countDown()
+            post {
+                if (conversion === job) conversion = null
+                if (!closed) change { copy(converting = false, conversionStatus = converted(result)) }
+            }
+        }
+    }
+
+    /** Stops the conversion under way, which then writes nothing and says nothing. */
+    fun cancelConversion() {
+        conversion?.cancel()
+    }
+
+    /**
+     * Puts a converted file into the output folder [on] from now on,
+     * in place of next to its original, and keeps it in settings.json;
+     * the status says if the settings could not be saved.
+     */
+    fun setConvertToOutputDir(on: Boolean) {
+        settings = settings.copy(convertToOutputDir = on)
+        val failure = saveSettings()
+        change {
+            copy(convertToOutputDir = on, status = failure?.let { error -> { it.get(Str.SETTINGS_UNSAVED, error) } })
+        }
+    }
+
+    /** Writes the settings, and says why they could not be, if they could not. */
+    private fun saveSettings(): String? = try {
+        writeSettings(settingsFile, settings)
+        null
+    } catch (error: IOException) {
+        error.message.orEmpty()
+    }
+
+    private fun converting(percent: Int): (Texts) -> String = { it.get(Str.CONVERTING, it.get(Str.PERCENT, percent)) }
+
+    /** What a conversion's [result] says: the file written and how, nothing if it was cancelled, or why it failed. */
+    private fun converted(result: Result<Converted?>): ((Texts) -> String)? = result.fold(
+        onSuccess = { converted ->
+            when (converted) {
+                null -> null
+
+                is Converted.Photo -> { texts -> texts.get(Str.PHOTO_WRITTEN, converted.file) }
+
+                is Converted.Video -> { texts ->
+                    val sound = if (converted.sound == Sound.KEPT) Str.WRITTEN_WITH_SOUND else Str.WRITTEN_WITHOUT_SOUND
+                    val how = texts.get(sound, converted.encoder.format, converted.encoder.name)
+                    texts.get(Str.VIDEO_WRITTEN, converted.file, how)
+                }
+            }
+        },
+        onFailure = { error ->
+            if (error is ConversionException) {
+                error::message
+            } else {
+                { texts ->
+                    texts.get(Str.CONVERSION_FAILED, error.message)
+                }
+            }
+        },
+    )
 
     /** The recording under way, and what ticks its time in the status. */
     private var recorder: Recorder? = null
@@ -423,6 +524,8 @@ class LiveSession<I>(
     /** Stops the feed, and then the renderer, which the feed shows its frames on. */
     override fun close() {
         if (closed) return
+        conversion?.cancel()
+        conversionEnded?.await(CONVERSION_WAIT_MILLIS, TimeUnit.MILLISECONDS)
         recorder?.let { recording ->
             stopRecording()
             recording.await(FINISH_MILLIS)
@@ -529,6 +632,9 @@ class LiveSession<I>(
     companion object {
         /** How long a recording is waited for to be finished, when it stops and when the window closes. */
         private const val FINISH_MILLIS = 30_000L
+
+        /** How long a conversion cancelled is waited for to remove its file, when the window closes. */
+        private const val CONVERSION_WAIT_MILLIS = 5_000L
         private const val NANOS_A_SECOND = 1_000_000_000L
         private const val SECONDS_A_MINUTE = 60
 
