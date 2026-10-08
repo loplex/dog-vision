@@ -398,6 +398,11 @@ WGL chosen and WGL taken where Direct3D 11 is switched off, and the command line
   so a part named without `DogVision` comes without the runtime; Windows installs a Feature's parent with it.
 - **Under Wine, an upgrade installs every part**, whichever were installed before:
   Wine's `MigrateFeatureStates` migrates nothing, so only Windows shows that a later version keeps them.
+- **Under Wine, the Swing window shows its menus only where Wine draws the windows' frames**:
+  on Windows 10 and later FlatLaf draws a title bar of its own with the menus in it, as Windows Server 2022 shows them,
+  and Wine shows it only with `Decorated` set to `N` under `HKCU\Software\Wine\X11 Driver`,
+  which is `winecfg`'s *Allow the window manager to decorate the windows* turned off.\
+  Where the window manager decorates them, as by default, the window has the window manager's title bar and no menus.
 - **The Compose window's button that installs ffmpeg is tried on Linux**,
   with scripts in place of winget and PowerShell, as Wine has neither winget nor a registry that winget writes to.\
   winget's install itself ran on GitHub's Windows Server 2025, whose image has winget.
