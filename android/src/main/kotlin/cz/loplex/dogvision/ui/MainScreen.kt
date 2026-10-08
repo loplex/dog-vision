@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -189,6 +191,7 @@ fun MainScreen(model: MainViewModel) {
             }
         }
         val message by model.message.collectAsStateWithLifecycle()
+        val offersSdr by model.offersSdr.collectAsStateWithLifecycle()
         message?.let {
             Surface(
                 color = MaterialTheme.colorScheme.inverseSurface,
@@ -198,7 +201,21 @@ fun MainScreen(model: MainViewModel) {
                     .padding(16.dp)
                     .clickable(onClick = model::dismissMessage),
             ) {
-                Text(it, modifier = Modifier.padding(12.dp))
+                Column {
+                    Text(it, modifier = Modifier.padding(12.dp))
+                    // A video whose HDR the GPU cannot tone-map is converted as SDR only when asked: it comes out flat.
+                    if (offersSdr) {
+                        TextButton(
+                            onClick = { convert { model.convertVideo(asSdr = true) } },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.inversePrimary,
+                            ),
+                            modifier = Modifier.align(Alignment.End).padding(end = 4.dp),
+                        ) {
+                            Text(text(Str.CONVERT_AS_SDR))
+                        }
+                    }
+                }
             }
         }
     }

@@ -138,6 +138,8 @@
     <string name="snapshot_failed">Snímek nejde uložit: %1$s</string>
     <string name="converting">Převádím: %1$s</string>
     <string name="conversion_failed">Převod selhal: %1$s</string>
+    <string name="hdr_not_tone_mapped">tento GPU neumí převést HDR video na SDR; převedené jako SDR bude mít ploché barvy</string>
+    <string name="convert_as_sdr">Převést jako SDR</string>
     <string name="too_large">fotka je na dostupnou paměť příliš velká</string>
     <string name="storage_needed">Ukládání do galerie vyžaduje na této verzi Androidu oprávnění k úložišti.</string>
     <string name="monochromat">monochromat</string>

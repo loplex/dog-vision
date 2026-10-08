@@ -26,6 +26,7 @@ import cz.loplex.dogvision.render.Capture
 import cz.loplex.dogvision.render.Drawn
 import cz.loplex.dogvision.render.FrameExchange
 import cz.loplex.dogvision.texts.Str
+import cz.loplex.dogvision.video.HdrNotToneMapped
 import cz.loplex.dogvision.video.Recorder
 import cz.loplex.dogvision.video.Written
 import cz.loplex.dogvision.video.convertVideo
@@ -302,11 +303,18 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
         }
     }
 
+    /** Whether the message shown is the one a conversion ended with that offers converting the video as SDR. */
+    val offersSdr: StateFlow<Boolean> = combine(_message, Conversions.sdrOfferedWith) { shown, offering ->
+        shown != null && shown == offering
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     /**
      * Saves the video shown to Movies at its full size and with its sound, as the view shows it now;
-     * what the conversion is at, and how the video was written, are told as messages.
+     * what the conversion is at, and how the video was written, are told as messages.\
+     * An HDR video is tone-mapped to SDR, or, [asSdr], taken as SDR as it is,
+     * its colours flat, which the message offers where the GPU cannot tone-map it.
      */
-    fun convertVideo() {
+    fun convertVideo(asSdr: Boolean = false) {
         val video = source.value as? Source.Video ?: return
         val context = getApplication<Application>()
         val view = viewToConvert()
@@ -315,11 +323,14 @@ class MainViewModel(application: Application, state: SavedStateHandle) : Android
             // Transformer writes to a path, which the gallery does not give out; the video is copied there afterwards.
             val file = File(context.cacheDir, name)
             try {
-                val written = convertVideo(context, video.uri, view, file, onProgress = report)
+                val written = convertVideo(context, video.uri, view, file, hdrAsSdr = asSdr, onProgress = report)
                 withContext(Dispatchers.IO) {
                     saveToGallery(context, name, Gallery.VIDEOS) { out -> file.inputStream().use { it.copyTo(out) } }
                 }
                 context.texts.get(Str.SAVED_VIDEO, name, Gallery.VIDEOS.folder, describe(written))
+            } catch (_: HdrNotToneMapped) {
+                context.texts.get(Str.CONVERSION_FAILED, context.texts.get(Str.HDR_NOT_TONE_MAPPED))
+                    .also(Conversions::offerSdr)
             } catch (error: IOException) {
                 context.texts.get(Str.CONVERSION_FAILED, error.message)
             } finally {

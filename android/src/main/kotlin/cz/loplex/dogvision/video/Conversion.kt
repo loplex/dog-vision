@@ -1,12 +1,14 @@
 package cz.loplex.dogvision.video
 
 import android.content.Context
+import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.Clock
+import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.DefaultAssetLoaderFactory
@@ -41,6 +43,9 @@ data class Written(
     val silent: Boolean = false,
 )
 
+/** Why a video was not converted: it is HDR, and the GPU cannot tone-map it to SDR, lacking GL_EXT_YUV_target. */
+class HdrNotToneMapped(cause: Throwable) : IOException("The GPU cannot tone-map the HDR video", cause)
+
 /**
  * Writes [view] of every frame of the video at [uri] to [output], at the video's size and rate, with its sound;
  * [onProgress] is told the share done, on the main thread.
@@ -50,20 +55,23 @@ data class Written(
  * on the hardware it picks, at a smaller size if the encoder cannot take the view's.\
  * The sound is carried over as it is where an .mp4 holds it,
  * and re-encoded to a format that the encoder and an .mp4 take where not.\
- * An HDR video is tone-mapped to SDR first, since the model works on SDR.\
+ * An HDR video is tone-mapped to SDR first, since the model works on SDR,
+ * or, if [hdrAsSdr], taken as SDR as it is, its colours flat.\
  * Cancelling the coroutine stops the conversion, and [output] is then left unfinished.
  *
  * [textureLimit] caps the size of the view's texture below the GPU's own, as a GPU with a smaller one would.
  *
- * Throws IOException if the video cannot be converted.
+ * Throws IOException if the video cannot be converted, [HdrNotToneMapped] where tone-mapping is why.\
+ * Taking HDR as SDR is Media3's experimental API.
  */
-@OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class, ExperimentalApi::class)
 suspend fun convertVideo(
     context: Context,
     uri: Uri,
     view: View,
     output: File,
     textureLimit: Int = Int.MAX_VALUE,
+    hdrAsSdr: Boolean = false,
     onProgress: (Double) -> Unit,
 ): Written = withContext(Dispatchers.Main) {
     val result = CompletableDeferred<ExportResult>()
@@ -84,7 +92,16 @@ suspend fun convertVideo(
             }
 
             override fun onError(composition: Composition, exportResult: ExportResult, exception: ExportException) {
-                result.completeExceptionally(IOException(exception.message ?: exception.errorCodeName, exception))
+                val toneMapping = !hdrAsSdr &&
+                    exception.errorCode == ExportException.ERROR_CODE_VIDEO_FRAME_PROCESSING_FAILED &&
+                    isHdr(context, uri)
+                result.completeExceptionally(
+                    if (toneMapping) {
+                        HdrNotToneMapped(exception)
+                    } else {
+                        IOException(exception.message ?: exception.errorCodeName, exception)
+                    },
+                )
             }
         })
         .build()
@@ -93,7 +110,13 @@ suspend fun convertVideo(
         .setEffects(Effects(emptyList(), listOf(effect)))
         .build()
     val composition = Composition.Builder(EditedMediaItemSequence.withAudioAndVideoFrom(listOf(item)))
-        .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
+        .setHdrMode(
+            if (hdrAsSdr) {
+                Composition.HDR_MODE_EXPERIMENTAL_FORCE_INTERPRET_HDR_AS_SDR
+            } else {
+                Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL
+            },
+        )
         .build()
     transformer.start(composition, output.path)
     val progress = ProgressHolder()
@@ -121,6 +144,25 @@ suspend fun convertVideo(
         scaledTo = if (scaled) exported.width to exported.height else null,
     )
 }
+
+/** Whether the video at [uri] is HDR: its video track's transfer PQ's or HLG's; false where it cannot be read. */
+private fun isHdr(context: Context, uri: Uri): Boolean {
+    val extractor = MediaExtractor()
+    return try {
+        extractor.setDataSource(context, uri, null)
+        (0 until extractor.trackCount).map(extractor::getTrackFormat).any { format ->
+            format.getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true &&
+                format.containsKey(MediaFormat.KEY_COLOR_TRANSFER) &&
+                format.getInteger(MediaFormat.KEY_COLOR_TRANSFER) in HDR_TRANSFERS
+        }
+    } catch (_: IOException) {
+        false
+    } finally {
+        extractor.release()
+    }
+}
+
+private val HDR_TRANSFERS = setOf(MediaFormat.COLOR_TRANSFER_ST2084, MediaFormat.COLOR_TRANSFER_HLG)
 
 /** The name a video's format goes by. */
 internal fun formatName(mimeType: String?): String = when (mimeType) {

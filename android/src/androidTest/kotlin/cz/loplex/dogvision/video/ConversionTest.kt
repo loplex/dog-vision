@@ -23,6 +23,7 @@ import cz.loplex.dogvision.core.red
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -131,6 +132,25 @@ class ConversionTest {
         val output = File(context.cacheDir, "converted-small.mp4").apply { delete() }
         val written = runBlocking { convertVideo(context, Uri.fromFile(input), View(Params(Species.DOG)), output) {} }
         assertTrue("sound", written.sound)
+        val (mimeTypes, _) = tracks(output)
+        assertTrue(mimeTypes.toString(), mimeTypes.any { it.startsWith("video/") })
+    }
+
+    @Test
+    fun anHdrVideoTheGpuCannotToneMapIsConvertedAsSdrWhenAsked() {
+        // A GPU with GL_EXT_YUV_target tone-maps the HLG video, one without, as the emulator's, says it cannot.
+        val input = asset("quadrants-hlg.mp4")
+        val output = File(context.cacheDir, "converted-hlg.mp4").apply { delete() }
+        val view = View(Params(Species.DOG))
+        val toneMapped = try {
+            runBlocking { convertVideo(context, Uri.fromFile(input), view, output) {} }
+            true
+        } catch (_: HdrNotToneMapped) {
+            false
+        }
+        assumeFalse("this GPU tone-maps HDR", toneMapped)
+        output.delete()
+        runBlocking { convertVideo(context, Uri.fromFile(input), view, output, hdrAsSdr = true) {} }
         val (mimeTypes, _) = tracks(output)
         assertTrue(mimeTypes.toString(), mimeTypes.any { it.startsWith("video/") })
     }

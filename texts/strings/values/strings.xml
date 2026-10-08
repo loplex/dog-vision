@@ -153,6 +153,8 @@
     <string name="snapshot_failed">Cannot save the snapshot: %1$s</string>
     <string name="converting">Converting: %1$s</string>
     <string name="conversion_failed">Conversion failed: %1$s</string>
+    <string name="hdr_not_tone_mapped">this GPU cannot tone-map an HDR video to SDR; converted as SDR, its colours come out flat</string>
+    <string name="convert_as_sdr">Convert as SDR</string>
     <string name="too_large">the photo is too large for the memory there is</string>
     <string name="storage_needed">Saving to the gallery needs the storage permission on this version of Android.</string>
 

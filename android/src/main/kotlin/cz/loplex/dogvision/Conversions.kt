@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * and its notification shows how far it has got and cancels it.
  *
  * It is [running] from [start] until its work returns, fails or is cancelled.\
- * [message] is what it is at, "Converting: 42%", then the message its work returns; null once it is cancelled.
+ * [message] is what it is at, "Converting: 42%", then the message its work returns; null once it is cancelled.\
+ * [sdrOfferedWith] is that last message where it says a video's HDR could not be tone-mapped,
+ * which the screen then offers to convert as SDR.
  */
 object Conversions {
     /** What a conversion does, on [dispatcher]: [run] reports the share done and returns the message it ends with. */
@@ -30,6 +32,9 @@ object Conversions {
 
     private val mutableMessage = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = mutableMessage.asStateFlow()
+
+    private val mutableSdrOffer = MutableStateFlow<String?>(null)
+    val sdrOfferedWith: StateFlow<String?> = mutableSdrOffer.asStateFlow()
 
     /** The work [start] asked for, which the service takes as it starts; touched on the main thread only. */
     private var pending: Work? = null
@@ -45,6 +50,7 @@ object Conversions {
     ) {
         if (mutableRunning.value) return
         mutableRunning.value = true
+        mutableSdrOffer.value = null
         pending = Work(dispatcher, run)
         ContextCompat.startForegroundService(context, Intent(context, ConversionService::class.java))
     }
@@ -55,6 +61,11 @@ object Conversions {
     }
 
     internal fun take(): Work? = pending.also { pending = null }
+
+    /** Makes [message], the one the work ends with, offer converting the video again as SDR. */
+    fun offerSdr(message: String) {
+        mutableSdrOffer.value = message
+    }
 
     internal fun say(message: String?) {
         mutableMessage.value = message
