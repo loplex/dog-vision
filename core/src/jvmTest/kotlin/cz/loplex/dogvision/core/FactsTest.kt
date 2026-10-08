@@ -184,7 +184,7 @@ class FactsTest {
         "Acuity" to FactLabel.ACUITY,
     )
 
-    /** The reference facts, in English: facts.tsv, written by tools/reference_values.py. */
+    /** The reference facts, in English: facts.tsv, as the model of dog-vision-python gives them. */
     @TestFactory
     fun `every species has its reference facts`(): List<DynamicTest> {
         val rows = javaClass.getResourceAsStream("/facts.tsv")!!.bufferedReader().readLines().map { it.split("\t") }

@@ -408,7 +408,8 @@ WGL chosen and WGL taken where Direct3D 11 is switched off, and the command line
   four flat quadrants, one of them turned as a phone held upright records,
   and one too small for Qualcomm's hardware decoder.\
   With the same ffmpeg, it writes the same bytes each time it runs.
-- **[`tools/reference_values.py`](../tools/reference_values.py) writes the reference values** in [`core/src/jvmTest/resources`](../core/src/jvmTest/resources)
-  from a checkout of [dog-vision-python](https://github.com/loplex/dog-vision-python): its matrices, RNL factors and neutral points,
+- **The reference values** in [`core/src/jvmTest/resources`](../core/src/jvmTest/resources) are those of the model of [dog-vision-python](https://github.com/loplex/dog-vision-python),
+  which this project was ported from: its matrices, RNL factors and neutral points,
   images it renders from a test pattern, and the facts of every species.\
-  Its docstring says how to run it; the tests fail when `core` stops matching them.
+  They are its output at commit [`306ebb9`](https://github.com/loplex/dog-vision-python/commit/306ebb9ff34b181f2419dc4dcce97e5d3517fd32), with numpy 2.5.3 and opencv-python-headless 5.0.0.93.\
+  The tests fail when `core` stops matching them.

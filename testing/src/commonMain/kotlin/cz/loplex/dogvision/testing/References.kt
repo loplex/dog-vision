@@ -14,8 +14,8 @@ import cz.loplex.dogvision.core.rgb
 import kotlin.math.abs
 
 /**
- * The image drawn by the reference script's `pattern()`, at its size unless another is given:
- * neighbouring pixels differ in every channel,
+ * The test pattern the reference images in images.tsv were rendered from,
+ * at its size unless another is given: neighbouring pixels differ in every channel,
  * so that a pixel read from the wrong place, or a channel from the wrong one, shows.
  */
 @Suppress("MagicNumber")
