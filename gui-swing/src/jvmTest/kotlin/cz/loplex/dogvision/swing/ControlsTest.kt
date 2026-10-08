@@ -2,6 +2,7 @@ package cz.loplex.dogvision.swing
 
 import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.Facing
+import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.desktop.Area
@@ -41,6 +42,8 @@ class ControlsTest {
         override fun setView(view: View) = Unit
 
         override fun setArea(area: Area) = Unit
+
+        override fun readImages(onImages: (List<Image>?) -> Unit) = onImages(null)
 
         override fun close() = Unit
     }

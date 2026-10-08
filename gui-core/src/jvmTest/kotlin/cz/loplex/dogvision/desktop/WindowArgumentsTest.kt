@@ -17,10 +17,10 @@ import kotlin.test.assertTrue
 class WindowArgumentsTest {
     @Test
     fun everyOptionIsRead() {
-        val args = listOf("--species=cat", "--difference", "--camera", "2", "--gl=wgl", "a.png")
+        val args = listOf("--species=cat", "--difference", "--camera", "2", "--gl=wgl", "--output-dir", "out", "a.png")
         val arguments = parseWindowArguments(args)
         val view = ViewOptions(Params(Species.CAT), difference = true)
-        assertEquals(WindowArguments(File("a.png"), 2, view, WindowsGl.WGL), arguments)
+        assertEquals(WindowArguments(File("a.png"), 2, view, WindowsGl.WGL, File("out")), arguments)
         assertTrue(arguments.windowView.sideBySide)
     }
 
@@ -32,7 +32,6 @@ class WindowArgumentsTest {
             listOf("--gl", "vulkan"),
             listOf("--species", "unicorn"),
             listOf("--window", "a.png"),
-            listOf("--output-dir", "out"),
             listOf("a.png", "b.png"),
         )
         for (args in wrong) assertFailsWith<UsageException>(args.toString()) { parseWindowArguments(args) }
@@ -42,13 +41,13 @@ class WindowArgumentsTest {
     fun theUsageNamesEveryOptionOfItsOwnInEachLanguage() {
         val options = listOf(
             "--species", "--compare", "--difference", "--adaptation", "--strength", "--chroma-scale", "--acuity",
-            "--fov", "--camera", "--gl", "--help",
+            "--fov", "--camera", "--gl", "--output-dir", "--help",
         )
         for (language in Texts.LANGUAGES) {
             val usage = windowUsage(Texts.of(language), "dog-vision-swing")
             assertTrue(usage.startsWith(Texts.of(language).get(Str.WINDOW_USAGE_SYNOPSIS, "dog-vision-swing")))
             for (option in options) assertTrue(option in usage, "$language: $option")
-            for (option in listOf("--window", "--output-dir")) assertFalse(option in usage, "$language: $option")
+            assertFalse("--window" in usage, language)
         }
     }
 

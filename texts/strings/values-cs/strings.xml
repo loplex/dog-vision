@@ -106,6 +106,11 @@
     <string name="menu_file">Soubor</string>
     <string name="quit">Ukončit</string>
     <string name="degrees">%1$s°</string>
+    <string name="output_folder_menu">Výstupní složka…</string>
+    <string name="output_folder_title">Složka pro snímky a nahrávky</string>
+    <string name="output_folder_set">Snímky a nahrávky se ukládají do složky %1$s</string>
+    <string name="settings_unsaved">Nastavení nejde uložit: %1$s</string>
+    <string name="no_frame">Zatím není co uložit</string>
     <string name="switch_camera">Přepnout mezi zadní a přední kamerou</string>
     <string name="next_camera">Přepnout na další kameru</string>
     <string name="media_failed">%1$s nejde otevřít jako fotka ani jako video</string>
@@ -183,6 +188,45 @@
     <string name="ffmpeg_not_installed">winget ffmpeg nenainstaloval: %1$s</string>
     <string name="no_winget">V těchto Windows není winget. ffmpeg pro Windows lze stáhnout z %1$s</string>
 
+    <!-- Swing's file chooser, which the windows pick a folder in on Windows,
+         and on Linux where neither kdialog nor zenity is installed;
+         an &amp; marks the letter its key goes to, {0} is a file's name,
+         and in file_chooser_new_folder_next the number that sets the new folder apart from those already there -->
+    <string name="file_chooser_look_in">&amp;Hledat v:</string>
+    <string name="file_chooser_file_name">&amp;Název souboru:</string>
+    <string name="file_chooser_folder_name">Název &amp;složky:</string>
+    <string name="file_chooser_files_of_type">&amp;Typ souborů:</string>
+    <string name="file_chooser_all_files">Všechny soubory</string>
+    <string name="file_chooser_open">Otevřít</string>
+    <string name="file_chooser_open_file_tip">Otevřít vybraný soubor</string>
+    <string name="file_chooser_open_folder_tip">Otevřít vybranou složku</string>
+    <string name="file_chooser_cancel">Zrušit</string>
+    <string name="file_chooser_cancel_tip">Zavřít dialog bez výběru</string>
+    <string name="file_chooser_up_tip">O úroveň výš</string>
+    <string name="file_chooser_up">Nahoru</string>
+    <string name="file_chooser_home">Domů</string>
+    <string name="file_chooser_new_folder_tip">Vytvořit novou složku</string>
+    <string name="file_chooser_new_folder">Nová složka</string>
+    <string name="file_chooser_new_folder_next">Nová složka ({0})</string>
+    <string name="file_chooser_list">Seznam</string>
+    <string name="file_chooser_details">Podrobnosti</string>
+    <string name="file_chooser_view">Zobrazení</string>
+    <string name="file_chooser_view_menu">Nabídka zobrazení</string>
+    <string name="file_chooser_refresh">Obnovit</string>
+    <string name="file_chooser_files_list">Seznam souborů</string>
+    <string name="file_chooser_files_details">Podrobnosti souborů</string>
+    <string name="file_chooser_name_column">Název</string>
+    <string name="file_chooser_size_column">Velikost</string>
+    <string name="file_chooser_type_column">Typ</string>
+    <string name="file_chooser_modified_column">Změněno</string>
+    <string name="file_chooser_folder_type">Složka</string>
+    <string name="file_chooser_new_folder_error">Novou složku nejde vytvořit</string>
+    <string name="file_chooser_no_parent_title">Složku nejde vytvořit</string>
+    <string name="file_chooser_no_parent">Složku nejde vytvořit.\n\nSystém nenašel zadanou cestu.</string>
+    <string name="file_chooser_rename_error_title">Soubor nebo složku nejde přejmenovat</string>
+    <string name="file_chooser_rename_error">{0} nejde přejmenovat</string>
+    <string name="file_chooser_rename_exists">{0} nejde přejmenovat: soubor zadaného názvu už existuje. Zadejte jiný název.</string>
+
     <!-- What the command line says, and the windows when started from one;
          option names, species ids and file names stay as they are typed -->
     <string name="usage_synopsis">použití: %1$s [volby] soubor</string>
@@ -204,6 +248,7 @@
     <string name="usage_option_fov">kolik stupňů obrázek zabírá na šířku, pro --acuity (výchozí %1$s)</string>
     <string name="usage_option_camera">kamera, kterou okno ukáže, číslovaná od 0: na Linuxu /dev/videoN (výchozí %1$s)</string>
     <string name="usage_option_output_dir">zapíše převedený soubor tam místo vedle originálu</string>
+    <string name="usage_option_window_output_dir">kam se ukládají snímky a nahrávky, místo naposledy zvolené složky</string>
     <string name="usage_option_gl">jak okno kreslí na Windows: angle, nebo wgl (výchozí angle, a kde nejde spustit, wgl)</string>
     <string name="usage_option_info">vypíše model odvozený pro --species a jeho kontroly a skončí</string>
     <string name="usage_option_help">ukáže tuto nápovědu a skončí</string>

@@ -268,7 +268,7 @@ It runs on Linux and Windows on x86-64.
 - **Its launcher takes the Java in `JAVA_HOME`**, else the one on the `PATH`,
   else the newest in `/usr/lib/jvm` or `/usr/lib64/jvm`, whichever is first 17 or newer and not headless.
 - **It takes options of its own**: the command line's for the view it starts with and goes back to,
-  `--camera` and `--gl`, but not `--output-dir`, as it saves nothing yet.\
+  `--camera`, `--gl`, and `--output-dir` for where snapshots and recordings go.\
   It converts no file: given one, it shows it.
 - **`--help` lists them**, on the terminal on Linux,
   and on Windows, where the window has no console, in a window of its own, whose text can be selected and copied.\
@@ -294,7 +294,28 @@ It runs on Linux and Windows on x86-64.
   the menus show each key beside its entry, and a key does nothing while its entry is disabled.
 - **The keys follow the desktop's conventions**: Ctrl+O to open, Ctrl+Q to quit,
   and F9 for the controls at the side, as KDE's programs show and hide their side panel.
-- **It has no settings, no snapshots and no recording yet.**
+- **Ctrl+S or *File* → *Save snapshot* saves the view as a PNG**: its images,
+  side by side or one above another as the window shows them, without the captions, at the size they are composed at:
+  the photo's, the video's or the camera's, scaled down to 1280 pixels on its longest side.\
+  It is named after the species and the time,
+  as `dog-cat-20261008-090507.png`, or `dog-horse-vs-cat-20261008-090507.png` where a horse is shown beside a cat.
+- **Snapshots and recordings go to the output folder**: the one `--output-dir` names,
+  or else the one *File* → *Output folder…* chose last, kept for the next run, or else the user's pictures;
+  a folder chosen in the window goes before `--output-dir` from then on.
+- **The user's pictures are where the system keeps them**: the Pictures folder Windows knows, moved or not, on Windows,
+  and on Linux the one `XDG_PICTURES_DIR` names in `user-dirs.dirs`,
+  as the file managers show it, such as `~/Obrázky`; the home where it names none.
+- **On Windows the output folder is picked in Java's dialog**,
+  as it is on Linux where neither kdialog nor zenity is installed;
+  it is worded in the window's language, which Java itself has no Czech for.\
+  Where the Compose window takes GTK's look, as on GNOME, part of it stays in English,
+  as GTK's look reads words of its own.
+- **The folder chosen is kept in `settings.json`**:
+  in `$XDG_CONFIG_HOME/dog-vision`, or `~/.config/dog-vision` where that is not set, on Linux,
+  and in `%APPDATA%\dog-vision` on Windows.
+- **The status bar under the images says what is shown**, the file's name or the camera's,
+  and what the window did last: where a snapshot went, or why it could not be saved.
+- **It has no recording yet.**
 
 ### The same window in Swing: `dog-vision-swing`
 

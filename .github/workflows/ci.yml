@@ -186,19 +186,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
       - name: Install ffmpeg
         run: choco install ffmpeg --no-progress -y
-      # Windows's own opengl32.dll has OpenGL 1.1 alone, where WglContext asks for 3.3 core:
-      # Mesa's llvmpipe, beside java.exe, which Windows loads a DLL from before its system folder.
-      # Its WGL alone: Mesa's libEGL and libGLESv2 there could be taken for ANGLE's, which have their names.
-      - name: Put Mesa's OpenGL beside java.exe
+      # opengl32.dll hands WGL to the GPU's driver;
+      # with none, as on the runner, it has only Windows's own OpenGL 1.1, where WglContext asks for 3.3 core.
+      # The window draws through ANGLE first, on Direct3D 11, which Windows has without a driver too;
+      # WGL is its fallback.
+      # Mesa's llvmpipe is installed as the system's OpenGL driver,
+      # by Mesa's own systemwidedeploy.cmd, choice 1, unattended,
+      # so that WGL reaches it whatever loads opengl32.dll first, as Windows's shell does behind a JFileChooser.
+      # Its WGL alone: Mesa's libEGL and libGLESv2 are not installed, as they could be taken for ANGLE's.
+      - name: Install Mesa's OpenGL as the system's driver
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download --repo pal1000/mesa-dist-win --pattern "*release-msvc.7z" --output mesa.7z
-          7z x mesa.7z -omesa "x64/*.dll" | Out-Null
-          Write-Host "Mesa's DLLs: $((Get-ChildItem mesa/x64).Name -join ', ')"
-          foreach ($dll in "opengl32.dll", "libgallium_wgl.dll", "libglapi.dll") {
-            if (Test-Path "mesa/x64/$dll") { Copy-Item "mesa/x64/$dll" (Join-Path $env:JAVA_HOME "bin") }
+          7z x mesa.7z -omesa | Out-Null
+          $deploy = Get-ChildItem mesa -Recurse -Filter systemwidedeploy.cmd | Select-Object -First 1
+          if (-not $deploy) { throw "Mesa's package has no systemwidedeploy.cmd" }
+          cmd /c "`"$($deploy.FullName)`" 1"
+          $driver = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MSOGL"
+          Write-Host "The system's OpenGL driver: $($driver.DLL)"
+          if ($driver.DLL -ne "mesadrv.dll" -or -not (Test-Path "$env:windir\System32\mesadrv.dll")) {
+            throw "Mesa is not the system's OpenGL driver"
           }
       # ANGLE runs on Direct3D 11's software rasteriser, WARP, as the runner has no GPU.
       # Mesa would take its Direct3D 12 driver, which needs Mesa's dxil.dll, over llvmpipe.

@@ -23,6 +23,8 @@ data class WindowArguments(
     val view: ViewOptions = ViewOptions(),
     /** How the window draws on Windows; null for ANGLE, and WGL where ANGLE cannot start. */
     val windowsGl: WindowsGl? = null,
+    /** Where snapshots and recordings go, in place of the folder the settings keep, until another is chosen. */
+    val outputDir: File? = null,
     val help: Boolean = false,
 ) {
     /** The view the window starts with: side by side. */
@@ -46,6 +48,7 @@ fun parseWindowArguments(args: List<String>): WindowArguments =
             "-h", "--help" -> option.flag().let { copy(help = true) }
             "--camera" -> copy(camera = camera(option.name, option.value()))
             "--gl" -> copy(windowsGl = windowsGl(option.name, option.value()))
+            "--output-dir" -> copy(outputDir = File(option.value()))
             else -> view.read(option)?.let { copy(view = it) }
         }
     }
@@ -59,6 +62,7 @@ fun windowUsage(texts: Texts, command: String): String = usage(
     ViewOptions.usage(texts) + listOf(
         "--camera N" to texts.get(Str.USAGE_OPTION_CAMERA, WindowArguments().camera),
         "--gl API" to texts.get(Str.USAGE_OPTION_GL),
+        "--output-dir DIR" to texts.get(Str.USAGE_OPTION_WINDOW_OUTPUT_DIR),
         "-h, --help" to texts.get(Str.USAGE_OPTION_HELP),
     ),
 )

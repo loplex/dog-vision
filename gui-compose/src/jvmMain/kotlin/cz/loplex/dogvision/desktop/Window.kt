@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,9 +43,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.KeyShortcut
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
@@ -60,15 +60,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.FrameWindowScope
-import androidx.compose.ui.window.MenuBar
-import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import cz.loplex.dogvision.texts.Menu
-import cz.loplex.dogvision.texts.MenuEntry
-import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press
@@ -109,7 +103,8 @@ fun showWindow(arguments: WindowArguments): Int {
         val icon = remember { BitmapPainter(windowIcon().toComposeImageBitmap()) }
         val open = { dialogs.open(state.texts, state.source, session::openFile) }
         val lists = remember { OpenLists() }
-        val menus = session.menus(state, open = { open() }, quit = ::exitApplication)
+        val chooseOutputDir = { dialogs.chooseFolder(state.texts, state.outputDir, session::setOutputDir) }
+        val menus = session.menus(state, open = { open() }, chooseOutputDir = chooseOutputDir, quit = ::exitApplication)
         CompositionLocalProvider(LocalTexts provides state.texts, LocalOpenLists provides lists) {
             Window(
                 onCloseRequest = ::exitApplication,
@@ -142,73 +137,29 @@ fun showWindow(arguments: WindowArguments): Int {
     return 0
 }
 
-/** The keys of the menus' entries, as Compose names them. */
-private val MENU_KEYS = MenuKey.entries.associateBy { key ->
-    when (key) {
-        MenuKey.OPEN -> Key.O
-        MenuKey.QUIT -> Key.Q
-        MenuKey.CONTROLS -> Key.F9
-        MenuKey.RESET -> Key.Zero
-        MenuKey.SIDE_BY_SIDE -> Key.M
-        MenuKey.DIFFERENCE -> Key.D
-    }
-}
-
-/** [menus] as the window's menu bar, each key shown beside its entry. */
-@Composable
-private fun FrameWindowScope.WindowMenuBar(menus: List<Menu>) {
-    MenuBar {
-        menus.forEach { menu -> Menu(menu.label) { Entries(menu.entries) } }
-    }
-}
-
-@Composable
-private fun MenuScope.Entries(entries: List<MenuEntry>) {
-    entries.forEach { entry ->
-        when (entry) {
-            is MenuEntry.Action ->
-                Item(entry.label, enabled = entry.enabled, shortcut = shortcutOf(entry.key), onClick = entry.onSelect)
-
-            is MenuEntry.Check -> CheckboxItem(
-                entry.label,
-                entry.checked,
-                enabled = entry.enabled,
-                shortcut = shortcutOf(entry.key),
-                onCheckedChange = entry.onSelect,
-            )
-
-            is MenuEntry.Choice ->
-                RadioButtonItem(entry.label, entry.selected, enabled = entry.enabled, onClick = entry.onSelect)
-
-            is MenuEntry.Submenu -> Menu(entry.label, enabled = entry.enabled) { Entries(entry.entries) }
-
-            MenuEntry.Separator -> Separator()
-        }
-    }
-}
-
-/** The shortcut [key] shows beside its entry, if it has one. */
-private fun shortcutOf(key: MenuKey?): KeyShortcut? =
-    key?.let { menuKey -> KeyShortcut(MENU_KEYS.entries.first { it.value == menuKey }.key, ctrl = menuKey.withCtrl) }
-
 /** The system's dialogs, over the window [parent] once it is shown. */
 private class Dialogs {
     var parent: Frame? = null
     private val openDialog = OpenDialog()
+    private val folderDialog = OpenDialog(folder = true)
 
     /**
      * Tells [onPicked] a photo or a video picked in the system's dialog,
      * which starts in the folder of the file [shown], if one is.
      */
     fun open(texts: Texts, shown: Source, onPicked: (File) -> Unit) {
-        openDialog.show(parent, texts.get(Str.OPEN_MEDIA), (shown as? Source.Media)?.file, onPicked)
+        openDialog.show(parent, texts.get(Str.OPEN_MEDIA), (shown as? Source.Media)?.file, texts, onPicked)
+    }
+
+    /** Tells [onPicked] a folder picked in the system's dialog, which starts in the folder [shown]. */
+    fun chooseFolder(texts: Texts, shown: File, onPicked: (File) -> Unit) {
+        folderDialog.show(parent, texts.get(Str.OUTPUT_FOLDER_TITLE), shown, texts, onPicked)
     }
 }
 
 /** The images and the controls, which a file dropped anywhere on them opens in place of what [state] shows. */
 @Composable
 private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, onOpen: () -> Unit) {
-    val texts = LocalTexts.current
     val picture by session.picture.collectAsState()
     val drop = remember(session) {
         object : DragAndDropTarget {
@@ -219,39 +170,73 @@ private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, 
             }
         }
     }
-    Row(Modifier.dragAndDropTarget(shouldStartDragAndDrop = { droppedFiles(it).isNotEmpty() }, target = drop)) {
-        Preview(
-            picture,
-            state,
-            Modifier.weight(1f).fillMaxHeight(),
-            session::setArea,
-            session::downloadFfmpeg,
-            session::installFfmpeg,
-        )
-        PanelToggle(state.panelShown, session::togglePanel)
-        if (state.panelShown) {
-            Column(Modifier.width(380.dp).fillMaxHeight()) {
-                Row(
-                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedButton(onClick = onOpen) { Text(texts.get(Str.OPEN_MEDIA)) }
-                    OutlinedButton(onClick = session::openCamera) { Text(texts.get(Str.SHOW_CAMERA)) }
-                }
-                Controls(
-                    view = state.view,
-                    recording = false,
-                    onChange = session::changeView,
-                    onReset = session::reset,
-                    camera = state.camera,
-                    onCamera = session::chooseCamera,
-                    onMirroring = session::setMirroring,
-                    language = state.language,
-                    onLanguage = session::setLanguage,
-                    modifier = Modifier.weight(1f),
-                    onCamerasOpened = session::listCamerasAgain,
-                )
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.weight(1f)
+                .dragAndDropTarget(shouldStartDragAndDrop = { droppedFiles(it).isNotEmpty() }, target = drop),
+        ) {
+            Images(session, state, onOpen, picture)
+        }
+        StatusBar(state)
+    }
+}
+
+/** The images, the button at their edge and the controls, as [state] has them. */
+@Composable
+private fun RowScope.Images(
+    session: LiveSession<ImageBitmap>,
+    state: LiveSession.State,
+    onOpen: () -> Unit,
+    picture: Picture<ImageBitmap>?,
+) {
+    val texts = LocalTexts.current
+    Preview(
+        picture,
+        state,
+        Modifier.weight(1f).fillMaxHeight(),
+        session::setArea,
+        session::downloadFfmpeg,
+        session::installFfmpeg,
+    )
+    PanelToggle(state.panelShown, session::togglePanel)
+    if (state.panelShown) {
+        Column(Modifier.width(380.dp).fillMaxHeight()) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = onOpen) { Text(texts.get(Str.OPEN_MEDIA)) }
+                OutlinedButton(onClick = session::openCamera) { Text(texts.get(Str.SHOW_CAMERA)) }
             }
+            Controls(
+                view = state.view,
+                recording = false,
+                onChange = session::changeView,
+                onReset = session::reset,
+                camera = state.camera,
+                onCamera = session::chooseCamera,
+                onMirroring = session::setMirroring,
+                language = state.language,
+                onLanguage = session::setLanguage,
+                modifier = Modifier.weight(1f),
+                onCamerasOpened = session::listCamerasAgain,
+            )
+        }
+    }
+}
+
+/** What is shown, and what the window said it did last, under the images and the controls. */
+@Composable
+private fun StatusBar(state: LiveSession.State) {
+    val texts = LocalTexts.current
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        val style = MaterialTheme.typography.bodySmall
+        Text(state.sourceName(texts), style = style, maxLines = 1)
+        state.status?.let { status ->
+            Text(status(texts), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

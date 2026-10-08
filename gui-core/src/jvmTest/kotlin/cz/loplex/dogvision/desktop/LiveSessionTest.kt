@@ -2,6 +2,7 @@ package cz.loplex.dogvision.desktop
 
 import cz.loplex.dogvision.common.ViewOptions
 import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.ClockTime
 import cz.loplex.dogvision.core.Facing
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.Mirroring
@@ -9,6 +10,7 @@ import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
+import cz.loplex.dogvision.core.rgb
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import cz.loplex.dogvision.texts.MenuEntry
@@ -16,11 +18,13 @@ import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press
+import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -64,10 +68,23 @@ class LiveSessionTest {
 
         override fun setArea(area: Area) = Unit
 
+        /** What the renderer has composed, which it hands over when asked; null while nothing is. */
+        var composed: List<Image>? = null
+
+        override fun readImages(onImages: (List<Image>?) -> Unit) = onImages(composed)
+
         override fun close() {
             log += "renderer closed"
         }
     }
+
+    @TempDir
+    lateinit var directory: File
+
+    private val settings get() = File(directory, "config/dog-vision/settings.json")
+
+    /** The user's pictures, where snapshots and recordings go while no folder is named or chosen. */
+    private val pictures get() = File(directory, "Pictures")
 
     /** The renderer each feed started was given, in order. */
     private val feedRenderers = mutableListOf<Renderer>()
@@ -119,6 +136,9 @@ class LiveSessionTest {
         wingetFound = wingetFound,
         post = { it() },
         systemLanguages = { listOf("en") },
+        settingsFile = settings,
+        clock = { ClockTime(2026, 10, 8, 9, 5, 7) },
+        defaultOutputDir = { pictures },
     )
 
     @Test
@@ -500,7 +520,7 @@ class LiveSessionTest {
         val session = session()
         var opened = 0
         var quit = 0
-        fun menus() = session.menus(session.state.value, open = { opened++ }, quit = { quit++ })
+        fun menus() = session.menus(session.state.value, open = { opened++ }, chooseOutputDir = {}, quit = { quit++ })
         assertEquals(
             listOf("File", "Camera", "Species", "Simulation", "Acuity", "View", "Language"),
             menus().map { it.label },
@@ -512,11 +532,75 @@ class LiveSessionTest {
         assertFalse(session.state.value.panelShown)
         assertTrue(menus().press(MenuKey.SIDE_BY_SIDE))
         assertFalse(session.state.value.view.sideBySide)
-        val camera = menus().first().entries.filterIsInstance<MenuEntry.Action>().single { it.key == null }
+        val camera = menus().first().entries.filterIsInstance<MenuEntry.Action>().single { it.label == "Camera" }
         camera.onSelect()
         assertTrue(session.state.value.source is Source.Camera)
         session.setLanguage("cs")
         assertEquals("Soubor", menus().first().label)
+    }
+
+    @Test
+    fun aSnapshotIsTheViewsImagesSideBySideNamedAfterTheSpeciesAndTheTime() {
+        val folder = File(directory, "shots")
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = folder))
+        val left = Image(2, 1, intArrayOf(rgb(200, 10, 255), rgb(0, 128, 64)))
+        val right = Image(2, 1, intArrayOf(rgb(1, 2, 3), rgb(250, 251, 252)))
+        renderer.composed = listOf(left, right)
+        assertTrue(session.menus(session.state.value, {}, {}, {}).press(MenuKey.SNAPSHOT))
+        val file = File(folder, "dog-dog-20261008-090507.png")
+        val written = ImageIO.read(file)
+        assertEquals(4 to 1, written.width to written.height)
+        val expected = (left.pixels.toList() + right.pixels.toList()).map { it or 0xFF000000.toInt() }
+        assertEquals(expected, written.getRGB(0, 0, 4, 1, null, 0, 4).toList())
+        val status = checkNotNull(session.state.value.status)(Texts.of("en"))
+        assertEquals("Saved ${file.name} to $folder", status)
+    }
+
+    @Test
+    fun beforeAnythingIsComposedThereIsNothingToSave() {
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory))
+        session.saveSnapshot()
+        assertEquals("Nothing to save yet", session.state.value.status?.invoke(Texts.of("en")))
+        assertEquals(emptyList(), directory.listFiles { file -> file.extension == "png" }?.toList())
+    }
+
+    @Test
+    fun theOutputFolderIsTheCommandLinesThenTheSettingsThenTheUsersPictures() {
+        assertEquals(pictures, session().state.value.outputDir)
+        writeSettings(settings, Settings(File(directory, "kept")))
+        assertEquals(File(directory, "kept"), session().state.value.outputDir)
+        val named = File(directory, "named")
+        assertEquals(named, session(WindowArguments(outputDir = named)).state.value.outputDir)
+    }
+
+    @Test
+    fun aFolderChosenIsKeptForTheNextRun() {
+        val session = session(WindowArguments(outputDir = File(directory, "named")))
+        val chosen = File(directory, "chosen")
+        session.setOutputDir(chosen)
+        assertEquals(chosen, session.state.value.outputDir)
+        assertEquals(Settings(chosen), readSettings(settings))
+        assertEquals("Snapshots and recordings go to $chosen", session.state.value.status?.invoke(Texts.of("en")))
+        assertEquals(chosen, session().state.value.outputDir)
+    }
+
+    @Test
+    fun settingsThatCannotBeSavedAreSaidAndTheFolderIsStillUsed() {
+        File(directory, "config").writeText("a file where the folder should be")
+        val session = session()
+        val chosen = File(directory, "chosen")
+        session.setOutputDir(chosen)
+        assertEquals(chosen, session.state.value.outputDir)
+        val status = session.state.value.status?.invoke(Texts.of("en")).orEmpty()
+        assertTrue(status.startsWith("Cannot save the settings: "), status)
+    }
+
+    @Test
+    fun theStatusBarNamesTheFileOrTheCamera() {
+        val texts = Texts.of("en")
+        assertEquals("a.jpg", session().state.value.sourceName(texts))
+        val camera = session(WindowArguments())
+        assertEquals("Integrated Camera", camera.state.value.sourceName(texts))
     }
 
     private companion object {

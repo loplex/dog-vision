@@ -1,10 +1,15 @@
 package cz.loplex.dogvision.desktop
 
+import cz.loplex.dogvision.core.Arrangement
 import cz.loplex.dogvision.core.CameraChoice
 import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.ClockTime
 import cz.loplex.dogvision.core.Facing
+import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.View
+import cz.loplex.dogvision.core.snapshotName
+import cz.loplex.dogvision.core.stitch
 import cz.loplex.dogvision.ffmpeg.FfmpegDownload
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
@@ -16,8 +21,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.awt.EventQueue
+import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
+import java.time.LocalDateTime
+import javax.imageio.ImageIO
 import kotlin.concurrent.thread
 
 /**
@@ -29,11 +37,12 @@ import kotlin.concurrent.thread
  * Compose Desktop composes on that thread, and Swing collects on it.\
  * It starts on what [arguments] ask for, as the window does.
  *
- * The renderer is made by [makeRenderer] once, the feed of each source by [feed],
- * the cameras listed by [cameraLister] through [inBackground],
+ * The renderer is made by [makeRenderer] once,
+ * the feed of each source by [feed], the cameras listed by [cameraLister] through [inBackground],
  * ffmpeg downloaded by [ffmpegDownloader] and installed through winget by [ffmpegInstaller],
  * which [canInstallFfmpeg] says whether to offer where it is missing,
- * and [wingetFound] whether to offer winget as well;
+ * and [wingetFound] whether to offer winget as well,
+ * and the output folder, where none is named or chosen, by [defaultOutputDir];
  * the tests give their own of each, and a [post] that runs what it is given there and then.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -42,13 +51,18 @@ class LiveSession<I>(
     makeRenderer: (onPicture: (Picture<I>) -> Unit, onFailure: (String) -> Unit) -> Renderer,
     private val feed: (Source, Renderer, (Failure) -> Unit) -> AutoCloseable = ::startFeed,
     private val cameraLister: () -> List<CameraOption> = ::listCameras,
-    private val inBackground: (() -> Unit) -> Unit = { thread(name = "dog-vision-cameras", isDaemon = true) { it() } },
+    private val inBackground: (
+        () -> Unit,
+    ) -> Unit = { thread(name = "dog-vision-background", isDaemon = true) { it() } },
     private val ffmpegInstaller: () -> FfmpegInstall = FfmpegPrograms::install,
     private val ffmpegDownloader: (onPercent: (Int) -> Unit) -> FfmpegInstall = FfmpegDownload::download,
     private val canInstallFfmpeg: Boolean = onWindows,
     wingetFound: Boolean = canInstallFfmpeg && FfmpegPrograms.wingetOnPath(),
     private val post: (() -> Unit) -> Unit = { EventQueue.invokeLater(it) },
     private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.texts.systemLanguages() },
+    private val settingsFile: File = settingsFile(),
+    private val clock: () -> ClockTime = ::now,
+    defaultOutputDir: () -> File = { picturesFolder() },
 ) : PanelActions,
     AutoCloseable {
     /**
@@ -75,6 +89,10 @@ class LiveSession<I>(
         val ffmpegFailure: Failure? = null,
         /** Whether the panel of controls is shown, or the images have the whole window, as F9 toggles it. */
         val panelShown: Boolean = true,
+        /** Where snapshots and recordings go. */
+        val outputDir: File,
+        /** What the window said it did last, worded when it is shown, in the language chosen then. */
+        val status: ((Texts) -> String)? = null,
         private val canInstallFfmpeg: Boolean = false,
         private val wingetFound: Boolean = false,
     ) {
@@ -89,7 +107,20 @@ class LiveSession<I>(
 
         /** Whether ffmpeg is being downloaded or installed, which neither may start again meanwhile. */
         val gettingFfmpeg: Boolean get() = installingFfmpeg || downloadingFfmpeg != null
+
+        /** What is shown, as the status bar names it: the file's name, or the camera's as the controls name it. */
+        fun sourceName(texts: Texts): String = when (source) {
+            is Source.Media -> source.file.name
+
+            is Source.Camera -> camera.offered.indexOf(camera.shown).takeIf { it > 0 }
+                ?.let { texts.cameraNames(camera)[it] } ?: texts.get(Str.NUMBERED_CAMERA, source.index)
+
+            Source.None -> ""
+        }
     }
+
+    /** What settings.json holds, as read when the session started and written since. */
+    private var settings = readSettings(settingsFile)
 
     /** The camera shown last, or the one --camera names, which the camera button shows again. */
     private var lastCamera = CameraOption("${arguments.camera}", null, Facing.UNKNOWN)
@@ -103,6 +134,7 @@ class LiveSession<I>(
             textsIn(""),
             canInstallFfmpeg = canInstallFfmpeg,
             wingetFound = wingetFound,
+            outputDir = (arguments.outputDir ?: settings.outputDir ?: defaultOutputDir()).absoluteFile,
         ),
     )
     val state: StateFlow<State> = mutableState.asStateFlow()
@@ -183,6 +215,57 @@ class LiveSession<I>(
 
     /** Hides the panel of controls if it is shown, and shows it if not, as F9 does. */
     fun togglePanel() = change { copy(panelShown = !panelShown) }
+
+    /**
+     * Saves the images of the view shown as a PNG in the output folder, put together as the window shows them,
+     * named after the species and the time, as dog-cat-20260925-105600.png; the status says where, or why not.
+     */
+    fun saveSnapshot() {
+        val view = mutableState.value.view
+        val folder = mutableState.value.outputDir
+        val name = snapshotName(view, clock())
+        renderer.readImages { images ->
+            post {
+                if (images == null) {
+                    change { copy(status = { it.get(Str.NO_FRAME) }) }
+                    return@post
+                }
+                val arrangement = mutablePicture.value?.layout?.arrangement ?: Arrangement.ROW
+                inBackground {
+                    val saved = runCatching { writePng(stitch(images, arrangement), File(folder, name)) }
+                    post {
+                        val status: (Texts) -> String = saved.fold(
+                            onSuccess = { { texts -> texts.get(Str.SAVED, name, folder) } },
+                            onFailure = { error -> { texts -> texts.get(Str.SNAPSHOT_FAILED, error.message) } },
+                        )
+                        change { copy(status = status) }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Saves snapshots and recordings in [folder] from now on,
+     * in place of a folder the command line named, and keeps it in settings.json for the next run;
+     * the status says so, or that the settings could not be saved.
+     */
+    fun setOutputDir(folder: File) {
+        val absolute = folder.absoluteFile
+        settings = settings.copy(outputDir = absolute)
+        val failure = try {
+            writeSettings(settingsFile, settings)
+            null
+        } catch (error: IOException) {
+            error
+        }
+        val status: (Texts) -> String = if (failure == null) {
+            { it.get(Str.OUTPUT_FOLDER_SET, absolute) }
+        } else {
+            { it.get(Str.SETTINGS_UNSAVED, failure.message) }
+        }
+        change { copy(outputDir = absolute, status = status) }
+    }
 
     /** The area the pictures are laid out on, which the window has given the images. */
     fun setArea(area: Area) = renderer.setArea(area)
@@ -323,6 +406,14 @@ class LiveSession<I>(
     private fun textsIn(language: String): Texts =
         Texts.forLanguages(if (language.isEmpty()) systemLanguages() else listOf(language))
 
+    /** [image] as a PNG in [file], whose folder is made if it is missing; IOException where it cannot be written. */
+    private fun writePng(image: Image, file: File) {
+        val buffered = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+        buffered.setRGB(0, 0, image.width, image.height, image.pixels, 0, image.width)
+        file.parentFile?.mkdirs()
+        if (!ImageIO.write(buffered, "png", file)) throw IOException("no PNG writer")
+    }
+
     companion object {
         /** A session drawn by a [GlRenderer], opened as [arguments] ask on Windows, into images [imageMaker] makes. */
         fun <I> drawnOnGpu(arguments: WindowArguments, imageMaker: ImageMaker<I>): LiveSession<I> =
@@ -330,4 +421,9 @@ class LiveSession<I>(
                 GlRenderer(arguments.windowsGl, imageMaker, onPicture, onFailure)
             })
     }
+}
+
+/** The time on the local clock now, which names what is saved. */
+internal fun now(): ClockTime = LocalDateTime.now().run {
+    ClockTime(year, monthValue, dayOfMonth, hour, minute, second)
 }

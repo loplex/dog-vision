@@ -39,6 +39,7 @@ import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JFrame
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import javax.swing.TransferHandler
@@ -66,6 +67,9 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     val preview = Preview(session)
     val controls = Controls(session)
     val dialog = OpenDialog()
+    val folderDialog = OpenDialog(folder = true)
+    val statusBar = StatusBar()
+    val menuBar = MenuBarOf(frame)
     val open = JButton().apply { addActionListener { openFromDialog(frame, dialog, session) } }
     val camera = JButton().apply { addActionListener { session.openCamera() } }
     val column = JPanel(BorderLayout()).apply {
@@ -95,19 +99,26 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     frame.iconImage = windowIcon()
     frame.contentPane.add(preview, BorderLayout.CENTER)
     frame.contentPane.add(east, BorderLayout.EAST)
-
-    var menus = emptyList<Menu>()
-    var shownMenus: List<Any>? = null
+    frame.contentPane.add(statusBar, BorderLayout.SOUTH)
 
     @Suppress("MagicNumber")
     fun show(state: LiveSession.State) {
-        menus = session.menus(state, open = { openFromDialog(frame, dialog, session) }, quit = frame::dispose)
-        val shown = shownOf(menus)
-        if (shown != shownMenus) {
-            shownMenus = shown
-            frame.jMenuBar = menuBar(menus)
-            frame.rootPane.revalidate()
-        }
+        menuBar.show(
+            session.menus(
+                state,
+                open = { openFromDialog(frame, dialog, session) },
+                chooseOutputDir = {
+                    folderDialog.show(
+                        frame,
+                        state.texts.get(Str.OUTPUT_FOLDER_TITLE),
+                        state.outputDir,
+                        state.texts,
+                        session::setOutputDir,
+                    )
+                },
+                quit = frame::dispose,
+            ),
+        )
         frame.title = state.texts.get(Str.APP_NAME)
         open.text = state.texts.get(Str.OPEN_MEDIA)
         camera.text = state.texts.get(Str.SHOW_CAMERA)
@@ -119,6 +130,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
             column.isVisible = state.panelShown
             east.revalidate()
         }
+        statusBar.show(state)
         controls.show(state)
         preview.show(state)
     }
@@ -127,7 +139,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     scope.launch { session.state.collect(::show) }
     scope.launch { session.picture.collect { preview.picture = it } }
 
-    keys(frame.rootPane) { menus }
+    keys(frame.rootPane) { menuBar.menus }
     frame.transferHandler = FileDrop(session::openFile)
     frame.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
     frame.addWindowListener(
@@ -144,11 +156,40 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     frame.isVisible = true
 }
 
+/** What is shown, and what the window said it did last, under the images and the controls. */
+private class StatusBar :
+    JPanel(FlowLayout(FlowLayout.LEFT, UIScale.scale(STATUS_GAP), UIScale.scale(STATUS_PADDING))) {
+    private val source = JLabel().also(::add)
+    private val status = JLabel().also(::add)
+
+    fun show(state: LiveSession.State) {
+        source.text = state.sourceName(state.texts)
+        status.text = state.status?.invoke(state.texts).orEmpty()
+    }
+}
+
+/** The menu bar of [frame], built again only when what its menus show changes, which would close a menu open. */
+private class MenuBarOf(private val frame: JFrame) {
+    /** The menus shown last, which the window's keys press. */
+    var menus = emptyList<Menu>()
+        private set
+    private var shown: List<Any>? = null
+
+    fun show(menus: List<Menu>) {
+        this.menus = menus
+        val now = shownOf(menus)
+        if (now == shown) return
+        shown = now
+        frame.jMenuBar = menuBar(menus)
+        frame.rootPane.revalidate()
+    }
+}
+
 /** Opens the photo or the video picked in [dialog], which starts in the folder of the file shown, if any. */
 private fun openFromDialog(frame: JFrame, dialog: OpenDialog, session: LiveSession<*>) {
     val state = session.state.value
     val shown = (state.source as? Source.Media)?.file
-    dialog.show(frame, state.texts.get(Str.OPEN_MEDIA), shown, session::openFile)
+    dialog.show(frame, state.texts.get(Str.OPEN_MEDIA), shown, state.texts, session::openFile)
 }
 
 /**
@@ -206,3 +247,7 @@ internal fun swingImage(pixels: ByteArray, width: Int, height: Int): BufferedIma
 private const val WIDTH = 1280
 private const val HEIGHT = 800
 private const val COLUMN_WIDTH = 380
+
+/** The status bar's gap between its parts, and above and below them. */
+private const val STATUS_GAP = 24
+private const val STATUS_PADDING = 4

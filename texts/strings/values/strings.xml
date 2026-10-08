@@ -119,6 +119,11 @@
     <string name="menu_file">File</string>
     <string name="quit">Quit</string>
     <string name="degrees">%1$s°</string>
+    <string name="output_folder_menu">Output folder…</string>
+    <string name="output_folder_title">Folder for snapshots and recordings</string>
+    <string name="output_folder_set">Snapshots and recordings go to %1$s</string>
+    <string name="settings_unsaved">Cannot save the settings: %1$s</string>
+    <string name="no_frame">Nothing to save yet</string>
     <string name="switch_camera">Switch between the back and the front camera</string>
     <string name="next_camera">Switch to the next camera</string>
     <string name="media_failed">Cannot open %1$s as a photo or a video</string>
@@ -202,6 +207,45 @@
     <string name="ffmpeg_not_installed">winget did not install ffmpeg: %1$s</string>
     <string name="no_winget">This Windows has no winget. ffmpeg for Windows can be downloaded from %1$s</string>
 
+    <!-- Swing's file chooser, which the windows pick a folder in on Windows,
+         and on Linux where neither kdialog nor zenity is installed;
+         an &amp; marks the letter its key goes to, {0} is a file's name,
+         and in file_chooser_new_folder_next the number that sets the new folder apart from those already there -->
+    <string name="file_chooser_look_in">Look &amp;In:</string>
+    <string name="file_chooser_file_name">File &amp;Name:</string>
+    <string name="file_chooser_folder_name">Folder &amp;name:</string>
+    <string name="file_chooser_files_of_type">Files of &amp;Type:</string>
+    <string name="file_chooser_all_files">All Files</string>
+    <string name="file_chooser_open">Open</string>
+    <string name="file_chooser_open_file_tip">Open selected file</string>
+    <string name="file_chooser_open_folder_tip">Open selected directory</string>
+    <string name="file_chooser_cancel">Cancel</string>
+    <string name="file_chooser_cancel_tip">Abort file chooser dialog</string>
+    <string name="file_chooser_up_tip">Up One Level</string>
+    <string name="file_chooser_up">Up</string>
+    <string name="file_chooser_home">Home</string>
+    <string name="file_chooser_new_folder_tip">Create New Folder</string>
+    <string name="file_chooser_new_folder">New Folder</string>
+    <string name="file_chooser_new_folder_next">New Folder ({0})</string>
+    <string name="file_chooser_list">List</string>
+    <string name="file_chooser_details">Details</string>
+    <string name="file_chooser_view">View</string>
+    <string name="file_chooser_view_menu">View Menu</string>
+    <string name="file_chooser_refresh">Refresh</string>
+    <string name="file_chooser_files_list">Files List</string>
+    <string name="file_chooser_files_details">Files Details</string>
+    <string name="file_chooser_name_column">Name</string>
+    <string name="file_chooser_size_column">Size</string>
+    <string name="file_chooser_type_column">Type</string>
+    <string name="file_chooser_modified_column">Modified</string>
+    <string name="file_chooser_folder_type">Directory</string>
+    <string name="file_chooser_new_folder_error">Error creating new folder</string>
+    <string name="file_chooser_no_parent_title">Unable to create folder</string>
+    <string name="file_chooser_no_parent">Unable to create the folder.\n\nThe system cannot find the path specified.</string>
+    <string name="file_chooser_rename_error_title">Error Renaming File or Folder</string>
+    <string name="file_chooser_rename_error">Cannot rename {0}</string>
+    <string name="file_chooser_rename_exists">Cannot rename {0}: A file with the name you specified already exists. Specify a different file name.</string>
+
     <!-- What the command line says, and the windows when started from one;
          option names, species ids and file names stay as they are typed -->
     <string name="usage_synopsis">usage: %1$s [options] file</string>
@@ -223,6 +267,7 @@
     <string name="usage_option_fov">degrees the image spans across, for --acuity (default %1$s)</string>
     <string name="usage_option_camera">the camera the window shows, counted from 0: /dev/videoN on Linux (default %1$s)</string>
     <string name="usage_option_output_dir">writes a converted file there instead of next to its original</string>
+    <string name="usage_option_window_output_dir">where snapshots and recordings go, in place of the folder chosen last</string>
     <string name="usage_option_gl">how the window draws on Windows: angle, or wgl (default angle, and wgl where it cannot start)</string>
     <string name="usage_option_info">prints the model derived for --species and its checks, and exits</string>
     <string name="usage_option_help">shows this and exits</string>

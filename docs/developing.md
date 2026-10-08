@@ -346,7 +346,7 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 - **On Ubuntu 24.04, `./gradlew packageAll`** as the first build of a fresh tree, apart from the checks:
   a task that reads another's output while Gradle plans the build fails only where that output is not built yet.
 - **On Windows Server 2022, `./gradlew :gui-core:jvmTest :ffmpeg:jvmTest`**:
-  the GL tests over ANGLE on WARP and over WGL on Mesa's llvmpipe, which the job puts beside `java.exe`,
+  the GL tests over ANGLE on WARP and over WGL on Mesa's llvmpipe, which the job installs as the system's OpenGL driver,
   as Windows's own OpenGL is 1.1, and ffmpeg's, for how a program is started on Windows.
 - **On Windows Server 2022, the MSI**, built by `package_msi_on_windows.ps1` in two versions
   and tried by `test_msi_on_windows.ps1`; the MSIs are the run's artifacts.
