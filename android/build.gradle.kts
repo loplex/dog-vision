@@ -11,6 +11,7 @@ import javax.xml.transform.stream.StreamResult
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("cz.loplex.dogvision.ktlint")
 }
 
 /**

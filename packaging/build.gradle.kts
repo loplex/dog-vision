@@ -43,6 +43,7 @@ plugins {
     // The toolchains, for the JDK whose jlink links the runtime.
     `jvm-toolchains`
     id("cz.loplex.dogvision.packaging")
+    id("cz.loplex.dogvision.ktlint")
 }
 
 val launchers = configurations.dependencyScope("windowsLaunchers")

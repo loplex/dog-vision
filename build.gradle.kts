@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kover)
-    alias(libs.plugins.ktlint) apply false
     id("cz.loplex.dogvision.packaging") apply false
 }
 
@@ -49,17 +48,6 @@ if (gradle.startParameter.systemPropertiesArgs["idea.sync.active"] == "true") {
 allprojects {
     plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
         the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().downloadBaseUrl = null
-    }
-}
-
-// Every module's Kotlin, the build scripts' included, is held to .editorconfig by ktlint in `check`.
-val ktlintPlugin = libs.plugins.ktlint.get().pluginId
-val ktlintVersion = libs.versions.ktlint.cli.get()
-subprojects {
-    @Suppress("AvoidApplyPluginMethod")
-    apply(plugin = ktlintPlugin)
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version = ktlintVersion
     }
 }
 

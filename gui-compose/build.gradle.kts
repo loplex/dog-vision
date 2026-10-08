@@ -17,6 +17,7 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
     id("cz.loplex.dogvision.packaging")
+    id("cz.loplex.dogvision.ktlint")
 }
 
 /** The class whose main the window and its JARs start with. */

@@ -1,4 +1,5 @@
-// The tasks the packages are made with, applied as the plugin below, and the natives the desktop modules run with.
+// The tasks the packages are made with, applied as the packaging plugin below,
+// the natives the desktop modules run with, and ktlint as every module applies it.
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlint)
@@ -10,11 +11,16 @@ gradlePlugin {
             id = "cz.loplex.dogvision.packaging"
             implementationClass = "cz.loplex.dogvision.packaging.PackagingPlugin"
         }
+        create("ktlint") {
+            id = "cz.loplex.dogvision.ktlint"
+            implementationClass = "cz.loplex.dogvision.KtlintPlugin"
+        }
     }
 }
 
 // The functions that write the packages' licences are tested here; `check` runs the tests.
 dependencies {
+    implementation(libs.ktlint.gradle)
     testImplementation(kotlin("test"))
 }
 

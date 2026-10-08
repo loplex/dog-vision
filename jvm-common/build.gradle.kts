@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kover)
     alias(libs.plugins.detekt)
+    id("cz.loplex.dogvision.ktlint")
 }
 
 kotlin {

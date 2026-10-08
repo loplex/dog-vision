@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.detekt)
     id("cz.loplex.dogvision.packaging")
+    id("cz.loplex.dogvision.ktlint")
 }
 
 /** The class whose main the command line and its JARs start with. */

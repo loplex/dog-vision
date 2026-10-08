@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
+    id("cz.loplex.dogvision.ktlint")
 }
 
 kotlin {

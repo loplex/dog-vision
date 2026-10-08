@@ -1,7 +1,8 @@
 @file:Suppress("UnstableApiUsage")
 
 pluginManagement {
-    // The tasks the packages are made with, and the natives the desktop modules share.
+    // The tasks the packages are made with, the natives the desktop modules share,
+    // and ktlint as every module applies it.
     includeBuild("build-logic")
     repositories {
         google {
