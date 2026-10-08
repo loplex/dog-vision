@@ -293,6 +293,8 @@ It runs on Linux and Windows on x86-64.
   the panel's [*Camera*](#the-camera-and-its-mirroring) picks another, or *Off*.
 - **The cameras are listed again as the panel's list drops down**, so that one plugged in since shows;
   on Windows, where ffmpeg lists them, they come a moment after it opens.
+- **The panel's last section, *The model and its checks*, shows what `--info` prints**
+  for the species and the settings shown, as they change; it starts closed, and its text can be selected.
 - **F9 or the arrow at the images' edge hides the controls**, and the images take their room; the same again shows them.
 - **Ctrl+Q closes it**, but for while a list is dropped down, which then takes the key.
 - **Escape closes a list dropped down or a menu open, and not the window.**

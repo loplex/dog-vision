@@ -36,6 +36,7 @@ import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
+import cz.loplex.dogvision.texts.nameKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -57,12 +58,14 @@ class ControlsTest {
     private val back = CameraOption("0", null, Facing.BACK)
     private val webcam = CameraOption("1", "Integrated Camera", Facing.UNKNOWN)
 
+    @Suppress("LongParameterList")
     private fun ComposeUiTest.show(
         view: View = View(),
         recording: Boolean = false,
         texts: Texts = english,
         camera: CameraChoice = CameraChoice(listOf(back, webcam), shown = back),
         width: Dp? = null,
+        info: ((Params, Texts) -> String)? = null,
     ): Held {
         val held = Held(view, camera)
         setContent {
@@ -80,6 +83,7 @@ class ControlsTest {
                         onLanguage = { held.language = it },
                         modifier = width?.let { Modifier.width(it) } ?: Modifier,
                         onCamerasOpened = { held.camerasOpened++ },
+                        info = info,
                     )
                 }
             }
@@ -106,6 +110,22 @@ class ControlsTest {
         show(View(Params(acuity = true), difference = true))
         node(Str.ACUITY_BLUR).assertExists()
         node(Str.SIDE_BY_SIDE).assertExists()
+    }
+
+    @Test
+    fun theModelsSectionIsThereOnlyWhereInfoIsGivenAndFollowsTheParameters() = runComposeUiTest {
+        val held = show(info = { params, texts -> "${texts.get(params.species.nameKey)} model" })
+        onNodeWithText("dog model").assertDoesNotExist()
+        node(Str.INFO_SECTION).performScrollTo().performClick()
+        onNodeWithText("dog model").assertExists()
+        held.view = View(Params(Species.CAT))
+        onNodeWithText("cat model").assertExists()
+    }
+
+    @Test
+    fun withoutInfoThereIsNoModelsSection() = runComposeUiTest {
+        show()
+        node(Str.INFO_SECTION).assertDoesNotExist()
     }
 
     @Test

@@ -5,6 +5,7 @@ package cz.loplex.dogvision.swing
 
 import com.formdev.flatlaf.FlatClientProperties
 import com.formdev.flatlaf.util.UIScale
+import cz.loplex.dogvision.common.info
 import cz.loplex.dogvision.core.CameraChoice
 import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.ChromaScale
@@ -47,8 +48,8 @@ import kotlin.math.roundToInt
 
 /**
  * The simulation's controls in Swing, as ui's `Controls` lays them out for the Compose window:
- * sections that open and close, with the camera, the species, its facts, the simulation, the acuity and the view,
- * then reset and the language.\
+ * sections that open and close, with the camera, the species, its facts, the simulation, the acuity,
+ * the view and the model with its checks, then reset and the language.\
  * Each shows what [session]'s state says and hands a change to [session]; it keeps only which sections are open.\
  * While recording, the camera, side by side and the map of differences are locked, as ui's lock them.
  */
@@ -177,6 +178,7 @@ internal class Controls(private val session: LiveSession<*>) :
                 ) { on -> session.changeView { it.copy(difference = on) } },
             ),
         )
+        add(section(Str.INFO_SECTION, startsOpen = false, modelInfo()))
         val reset = JButton().also { button ->
             button.addActionListener { session.reset() }
             on { button.text = it.texts.get(Str.RESET) }
@@ -497,6 +499,30 @@ internal class Controls(private val session: LiveSession<*>) :
             }
         }
         return rows
+    }
+
+    /**
+     * The model and the checks it passes, as the command line's --info prints them,
+     * worded again when the parameters or the language change;
+     * in a fixed-width font, so that a matrix's columns line up, and selectable.
+     */
+    private fun modelInfo(): JComponent {
+        val text = JTextArea().apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
+            putClientProperty(FlatClientProperties.STYLE_CLASS, "monospaced")
+        }
+        var shown: Pair<Params, String>? = null
+        on { state ->
+            val params = state.view.params
+            if (shown != params to state.texts.language) {
+                shown = params to state.texts.language
+                text.text = info(params, state.texts)
+                text.caretPosition = 0
+            }
+        }
+        return text
     }
 
     /** The language: the system's, or one there are texts for, each named in itself. */

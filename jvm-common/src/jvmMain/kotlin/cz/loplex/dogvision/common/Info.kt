@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.cli
+package cz.loplex.dogvision.common
 
 import cz.loplex.dogvision.core.Matrix
 import cz.loplex.dogvision.core.Params
@@ -16,8 +16,9 @@ import kotlin.math.abs
 import kotlin.math.atan2
 
 /**
- * What --info prints for [params], worded by [texts]: the species' cone matrix,
- * a dichromat's confusion direction, the simulation matrix at full strength, and the checks they pass:
+ * What the command line's --info prints for [params], and the windows show, worded by [texts]:
+ * the species' cone matrix, a dichromat's confusion direction,
+ * the simulation matrix at full strength, and the checks they pass:
  * grey kept grey, the cones excited as by the input, a dichromat's neutral point,
  * and the "rnl" scale matching the animal's discrimination and, for a trichromat, keeping blue's hue.\
  * Then the species' facts, and the published values to compare with.

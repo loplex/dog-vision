@@ -1,6 +1,7 @@
 package cz.loplex.dogvision.cli
 
 import cz.loplex.dogvision.common.UsageException
+import cz.loplex.dogvision.common.info
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.systemTexts

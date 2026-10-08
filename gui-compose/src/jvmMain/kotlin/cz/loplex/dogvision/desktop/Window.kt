@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import cz.loplex.dogvision.common.info
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press
@@ -220,6 +221,7 @@ private fun RowScope.Images(
                 onLanguage = session::setLanguage,
                 modifier = Modifier.weight(1f),
                 onCamerasOpened = session::listCamerasAgain,
+                info = ::info,
             )
         }
     }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import cz.loplex.dogvision.core.CameraChoice
@@ -72,7 +74,9 @@ import kotlin.math.roundToInt
  * The camera section at the top shows [camera], and hands a camera chosen, or null for Off, to [onCamera],
  * and a mirroring chosen to [onMirroring]; [onCamerasOpened] is called as its list drops down.\
  * The language choice at the end shows [language], a language tag or "" for the system's,
- * and hands a choice to [onLanguage].
+ * and hands a choice to [onLanguage].\
+ * Where [info] is given, a closed section after the view shows what it words for the parameters:
+ * the model and the checks it passes, as the desktop's command line prints them.
  */
 @Composable
 fun Controls(
@@ -87,6 +91,7 @@ fun Controls(
     onLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
     onCamerasOpened: () -> Unit = {},
+    info: ((Params, Texts) -> String)? = null,
 ) {
     val params = view.params
     fun setParams(change: Params.() -> Params) = onChange { it.copy(params = it.params.change()) }
@@ -157,6 +162,11 @@ fun Controls(
                 view.difference,
                 enabled = view.sideBySide && !recording,
             ) { on -> onChange { it.copy(difference = on) } }
+        }
+        if (info != null) {
+            Section(Str.INFO_SECTION, startsOpen = false) {
+                ModelInfo(params, info)
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = onReset, modifier = Modifier.padding(vertical = 8.dp)) {
@@ -498,6 +508,16 @@ private fun Facts(species: Species) {
             }
             InfoButton(text(fact.label.nameKey), fact.label.aboutKey)
         }
+    }
+}
+
+/** What [info] words for [params], in a fixed-width font, so that a matrix's columns line up; it can be selected. */
+@Composable
+private fun ModelInfo(params: Params, info: (Params, Texts) -> String) {
+    val texts = LocalTexts.current
+    val words = remember(params, texts) { info(params, texts) }
+    SelectionContainer {
+        Text(words, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
     }
 }
 

@@ -279,7 +279,9 @@
     <string name="video_written">Zapsáno %1$s: %2$s</string>
     <string name="pixels_differ">%1$s pixelů se znatelně liší</string>
     <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky a videa</string>
-    <!-- What the command line prints for its info option; the formulas and their symbols stay as they are -->
+    <!-- What the command line prints for its info option, and the windows show in a section of the first title;
+         the formulas and their symbols stay as they are -->
+    <string name="info_section">Model a jeho kontroly</string>
     <string name="info_species">%1$s, maxima čípků %2$s nm</string>
     <string name="info_cone_matrix">Matice čípků M_animal (řádky: čípky od krátkých po dlouhé; sloupce: lineární R, G, B):</string>
     <string name="info_confusion">Směr záměny n (normalizovaný): %1$s</string>
