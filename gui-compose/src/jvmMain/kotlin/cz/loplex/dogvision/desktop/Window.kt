@@ -210,7 +210,7 @@ private fun RowScope.Images(
             }
             Controls(
                 view = state.view,
-                recording = false,
+                recording = state.recording,
                 onChange = session::changeView,
                 onReset = session::reset,
                 camera = state.camera,
@@ -235,6 +235,7 @@ private fun StatusBar(state: LiveSession.State) {
     ) {
         val style = MaterialTheme.typography.bodySmall
         Text(state.sourceName(texts), style = style, maxLines = 1)
+        state.recordingStatus?.let { recording -> Text(recording(texts), style = style, maxLines = 1) }
         state.status?.let { status ->
             Text(status(texts), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

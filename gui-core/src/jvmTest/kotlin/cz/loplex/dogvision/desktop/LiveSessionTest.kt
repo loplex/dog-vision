@@ -24,6 +24,7 @@ import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -73,6 +74,14 @@ class LiveSessionTest {
 
         override fun readImages(onImages: (List<Image>?) -> Unit) = onImages(composed)
 
+        /** Who records the images, handed them at once, as the renderer does. */
+        var recorder: ((List<Image>) -> Unit)? = null
+
+        override fun record(onImages: ((List<Image>) -> Unit)?) {
+            recorder = onImages
+            composed?.let { onImages?.invoke(it) }
+        }
+
         override fun close() {
             log += "renderer closed"
         }
@@ -85,6 +94,32 @@ class LiveSessionTest {
 
     /** The user's pictures, where snapshots and recordings go while no folder is named or chosen. */
     private val pictures get() = File(directory, "Pictures")
+
+    /** The monotonic clock a recording is timed by, and what ticks its status every second. */
+    private val nanos = AtomicLong()
+    private var tick: (() -> Unit)? = null
+
+    /** The frames each recording wrote, by its file, and whether it was finished. */
+    private val recorded: MutableMap<String, MutableList<Int>> = Collections.synchronizedMap(mutableMapOf())
+    private val finished: MutableList<String> = Collections.synchronizedList(mutableListOf())
+
+    private val recordingSink = { output: File, _: Int, _: Int ->
+        val frames = recorded.getOrPut(output.name) { Collections.synchronizedList(mutableListOf()) }
+        object : RecordingSink {
+            override val format = "H.264"
+            override val encoder = "libx264"
+
+            override fun write(pixels: IntArray) {
+                frames += pixels[0]
+            }
+
+            override fun close() {
+                finished += output.name
+            }
+
+            override fun abort() = Unit
+        }
+    }
 
     /** The renderer each feed started was given, in order. */
     private val feedRenderers = mutableListOf<Renderer>()
@@ -124,6 +159,7 @@ class LiveSessionTest {
         downloader: ((Int) -> Unit) -> FfmpegInstall = { FfmpegInstall.Found },
         canInstallFfmpeg: Boolean = true,
         wingetFound: Boolean = true,
+        ffmpegFound: () -> Boolean = { true },
     ) = LiveSession<Unit>(
         arguments,
         { _, _ -> renderer },
@@ -138,7 +174,14 @@ class LiveSessionTest {
         systemLanguages = { listOf("en") },
         settingsFile = settings,
         clock = { ClockTime(2026, 10, 8, 9, 5, 7) },
+        openRecording = recordingSink,
+        nanoTime = nanos::get,
+        everySecond = { ticks ->
+            tick = ticks
+            AutoCloseable { tick = null }
+        },
         defaultOutputDir = { pictures },
+        ffmpegFound = ffmpegFound,
     )
 
     @Test
@@ -603,7 +646,123 @@ class LiveSessionTest {
         assertEquals("Integrated Camera", camera.state.value.sourceName(texts))
     }
 
+    @Test
+    fun aRecordingIsTimedAndSavedAndSaysHow() {
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory))
+        renderer.composed = listOf(Image(2, 1, intArrayOf(1, 2)), Image(2, 1, intArrayOf(3, 4)))
+        val texts = Texts.of("en")
+        assertTrue(session.menus(session.state.value, {}, {}, {}).press(MenuKey.RECORD))
+        assertTrue(session.state.value.recording)
+        val name = "dog-dog-20261008-090507.mp4"
+        assertEquals("Recording $name: 0:00", session.state.value.recordingStatus?.invoke(texts))
+        Thread.sleep(SETTLE_MILLIS)
+        nanos.set(65 * SECOND)
+        checkNotNull(tick)()
+        assertEquals("Recording $name: 1:05", session.state.value.recordingStatus?.invoke(texts))
+        session.toggleRecording()
+        assertFalse(session.state.value.recording)
+        assertEquals(listOf(name), finished.toList())
+        assertEquals(65 * RECORDING_FPS, recorded.getValue(name).size)
+        assertEquals(setOf(1), recorded.getValue(name).toSet())
+        assertEquals(
+            "Saved $name to $directory: H.264 (libx264)",
+            session.state.value.recordingStatus?.invoke(texts),
+        )
+        assertNull(renderer.recorder)
+        assertNull(tick)
+    }
+
+    @Test
+    fun whileRecordingNothingChangesTheVideosSize() {
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory))
+        renderer.composed = listOf(Image(1, 1, intArrayOf(1)), Image(1, 1, intArrayOf(2)))
+        session.toggleRecording()
+        log.clear()
+        session.openFile(File("b.jpg"))
+        session.openCamera()
+        session.chooseCamera(cameras.first())
+        session.changeView { it.copy(sideBySide = false) }
+        session.changeView { it.copy(difference = true) }
+        assertEquals(emptyList(), log.toList())
+        assertTrue(session.state.value.view.sideBySide)
+        assertFalse(session.state.value.view.difference)
+        session.changeView { it.copy(params = it.params.copy(species = Species.CAT)) }
+        assertEquals(Species.CAT, session.state.value.view.params.species)
+        val menus = session.menus(session.state.value, {}, {}, {})
+        assertFalse(menus.press(MenuKey.OPEN))
+        assertFalse(menus.press(MenuKey.SIDE_BY_SIDE))
+        session.toggleRecording()
+        session.openFile(File("b.jpg"))
+        assertEquals(
+            listOf("close a.jpg", "start b.jpg"),
+            log.filter {
+                it.startsWith("close") || it.startsWith("start")
+            },
+        )
+    }
+
+    @Test
+    fun aRecordingWithoutAFrameSaysItFailed() {
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory))
+        session.toggleRecording()
+        session.toggleRecording()
+        assertEquals(
+            "Recording failed: No frame was shown while recording",
+            session.state.value.recordingStatus?.invoke(Texts.of("en")),
+        )
+    }
+
+    @Test
+    fun withoutFfmpegNothingIsRecordedAndFfmpegIsOffered() {
+        var found = false
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory), ffmpegFound = { found })
+        renderer.composed = listOf(Image(1, 1, intArrayOf(5)))
+        session.toggleRecording()
+        assertFalse(session.state.value.recording)
+        assertNull(session.state.value.recordingStatus)
+        assertNull(renderer.recorder)
+        assertNull(tick)
+        val texts = Texts.of("en")
+        assertEquals(texts.get(Str.FFMPEG_MISSING, "ffmpeg"), session.state.value.failure?.words(texts))
+        assertTrue(session.state.value.offersFfmpeg)
+        found = true
+        session.downloadFfmpeg()
+        awaitInstalled(session)
+        assertNull(session.state.value.failure)
+        assertEquals(listOf("start a.jpg", "close a.jpg", "start a.jpg"), log.filter { it.contains("a.jpg") })
+        session.toggleRecording()
+        assertTrue(session.state.value.recording)
+        session.toggleRecording()
+    }
+
+    @Test
+    fun ffmpegFoundOutsideTheWindowClearsItsFailureAsItRecords() {
+        var found = false
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory), ffmpegFound = { found })
+        renderer.composed = listOf(Image(1, 1, intArrayOf(5)))
+        session.toggleRecording()
+        assertEquals(true, session.state.value.failure?.ffmpegMissing)
+        found = true
+        session.toggleRecording()
+        assertNull(session.state.value.failure)
+        assertTrue(session.state.value.recording)
+        assertEquals(listOf("start a.jpg", "close a.jpg", "start a.jpg"), log.filter { it.contains("a.jpg") })
+        session.toggleRecording()
+    }
+
+    @Test
+    fun closingTheWindowFinishesTheRecording() {
+        val session = session(WindowArguments(file = File("a.jpg"), outputDir = directory))
+        renderer.composed = listOf(Image(1, 1, intArrayOf(5)))
+        session.toggleRecording()
+        Thread.sleep(SETTLE_MILLIS)
+        session.close()
+        assertEquals(listOf("dog-dog-20261008-090507.mp4"), finished.toList())
+    }
+
     private companion object {
         const val WAIT_SECONDS = 10L
+        const val SECOND = 1_000_000_000L
+        const val SETTLE_MILLIS = 200L
     }
 }

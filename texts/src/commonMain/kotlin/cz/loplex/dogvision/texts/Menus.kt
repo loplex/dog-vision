@@ -22,6 +22,9 @@ enum class MenuKey(val key: String, val withCtrl: Boolean = true) {
     /** Save, as everywhere: a snapshot. */
     SNAPSHOT("S"),
 
+    /** Record, as recorders take it. */
+    RECORD("R"),
+
     /** The controls at the side, as KDE's programs show and hide their side panel. */
     CONTROLS("F9", withCtrl = false),
 

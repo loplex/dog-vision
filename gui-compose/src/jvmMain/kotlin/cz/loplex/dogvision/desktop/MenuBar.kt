@@ -16,6 +16,7 @@ internal val MENU_KEYS = MenuKey.entries.associateBy { key ->
         MenuKey.OPEN -> Key.O
         MenuKey.QUIT -> Key.Q
         MenuKey.SNAPSHOT -> Key.S
+        MenuKey.RECORD -> Key.R
         MenuKey.CONTROLS -> Key.F9
         MenuKey.RESET -> Key.Zero
         MenuKey.SIDE_BY_SIDE -> Key.M

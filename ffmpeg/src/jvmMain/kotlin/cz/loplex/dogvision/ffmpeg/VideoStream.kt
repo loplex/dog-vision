@@ -11,9 +11,6 @@ import kotlin.math.roundToLong
  * how many [frames] it has, or about as many, and the codec of its first sound track, [audio], "" where it has none.
  */
 data class VideoStream(val width: Int, val height: Int, val rate: String, val frames: Long, val audio: String) {
-    /** The frame rate as a number. */
-    val framesPerSecond: Double get() = rateOf(rate)
-
     companion object {
         /** The rate a video is read at where its file gives none. */
         const val DEFAULT_RATE = "30"

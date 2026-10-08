@@ -126,8 +126,7 @@ class VideoTest {
     @Test
     fun theEncoderChosenForASmallVideoWritesIt() {
         val output = File(directory, "small.mp4")
-        val source = video("silent")
-        val writer = VideoWriter(output, source, VideoStream.probe(source), 48, 32, checkNotNull(bestEncoder(48, 32)))
+        val writer = VideoWriter.silent(output, 48, 32, checkNotNull(bestEncoder(48, 32)), 30)
         repeat(30) { writer.write(IntArray(48 * 32)) }
         writer.close()
         assertEquals(30L, VideoStream.probe(output).frames)
@@ -167,6 +166,16 @@ class VideoTest {
         writer.close()
         assertEquals(Sound.NONE, writer.sound)
         assertEquals("", VideoStream.probe(output).audio)
+    }
+
+    @Test
+    fun aRecordingIsWrittenAtItsOwnRateWithoutSound() {
+        val output = File(directory, "recorded.mp4")
+        val writer = VideoWriter.silent(output, 64, 48, checkNotNull(bestEncoder(64, 48)), 30)
+        repeat(15) { writer.write(IntArray(64 * 48)) }
+        writer.close()
+        assertEquals(Sound.NONE, writer.sound)
+        assertEquals(VideoStream(64, 48, "30/1", 15, ""), VideoStream.probe(output))
     }
 
     @Test

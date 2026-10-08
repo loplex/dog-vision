@@ -315,7 +315,14 @@ It runs on Linux and Windows on x86-64.
   and in `%APPDATA%\dog-vision` on Windows.
 - **The status bar under the images says what is shown**, the file's name or the camera's,
   and what the window did last: where a snapshot went, or why it could not be saved.
-- **It has no recording yet.**
+- **Ctrl+R or *File* → *Record video* records the view** into an .mp4 in the output folder,
+  named as a snapshot is, until the same again stops it or the window closes:
+  its images as a snapshot has them, 30 frames a second, each shown for as long as the window showed it, and no sound.\
+  It needs ffmpeg, as a video does:
+  where ffmpeg cannot run, nothing is recorded, and the window says so in place of the images, as it does for a video.
+- **While recording, what would change the video's size is locked**:
+  another file, the camera, side by side and the map of differences.
+- **The status bar says how long the recording runs**, then where it went, written by which encoder, or why it failed.
 
 ### The same window in Swing: `dog-vision-swing`
 
@@ -379,6 +386,7 @@ The sections below hold for both windows.
 - **Where winget is on the `PATH`**, the window offers to install it through winget as well,
   as Gyan's build (`winget install --id Gyan.FFmpeg`) for this user alone,
   which winget keeps up to date and the MSI leaves.
-- **It shows the video or the camera once ffmpeg is found**, without starting again.
+- **It shows the video or the camera once ffmpeg is found**, without starting again,
+  or the photo Ctrl+R could not record; Ctrl+R then records.
 - **Where winget turns out to be missing** after all,
   the window names ffmpeg's download page as a link, which opens in the browser when it is clicked.

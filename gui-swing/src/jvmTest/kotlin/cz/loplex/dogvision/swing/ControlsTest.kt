@@ -45,6 +45,8 @@ class ControlsTest {
 
         override fun readImages(onImages: (List<Image>?) -> Unit) = onImages(null)
 
+        override fun record(onImages: ((List<Image>) -> Unit)?) = Unit
+
         override fun close() = Unit
     }
 

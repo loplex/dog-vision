@@ -49,7 +49,8 @@ import kotlin.math.roundToInt
  * The simulation's controls in Swing, as ui's `Controls` lays them out for the Compose window:
  * sections that open and close, with the camera, the species, its facts, the simulation, the acuity and the view,
  * then reset and the language.\
- * Each shows what [session]'s state says and hands a change to [session]; it keeps only which sections are open.
+ * Each shows what [session]'s state says and hands a change to [session]; it keeps only which sections are open.\
+ * While recording, the camera, side by side and the map of differences are locked, as ui's lock them.
  */
 @Suppress("SpreadOperator", "TooManyFunctions")
 internal class Controls(private val session: LiveSession<*>) :
@@ -155,9 +156,12 @@ internal class Controls(private val session: LiveSession<*>) :
             section(
                 Str.VIEW,
                 startsOpen = start.view.compare != null || start.view.difference,
-                toggle(Str.SIDE_BY_SIDE, Str.ABOUT_SIDE_BY_SIDE, { it.view.sideBySide }) { on ->
-                    session.changeView { it.copy(sideBySide = on) }
-                },
+                toggle(
+                    Str.SIDE_BY_SIDE,
+                    Str.ABOUT_SIDE_BY_SIDE,
+                    { it.view.sideBySide },
+                    enabled = { !it.recording },
+                ) { on -> session.changeView { it.copy(sideBySide = on) } },
                 speciesChoice(
                     Str.COMPARE_WITH,
                     Str.ABOUT_COMPARE_WITH,
@@ -169,7 +173,7 @@ internal class Controls(private val session: LiveSession<*>) :
                     Str.DIFFERENCE,
                     Str.ABOUT_DIFFERENCE,
                     { it.view.difference },
-                    enabled = { it.view.sideBySide },
+                    enabled = { it.view.sideBySide && !it.recording },
                 ) { on -> session.changeView { it.copy(difference = on) } },
             ),
         )
@@ -340,6 +344,8 @@ internal class Controls(private val session: LiveSession<*>) :
             }
             choice = state.camera
             if (box.selectedItem != choice.shown) box.selectedItem = choice.shown
+            // A recording's size would change with the camera.
+            box.isEnabled = !state.recording
             box.repaint()
         }
         val column = Column().apply {

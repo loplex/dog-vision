@@ -25,6 +25,8 @@ import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime
+import java.util.Timer
+import java.util.TimerTask
 import javax.imageio.ImageIO
 import kotlin.concurrent.thread
 
@@ -42,7 +44,8 @@ import kotlin.concurrent.thread
  * ffmpeg downloaded by [ffmpegDownloader] and installed through winget by [ffmpegInstaller],
  * which [canInstallFfmpeg] says whether to offer where it is missing,
  * and [wingetFound] whether to offer winget as well,
- * and the output folder, where none is named or chosen, by [defaultOutputDir];
+ * the output folder, where none is named or chosen, by [defaultOutputDir],
+ * and whether ffmpeg, which a recording needs, can be run by [ffmpegFound];
  * the tests give their own of each, and a [post] that runs what it is given there and then.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -62,7 +65,11 @@ class LiveSession<I>(
     private val systemLanguages: () -> List<String> = { cz.loplex.dogvision.texts.systemLanguages() },
     private val settingsFile: File = settingsFile(),
     private val clock: () -> ClockTime = ::now,
+    private val openRecording: (File, Int, Int) -> RecordingSink = ::ffmpegRecording,
+    private val nanoTime: () -> Long = System::nanoTime,
+    private val everySecond: (() -> Unit) -> AutoCloseable = ::everySecond,
     defaultOutputDir: () -> File = { picturesFolder() },
+    private val ffmpegFound: () -> Boolean = ::ffmpegRuns,
 ) : PanelActions,
     AutoCloseable {
     /**
@@ -93,6 +100,10 @@ class LiveSession<I>(
         val outputDir: File,
         /** What the window said it did last, worded when it is shown, in the language chosen then. */
         val status: ((Texts) -> String)? = null,
+        /** Whether the view is being recorded, which locks what would change the size of its images. */
+        val recording: Boolean = false,
+        /** How the recording under way or the last one stands, worded as [status] is. */
+        val recordingStatus: ((Texts) -> String)? = null,
         private val canInstallFfmpeg: Boolean = false,
         private val wingetFound: Boolean = false,
     ) {
@@ -176,14 +187,17 @@ class LiveSession<I>(
         listCamerasAgain()
     }
 
-    /** Shows [file], a photo or else a video, in place of what is shown. */
-    fun openFile(file: File) = start(Source.Media(file))
+    /** Shows [file], a photo or else a video, in place of what is shown; not while recording, as all that changes. */
+    fun openFile(file: File) {
+        if (recorder == null) start(Source.Media(file))
+    }
 
     /**
      * Shows the camera shown last, or the one the command line named, or the first, in place of what is shown;
      * the cameras are listed again, as one may have been plugged in since.
      */
     fun openCamera() {
+        if (recorder != null) return
         start(Source.Camera(lastCamera.id.toInt()))
         listCamerasAgain()
     }
@@ -193,6 +207,7 @@ class LiveSession<I>(
      * null turns the camera off, and does nothing while a file is shown, which is shown with the camera off already.
      */
     override fun chooseCamera(camera: CameraOption?) {
+        if (recorder != null) return
         if (camera == null) {
             if (mutableState.value.source is Source.Camera) start(Source.None)
         } else {
@@ -267,6 +282,97 @@ class LiveSession<I>(
         change { copy(outputDir = absolute, status = status) }
     }
 
+    /** The recording under way, and what ticks its time in the status. */
+    private var recorder: Recorder? = null
+    private var ticking: AutoCloseable? = null
+
+    /** Whether ffmpeg is being looked for, before a recording starts. */
+    private var findingFfmpeg = false
+
+    /**
+     * Starts recording the view into the output folder, named as a snapshot is but for its .mp4,
+     * or stops the recording under way, which is then finished in the background, as the recording status says.\
+     * A recording starts once ffmpeg is found, in the background;
+     * where it cannot be run, nothing is recorded, and the window says so in place of the images,
+     * and offers it as where a video cannot be shown without it.\
+     * Found once that was said, as where it was installed outside the window since,
+     * the source is started again, as getting it in the window does.
+     */
+    fun toggleRecording() = if (recorder == null) findFfmpegAndRecord() else stopRecording()
+
+    private fun findFfmpegAndRecord() {
+        if (findingFfmpeg) return
+        findingFfmpeg = true
+        inBackground {
+            val found = ffmpegFound()
+            post {
+                findingFfmpeg = false
+                when {
+                    closed || recorder != null -> Unit
+
+                    found -> {
+                        if (mutableState.value.sourceFailure?.ffmpegMissing == true) startAgain()
+                        startRecording()
+                    }
+
+                    else -> change {
+                        copy(sourceFailure = Failure(ffmpegMissing = true) { it.get(Str.FFMPEG_MISSING, "ffmpeg") })
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startRecording() {
+        val state = mutableState.value
+        val output = File(state.outputDir, snapshotName(state.view, clock(), extension = "mp4"))
+        output.parentFile?.mkdirs()
+        // The images are put together as they are shown now, which a recording keeps, as its size cannot change.
+        val arrangement = mutablePicture.value?.layout?.arrangement ?: Arrangement.ROW
+        val recording = Recorder(output, openRecording, nanoTime)
+        recorder = recording
+        renderer.record { images -> recording.add { stitch(images, arrangement) } }
+        change { copy(recording = true, recordingStatus = running(recording)) }
+        ticking =
+            everySecond { post { if (recorder === recording) change { copy(recordingStatus = running(recording)) } } }
+    }
+
+    private fun stopRecording() {
+        val recording = recorder ?: return
+        recorder = null
+        ticking?.close()
+        ticking = null
+        renderer.record(null)
+        recording.stop()
+        change { copy(recording = false, recordingStatus = { it.get(Str.FINISHING, recording.output.name) }) }
+        inBackground {
+            recording.await(FINISH_MILLIS)
+            post { if (!closed) change { copy(recordingStatus = finished(recording)) } }
+        }
+    }
+
+    /** How long [recording] has run, as its status says it. */
+    private fun running(recording: Recorder): (Texts) -> String {
+        val seconds = (nanoTime() - recording.startedAt) / NANOS_A_SECOND
+        val time = "${seconds / SECONDS_A_MINUTE}:" + "${seconds % SECONDS_A_MINUTE}".padStart(2, '0')
+        return { it.get(Str.RECORDING, recording.output.name, time) }
+    }
+
+    /** Where [recording] went, written how, or why it failed. */
+    private fun finished(recording: Recorder): (Texts) -> String {
+        val error = recording.error
+        val sink = recording.sink
+        val name = recording.output.name
+        val folder = recording.output.parentFile
+        return when {
+            error != null || sink == null -> { texts -> texts.get(Str.RECORDING_FAILED, error?.message) }
+
+            else -> { texts ->
+                texts.get(Str.SAVED_VIDEO, name, folder, texts.get(Str.WRITTEN_SILENT, sink.format, sink.encoder))
+            }
+        }
+    }
+
     /** The area the pictures are laid out on, which the window has given the images. */
     fun setArea(area: Area) = renderer.setArea(area)
 
@@ -317,13 +423,19 @@ class LiveSession<I>(
     /** Stops the feed, and then the renderer, which the feed shows its frames on. */
     override fun close() {
         if (closed) return
+        recorder?.let { recording ->
+            stopRecording()
+            recording.await(FINISH_MILLIS)
+        }
         closed = true
         running?.close()
         running = null
         renderer.close()
     }
 
+    /** Shows [view], unless it has another number of images while recording, which would change the video's size. */
     private fun setView(view: View) {
+        if (recorder != null && view.images != mutableState.value.view.images) return
         change { copy(view = view) }
         renderer.setView(view)
     }
@@ -415,6 +527,11 @@ class LiveSession<I>(
     }
 
     companion object {
+        /** How long a recording is waited for to be finished, when it stops and when the window closes. */
+        private const val FINISH_MILLIS = 30_000L
+        private const val NANOS_A_SECOND = 1_000_000_000L
+        private const val SECONDS_A_MINUTE = 60
+
         /** A session drawn by a [GlRenderer], opened as [arguments] ask on Windows, into images [imageMaker] makes. */
         fun <I> drawnOnGpu(arguments: WindowArguments, imageMaker: ImageMaker<I>): LiveSession<I> =
             LiveSession(arguments, { onPicture, onFailure ->
@@ -427,3 +544,18 @@ class LiveSession<I>(
 internal fun now(): ClockTime = LocalDateTime.now().run {
     ClockTime(year, monthValue, dayOfMonth, hour, minute, second)
 }
+
+/** Calls [tick] every second on a thread of its own, until the AutoCloseable it returns is closed. */
+private fun everySecond(tick: () -> Unit): AutoCloseable {
+    val timer = Timer("dog-vision-seconds", true)
+    timer.scheduleAtFixedRate(
+        object : TimerTask() {
+            override fun run() = tick()
+        },
+        SECOND_MILLIS,
+        SECOND_MILLIS,
+    )
+    return AutoCloseable(timer::cancel)
+}
+
+private const val SECOND_MILLIS = 1000L
