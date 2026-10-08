@@ -126,6 +126,8 @@
     <string name="no_frame">Nothing to save yet</string>
     <string name="convert_file">Convert file</string>
     <string name="convert_to_output_dir">Converted files into the output folder</string>
+    <string name="menu">Menu</string>
+    <string name="back">Back</string>
     <string name="switch_camera">Switch between the back and the front camera</string>
     <string name="next_camera">Switch to the next camera</string>
     <string name="media_failed">Cannot open %1$s as a photo or a video</string>

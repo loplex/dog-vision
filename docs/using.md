@@ -51,6 +51,12 @@ The web page and the desktop window show the same ones.
 
 What each control does to the picture, and from which measurements, is [The model](model.md)'s.
 
+- **The ⋮ button beside the others opens a menu of everything**: *File* holds what the buttons do,
+  and *Camera*, *Species*, *Simulation*, *Acuity*, *View* and *Language* the controls' sections,
+  each a slider as fixed values, 0, 25, 50, 75 and 100 %, or 10°, 30°, 60°, 90° and 120°.
+- **A menu chosen shows its entries in the list's place**, under a row back up,
+  as do the lists in it, *Compared with* or *Adaptation to scene [%]*; an entry chosen closes the menu.
+
 The controls, which camera is shown or that it is off, and the photo or video shown instead (a video from its start)
 stay as they were when Android ends the app in the background to free memory.\
 A photo or a video that cannot be read by then,

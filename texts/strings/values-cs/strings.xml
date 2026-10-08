@@ -113,6 +113,8 @@
     <string name="no_frame">Zatím není co uložit</string>
     <string name="convert_file">Převést soubor</string>
     <string name="convert_to_output_dir">Převedené soubory do výstupní složky</string>
+    <string name="menu">Nabídka</string>
+    <string name="back">Zpět</string>
     <string name="switch_camera">Přepnout mezi zadní a přední kamerou</string>
     <string name="next_camera">Přepnout na další kameru</string>
     <string name="media_failed">%1$s nejde otevřít jako fotka ani jako video</string>

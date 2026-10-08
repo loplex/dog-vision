@@ -71,8 +71,16 @@ import cz.loplex.dogvision.PREVIEW_LONGEST_SIDE
 import cz.loplex.dogvision.R
 import cz.loplex.dogvision.Source
 import cz.loplex.dogvision.camera.CameraFeed
+import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Mirroring
+import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.savingNeedsPermission
+import cz.loplex.dogvision.texts.Menu
+import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.PanelActions
+import cz.loplex.dogvision.texts.PanelShown
 import cz.loplex.dogvision.texts.Str
+import cz.loplex.dogvision.texts.panelMenus
 import cz.loplex.dogvision.texts.switchKey
 import cz.loplex.dogvision.video.VideoFeed
 
@@ -99,16 +107,47 @@ fun MainScreen(model: MainViewModel) {
     }
     val save = rememberSaving(model)
     val convert = rememberConverting(save)
+    val openMedia = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
+    val texts = LocalTexts.current
+    // What the buttons do, and what they offer only now and then, as the menu's first part.
+    val fileMenu = Menu(
+        texts.get(Str.MENU_FILE),
+        listOf(
+            MenuEntry.Action(texts.get(Str.OPEN_MEDIA), enabled = !recording, onSelect = openMedia),
+            if (source != Source.Camera) {
+                MenuEntry.Action(texts.get(Str.SHOW_CAMERA), enabled = !recording, onSelect = model::openCamera)
+            } else {
+                val switchable = !recording && cameraAllowed && camera.cameras.size > 1
+                MenuEntry.Action(texts.get(camera.switchKey), enabled = switchable, onSelect = model::switchCamera)
+            },
+            MenuEntry.Separator,
+            MenuEntry.Action(texts.get(Str.SAVE_SNAPSHOT)) { save(model::saveSnapshot) },
+            MenuEntry.Check(texts.get(Str.RECORD), recording) { on ->
+                if (on) save(model::startRecording) else model.stopRecording()
+            },
+            MenuEntry.Separator,
+            MenuEntry.Action(texts.get(Str.SAVE_FULL_SIZE), enabled = source is Source.Photo && !converting) {
+                convert(model::convertPhoto)
+            },
+            MenuEntry.Action(texts.get(Str.SAVE_VIDEO_FULL_SIZE), enabled = source is Source.Video && !converting) {
+                convert(model::convertVideo)
+            },
+            MenuEntry.Action(
+                texts.get(Str.CANCEL_CONVERSION),
+                enabled = converting,
+                onSelect = model::cancelConversion,
+            ),
+        ),
+    )
     WhileRecording(model, recording)
     Box(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding()) {
         WithControls(
             model,
+            fileMenu,
             buttons = {
                 // The source cannot change while recording, as its size would change the video's.
                 if (!recording) {
-                    ImageButton(R.drawable.ic_photo, Str.OPEN_MEDIA) {
-                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                    }
+                    ImageButton(R.drawable.ic_photo, Str.OPEN_MEDIA, onClick = openMedia)
                     if (source != Source.Camera) {
                         ImageButton(R.drawable.ic_camera, Str.SHOW_CAMERA, onClick = model::openCamera)
                     } else if (cameraAllowed && camera.cameras.size > 1) {
@@ -286,11 +325,26 @@ private fun WhileRecording(model: MainViewModel, recording: Boolean) {
  * made anew, the camera would start again, and the surface would lose its GL context and the frames with it.
  */
 @Composable
-private fun WithControls(model: MainViewModel, buttons: @Composable () -> Unit, images: @Composable () -> Unit) {
+private fun WithControls(
+    model: MainViewModel,
+    fileMenu: Menu,
+    buttons: @Composable () -> Unit,
+    images: @Composable () -> Unit,
+) {
     val view by model.view.collectAsStateWithLifecycle()
     val recorder by model.recorder.collectAsStateWithLifecycle()
     val camera by model.camera.collectAsStateWithLifecycle()
     var shown by rememberSaveable { mutableStateOf(true) }
+    val language = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+    val actions = remember(model) { PanelActionsOf(model) }
+    val controlsShown = MenuEntry.Check(text(Str.CONTROLS), shown) { shown = it }
+    val menus = listOf(fileMenu) +
+        LocalTexts.current.panelMenus(
+            PanelShown(view, camera, language, recorder != null),
+            actions,
+            listOf(controlsShown),
+        )
+    val currentMenus by rememberUpdatedState(menus)
     val currentButtons by rememberUpdatedState(buttons)
     val currentImages by rememberUpdatedState(images)
     val imagesWithButtons = remember {
@@ -305,6 +359,7 @@ private fun WithControls(model: MainViewModel, buttons: @Composable () -> Unit, 
                 ) {
                     currentButtons()
                     ImageButton(R.drawable.ic_tune, Str.TOGGLE_CONTROLS) { shown = !shown }
+                    MenuButton(currentMenus, Color.White)
                 }
             }
         }
@@ -438,4 +493,21 @@ private fun Images(model: MainViewModel) {
             }
         }
     }
+}
+
+/**
+ * The model's changes of what the panel shows, which the menu changes too;
+ * the language is the app's, as Android keeps it.
+ */
+private class PanelActionsOf(private val model: MainViewModel) : PanelActions {
+    override fun changeView(change: (View) -> View) = model.update(change)
+
+    override fun reset() = model.reset()
+
+    override fun chooseCamera(camera: CameraOption?) = model.chooseCamera(camera)
+
+    override fun setMirroring(mirroring: Mirroring) = model.setMirroring(mirroring)
+
+    override fun setLanguage(language: String) =
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language))
 }
