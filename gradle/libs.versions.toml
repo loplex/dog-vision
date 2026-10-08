@@ -29,13 +29,13 @@ media3 = "1.11.1"
 # the newest build of it, which brings the branch's fixes;
 # a later branch is taken by hand, once the windows are tried with it.
 ffmpeg-windows = "9.0"
-# Temurin's release the packages' runtimes come from: the jmods for Windows,
-# which each MSI's and the command line's zip's runtime is linked from, are of it exactly;
-# the JDK that links them, and the tar.gzs' runtime, is Gradle's toolchain of its feature release, 25,
-# as jlink asks only for its own.
-# That release is an LTS one, as the packages ship the runtime to users.
-# A new feature release renames the module below.
-temurin-windows-jmods = "25.0.4.1+1"
+# Temurin's feature release the packages' runtimes are of:
+# the JDK the build packages with, Gradle's toolchain of it, is the tar.gzs' runtime, and the jmods for Windows,
+# which each MSI's and the command line's zip's runtime is linked from, are of that JDK's release exactly.
+# It is an LTS one, as the packages ship the runtime to users.
+# build-logic looks it up by its name.
+# noinspection UnusedVersionCatalogEntry
+temurin = "25"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
@@ -81,7 +81,6 @@ lwjgl-opengles = { module = "org.lwjgl:lwjgl-opengles", version.ref = "lwjgl" }
 # Looked up by its name in build-logic.
 # noinspection UnusedVersionCatalogEntry
 nucleus-angle-natives = { module = "dev.nucleusframework:nucleus.angle-natives", version.ref = "nucleus-angle" }
-temurin-windows-jmods = { module = "net.adoptium:temurin25-binaries", version.ref = "temurin-windows-jmods" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

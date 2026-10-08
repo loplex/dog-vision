@@ -4,7 +4,6 @@ package cz.loplex.dogvision.packaging
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RelativePath
 import org.gradle.api.provider.Provider
@@ -15,15 +14,12 @@ import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.toolchain.JvmVendorSpec
 
-/**
- * Temurin's release the packages' runtimes come from, temurin-windows-jmods in libs.versions.toml:
- * the jmods for Windows are of it exactly, and [packagingJdk] of its feature release.
- */
-private fun Project.temurinRelease(): String = libs().findVersion("temurin-windows-jmods").get().requiredVersion
+/** Temurin's feature release the packages' runtimes are of, temurin in libs.versions.toml. */
+private fun Project.temurinFeature(): Int = libs().findVersion("temurin").get().requiredVersion.toInt()
 
 /**
  * The JDK the packages' runtimes are linked with and jpackage runs from on Linux:
- * Temurin, of [temurinRelease]'s feature release, which jlink asks the jmods it links for Windows to be of.
+ * Temurin, of [temurinFeature], which jlink asks the jmods it links for Windows to be of.
  * Temurin brings its own libjpeg, giflib, libpng, lcms2, HarfBuzz and FreeType,
  * where a distribution's OpenJDK, Ubuntu's among them, links the system's,
  * and a tar.gz would then need that distribution's.\
@@ -31,9 +27,22 @@ private fun Project.temurinRelease(): String = libs().findVersion("temurin-windo
  */
 fun Project.packagingJdk(): Provider<JavaLauncher> =
     extensions.getByType(JavaToolchainService::class.java).launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(temurinRelease().substringBefore('.').toInt()))
+        languageVersion.set(JavaLanguageVersion.of(temurinFeature()))
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
+
+/**
+ * Temurin's release [packagingJdk] is, such as 25.0.4.1+1, as its release file names it:
+ * the jmods for Windows are of it exactly,
+ * so that every package's runtime is the same, and moves with the JDK the build packages with.
+ */
+fun Project.temurinRelease(): Provider<String> = packagingJdk().map { jdk ->
+    val release = jdk.metadata.installationPath.file("release").asFile
+    val implementor = release.readLines().firstOrNull { it.startsWith("IMPLEMENTOR_VERSION=") }
+    checkNotNull(implementor?.substringAfter("\"Temurin-", "")?.removeSuffix("\"")?.ifEmpty { null }) {
+        "$release names no Temurin release: $implementor"
+    }
+}
 
 /**
  * Registers windowsRuntime, which links in build/windows/runtime [what],
@@ -65,16 +74,17 @@ fun Project.windowsRuntimeImage(
 
 /** Registers windowsJmods, which unpacks Temurin's jmods for Windows of [temurinRelease] into build/windows/jmods. */
 private fun Project.windowsJmods(): TaskProvider<Sync> {
-    val release = temurinRelease()
+    val feature = temurinFeature()
     val jmodsScope = configurations.dependencyScope("windowsJmods")
     val jmodsZip = configurations.resolvable("windowsJmodsZip") { extendsFrom(jmodsScope.get()) }
-    dependencies.addProvider<MinimalExternalModuleDependency, ExternalModuleDependency>(
+    dependencies.addProvider<String, ExternalModuleDependency>(
         jmodsScope.name,
-        libs().findLibrary("temurin-windows-jmods").get(),
+        temurinRelease().map { "net.adoptium:temurin$feature-binaries:$it" },
     ) {
         // Adoptium names the zip after the release, with an underscore for its plus.
+        val release = checkNotNull(version)
         artifact {
-            name = "OpenJDK${release.substringBefore('.')}U-jmods_x64_windows_hotspot_${release.replace('+', '_')}"
+            name = "OpenJDK${feature}U-jmods_x64_windows_hotspot_${release.replace('+', '_')}"
             type = "zip"
         }
     }

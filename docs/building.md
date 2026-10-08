@@ -109,8 +109,8 @@ pwsh tools/package_cli_zip_on_windows.ps1
 - **Its runtime is Temurin's JDK 25, cut down by jlink to `java.base` and `java.desktop`**, which ImageIO needs.\
   `./gradlew :packaging:windowsCliRuntime` links it, on any system,
   from Temurin's jmods for Windows, which Gradle downloads from Adoptium's releases on GitHub.\
-  Their version is `temurin-windows-jmods` in [`libs.versions.toml`](../gradle/libs.versions.toml):
-  jlink takes jmods of any update of its own feature release, 25.
+  They are of the very release the JDK that links them is, the Temurin 25 Gradle packages with,
+  so the zip's runtime moves with it.
 - **jpackage makes the launcher only on Windows**, so each script runs a Windows jpackage over the runtime and the JARs:
   - [`tools/package_cli_zip_on_windows.ps1`](../tools/package_cli_zip_on_windows.ps1) runs the JDK 25 that `JAVA_HOME` names;
   - [`tools/package_cli_zip_on_linux.sh`](../tools/package_cli_zip_on_linux.sh) zips the image
@@ -188,7 +188,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 - **Gradle downloads Temurin 25 on the first build** that needs it, where it finds none installed,
   so that build needs the network: jpackage runs from it, and it is the tar.gzs' runtime.\
   Its jlink links the MSI's runtime as well, from Temurin's jmods for Windows,
-  which Gradle downloads too, of the release `temurin-windows-jmods` in [`libs.versions.toml`](../gradle/libs.versions.toml) gives.\
+  which Gradle downloads too, of that JDK's release, as its `release` file names it.\
+  The feature release, 25, is `temurin` in [`libs.versions.toml`](../gradle/libs.versions.toml).\
   Both tar.gzs come from [`AppImage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/AppImage.kt) in `build-logic`, which `packaging` runs for each window,
   as it takes both the window and the command line, whose launcher each tar.gz holds beside the window's.\
   The deb and the rpm take none, as they run on the system's Java.

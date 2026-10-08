@@ -14,6 +14,7 @@ import cz.loplex.dogvision.packaging.artifact
 import cz.loplex.dogvision.packaging.debianPackages
 import cz.loplex.dogvision.packaging.javaRuntimeNote
 import cz.loplex.dogvision.packaging.jvmRuntimeOf
+import cz.loplex.dogvision.packaging.temurinRelease
 import cz.loplex.dogvision.packaging.thirdPartyLicenses
 import cz.loplex.dogvision.packaging.windowDebDepends
 import cz.loplex.dogvision.packaging.windowPackages
@@ -100,12 +101,12 @@ val windowsWebPage = tasks.register<Sync>("windowsWebPage") {
 // What each Windows image holds that is not this project's own:
 // the parts each launcher's JARs are, as the module hands them over,
 // the web page's in the MSI, and the runtime, which keeps its notices in its own legal folder.
-val windowsRuntimeNote = javaRuntimeNote("runtime", libs.versions.temurin.windows.jmods.get())
+val windowsRuntimeNote = temurinRelease().map { javaRuntimeNote("runtime", it) }
 val windowsLicences = thirdPartyLicenses("windowsLicences", emptyList()) {
     artifactName = "Dog Vision for Windows"
     includedParts.from(launcherFiles.get().filter { it.name.endsWith(".licences") })
     extraParts = webParts("dog-vision.js") + webParts("dog-vision.js.map")
-    notes = listOf(windowsRuntimeNote)
+    notes.add(windowsRuntimeNote)
 }
 
 // One runtime of every module a launcher needs, and dog-vision-compose.exe the image's main launcher,
@@ -130,7 +131,7 @@ val cliLauncherFiles = launcherFiles.get().incoming.artifactView {
 val windowsCliLicences = thirdPartyLicenses("windowsCliLicences", emptyList()) {
     artifactName = "The command line for Windows"
     includedParts.from(cliLauncherFiles.filter { it.name.endsWith(".licences") })
-    notes = listOf(windowsRuntimeNote)
+    notes.add(windowsRuntimeNote)
 }
 windowsAppImage(
     packageName = "dog-vision-cli",
