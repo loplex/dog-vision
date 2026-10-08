@@ -26,6 +26,7 @@ import androidx.compose.ui.state.ToggleableState
 import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuEntry
 import cz.loplex.dogvision.texts.Str
+import cz.loplex.dogvision.texts.shownAt
 
 /**
  * A button of three dots, tinted [tint], that drops [menus] down as one list:
@@ -70,21 +71,6 @@ fun MenuButton(menus: List<Menu>, tint: Color, modifier: Modifier = Modifier) {
             }
         }
     }
-}
-
-/**
- * The label and the entries of the menu at [path] in [menus], the place of a menu and then of each submenu in it,
- * or null for the menus' own list; null too where the menus have changed under the path.
- */
-@Suppress("ReturnCount")
-internal fun shownAt(menus: List<Menu>, path: List<Int>): Pair<String, List<MenuEntry>>? {
-    val menu = path.firstOrNull()?.let(menus::getOrNull) ?: return null
-    var shown = menu.label to menu.entries
-    for (place in path.drop(1)) {
-        val submenu = shown.second.getOrNull(place) as? MenuEntry.Submenu ?: return null
-        shown = submenu.label to submenu.entries
-    }
-    return shown
 }
 
 @Composable

@@ -3,13 +3,19 @@ package cz.loplex.dogvision.web
 import cz.loplex.dogvision.core.Box
 import cz.loplex.dogvision.core.CameraChoice
 import cz.loplex.dogvision.core.CameraOption
+import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.ScreenLayout
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
 import cz.loplex.dogvision.core.snapshotName
 import cz.loplex.dogvision.core.stitch
+import cz.loplex.dogvision.texts.Menu
+import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.PanelActions
+import cz.loplex.dogvision.texts.PanelShown
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
+import cz.loplex.dogvision.texts.panelMenus
 import cz.loplex.dogvision.texts.switchKey
 import kotlinx.browser.document
 import kotlinx.browser.window
@@ -67,6 +73,7 @@ class Page(private var texts: Texts) {
     private val recordButton = element<HTMLButtonElement>("record")
     private val stopButton = element<HTMLButtonElement>("stop")
     private val panel = element<HTMLElement>("controls")
+    private val menu = MenuList(element("menu"), element("menu-list"))
 
     private val gl: WebGL2RenderingContext? = canvas.getContext(
         "webgl2",
@@ -205,16 +212,7 @@ class Page(private var texts: Texts) {
         panel,
         texts,
         language,
-        onChange = { change ->
-            // Reset too keeps how many images there are while recording, as in the Android app.
-            val changed = change(view)
-            view = if (recording == null) {
-                changed
-            } else {
-                changed.copy(sideBySide = view.sideBySide, difference = view.difference)
-            }
-            invalidate()
-        },
+        onChange = ::changeView,
         onCamera = if (camera == null) {
             null
         } else {
@@ -226,6 +224,57 @@ class Page(private var texts: Texts) {
         },
         onLanguage = ::switchLanguage,
     )
+
+    /** Changes the view as [change] makes it, but for how many images it has while recording. */
+    private fun changeView(change: (View) -> View) {
+        // Reset too keeps how many images there are while recording, as in the Android app.
+        val changed = change(view)
+        view =
+            if (recording == null) changed else changed.copy(sideBySide = view.sideBySide, difference = view.difference)
+        invalidate()
+    }
+
+    /** What the panel's controls change, which the menu changes too. */
+    private val panelActions = object : PanelActions {
+        override fun changeView(change: (View) -> View) = this@Page.changeView(change)
+
+        override fun reset() = changeView { View() }
+
+        override fun chooseCamera(camera: CameraOption?) {
+            if (camera == null) turnCameraOff() else startCamera(camera)
+        }
+
+        override fun setMirroring(mirroring: Mirroring) {
+            cameraChoice = cameraChoice.copy(mirroring = mirroring)
+            invalidate()
+        }
+
+        override fun setLanguage(language: String) = switchLanguage(language.ifEmpty { null })
+    }
+
+    /**
+     * The page's menu: File with what the buttons do, as the buttons stand now,
+     * then everything the controls hold; Camera only where the browser has a camera to show.
+     */
+    private fun menus(): List<Menu> {
+        val recording = recording != null
+        val file = listOfNotNull(
+            MenuEntry.Action(texts.get(Str.OPEN_MEDIA), enabled = !open.disabled) { open.click() },
+            MenuEntry.Action(texts.get(Str.SHOW_CAMERA), enabled = !cameraButton.disabled) {
+                startCamera(lastCamera)
+            }.takeUnless { cameraButton.hidden },
+            MenuEntry.Action(texts.get(cameraChoice.switchKey), enabled = !switchButton.disabled) {
+                startCamera(cameraChoice.next)
+            }.takeUnless { switchButton.hidden },
+            MenuEntry.Separator,
+            MenuEntry.Action(texts.get(Str.SAVE_SNAPSHOT), enabled = !save.disabled, onSelect = ::saveSnapshot),
+            MenuEntry.Check(texts.get(Str.RECORD), recording, enabled = recording || !recordButton.disabled) { on ->
+                if (on) startRecording() else stopRecording()
+            }.takeIf { Recording.supported },
+        )
+        val shown = PanelShown(view, cameraChoice, language.orEmpty(), recording, cameras = camera != null)
+        return listOf(Menu(texts.get(Str.MENU_FILE), file)) + texts.panelMenus(shown, panelActions)
+    }
 
     /** Words the page in the language of [texts]. */
     private fun showTexts() {
@@ -242,6 +291,8 @@ class Page(private var texts: Texts) {
         notice.title = texts.get(Str.CLOSE)
         showNotice(noticeText)
         controls.show(view, recording != null, cameraChoice)
+        // Filled here too, as a page that cannot draw never draws, and its menu still holds the controls.
+        menu.show(menus(), texts)
     }
 
     /**
@@ -483,6 +534,7 @@ class Page(private var texts: Texts) {
             drawScheduled = false
             controls.show(view, recording != null, cameraChoice)
             draw()
+            menu.show(menus(), texts)
         }
     }
 

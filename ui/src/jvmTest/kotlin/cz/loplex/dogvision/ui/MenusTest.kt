@@ -18,7 +18,6 @@ import cz.loplex.dogvision.texts.MenuEntry
 import cz.loplex.dogvision.texts.Texts
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 /** The app's menu drops the menus down as one list, a menu's entries in its place, with a row back up. */
 @OptIn(ExperimentalTestApi::class)
@@ -89,14 +88,5 @@ class MenusTest {
         onNodeWithText("File").performClick()
         onNodeWithText("Open").performClick()
         assertEquals(listOf("side by side false", "open"), done)
-    }
-
-    @Test
-    fun aPathTheMenusNoLongerHaveShowsTheirList() {
-        assertEquals("View" to menus[1].entries, shownAt(menus, listOf(1)))
-        assertEquals("Compared with", shownAt(menus, listOf(1, 1))?.first)
-        assertNull(shownAt(menus, listOf(1, 0)))
-        assertNull(shownAt(menus, listOf(5)))
-        assertNull(shownAt(menus, emptyList()))
     }
 }

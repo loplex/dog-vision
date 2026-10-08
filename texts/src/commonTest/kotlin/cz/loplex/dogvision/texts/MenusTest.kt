@@ -11,6 +11,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The menus hold what the panel holds, locked as it locks it, and its keys do what their entries do. */
@@ -167,5 +169,30 @@ class MenusTest {
         assertEquals(listOf("Čeština"), languages.filter { it.selected }.map { it.label })
         languages.first().onSelect()
         assertEquals("", actions.chosenLanguage)
+    }
+
+    @Test
+    fun whatTheMenusShowChangesOnlyWithWhatAnEntryShows() {
+        val actions = Actions()
+        assertEquals(shownOf(menus(actions)), shownOf(menus(actions)))
+        assertNotEquals(shownOf(menus(actions)), shownOf(menus(actions, recording = true)))
+    }
+
+    @Test
+    fun aPathTheMenusNoLongerHaveShowsTheirList() {
+        val menus = menus(Actions())
+        val view = menus.indexOfFirst { it.label == "View" }
+        assertEquals("View" to menus[view].entries, shownAt(menus, listOf(view)))
+        val compared = menus[view].entries.indexOfFirst { it is MenuEntry.Submenu }
+        assertEquals(texts.get(Str.COMPARE_WITH), shownAt(menus, listOf(view, compared))?.first)
+        assertNull(shownAt(menus, listOf(view, 0)))
+        assertNull(shownAt(menus, listOf(99)))
+        assertNull(shownAt(menus, emptyList()))
+    }
+
+    @Test
+    fun withoutACameraThereIsNoCameraMenu() {
+        val labels = texts.panelMenus(PanelShown(View(), cameras, "", cameras = false), Actions()).map { it.label }
+        assertEquals(listOf("Species", "Simulation", "Acuity", "View", "Language"), labels)
     }
 }

@@ -14,6 +14,7 @@ import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.press
+import cz.loplex.dogvision.texts.shownOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

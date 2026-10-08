@@ -23,22 +23,6 @@ internal fun menuBar(menus: List<Menu>): JMenuBar = JMenuBar().apply {
 /** The key as Swing names it. */
 internal val MenuKey.keyStroke: KeyStroke get() = KeyStroke.getKeyStroke(if (withCtrl) "ctrl $key" else key)
 
-/**
- * What [menus] show, without what their entries do,
- * so that the bar is built again only when that changes and not, closing a menu open, whenever the window's state does.
- */
-internal fun shownOf(menus: List<Menu>): List<Any> = menus.map { it.label to entriesShown(it.entries) }
-
-private fun entriesShown(entries: List<MenuEntry>): List<Any> = entries.map { entry ->
-    when (entry) {
-        is MenuEntry.Action -> listOf(entry.label, entry.key, entry.enabled)
-        is MenuEntry.Check -> listOf(entry.label, entry.checked, entry.key, entry.enabled)
-        is MenuEntry.Choice -> listOf(entry.label, entry.selected, entry.enabled)
-        is MenuEntry.Submenu -> listOf(entry.label, entry.enabled, entriesShown(entry.entries))
-        MenuEntry.Separator -> entry
-    }
-}
-
 /** Adds [entries], each run of choices one group, of which one is selected at a time. */
 private fun JMenu.addEntries(entries: List<MenuEntry>) {
     var group: ButtonGroup? = null

@@ -94,6 +94,37 @@ fun List<Menu>.press(key: MenuKey): Boolean {
     return any { press(it.entries) }
 }
 
+/**
+ * What [menus] show, without what their entries do,
+ * so that the bar is built again only when that changes and not, closing a menu open, whenever the state does.
+ */
+fun shownOf(menus: List<Menu>): List<Any> = menus.map { it.label to entriesShown(it.entries) }
+
+private fun entriesShown(entries: List<MenuEntry>): List<Any> = entries.map { entry ->
+    when (entry) {
+        is MenuEntry.Action -> listOf(entry.label, entry.key, entry.enabled)
+        is MenuEntry.Check -> listOf(entry.label, entry.checked, entry.key, entry.enabled)
+        is MenuEntry.Choice -> listOf(entry.label, entry.selected, entry.enabled)
+        is MenuEntry.Submenu -> listOf(entry.label, entry.enabled, entriesShown(entry.entries))
+        MenuEntry.Separator -> entry
+    }
+}
+
+/**
+ * The label and the entries of the menu at [path] in [menus], the place of a menu and then of each submenu in it,
+ * or null for the menus' own list; null too where the menus have changed under the path.
+ */
+@Suppress("ReturnCount")
+fun shownAt(menus: List<Menu>, path: List<Int>): Pair<String, List<MenuEntry>>? {
+    val menu = path.firstOrNull()?.let(menus::getOrNull) ?: return null
+    var shown = menu.label to menu.entries
+    for (place in path.drop(1)) {
+        val submenu = shown.second.getOrNull(place) as? MenuEntry.Submenu ?: return null
+        shown = submenu.label to submenu.entries
+    }
+    return shown
+}
+
 /** What the panel's controls change, which the menus that hold them change too. */
 interface PanelActions {
     fun changeView(change: (View) -> View)
@@ -111,9 +142,16 @@ interface PanelActions {
 
 /**
  * What the panel shows, which its menus show too: [view], [camera], [language], a language tag or "" for the system's,
- * and whether the view is [recording], which locks what would change its size.
+ * and whether the view is [recording], which locks what would change its size;
+ * without [cameras], where nothing can show a camera, there is no camera to choose.
  */
-data class PanelShown(val view: View, val camera: CameraChoice, val language: String, val recording: Boolean = false)
+data class PanelShown(
+    val view: View,
+    val camera: CameraChoice,
+    val language: String,
+    val recording: Boolean = false,
+    val cameras: Boolean = true,
+)
 
 /** The shares a menu offers of a slider in percent, which still sets any other. */
 val MENU_PERCENTS = listOf(0, 25, 50, 75, 100)
@@ -136,8 +174,8 @@ private const val WHOLE = 100.0
 fun Texts.panelMenus(shown: PanelShown, actions: PanelActions, viewFirst: List<MenuEntry> = emptyList()): List<Menu> {
     val params = shown.view.params
     fun setParams(change: Params.() -> Params) = actions.changeView { it.copy(params = it.params.change()) }
-    return listOf(
-        Menu(get(Str.CAMERA), cameraEntries(shown.camera, shown.recording, actions)),
+    return listOfNotNull(
+        Menu(get(Str.CAMERA), cameraEntries(shown.camera, shown.recording, actions)).takeIf { shown.cameras },
         Menu(
             get(Str.SPECIES),
             Species.entries.map { species ->

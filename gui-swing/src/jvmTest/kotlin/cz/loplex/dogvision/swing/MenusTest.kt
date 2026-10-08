@@ -11,11 +11,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The menu bar lays out the menus' entries, each doing what it says, and is built again only when they change. */
+/** The menu bar lays out the menus' entries, each doing what it says. */
 class MenusTest {
     private val done = mutableListOf<String>()
 
@@ -67,11 +66,5 @@ class MenusTest {
         bar.getMenu(1).getItem(0).doClick()
         (bar.getMenu(1).getItem(1) as JMenu).getItem(1).doClick()
         assertEquals(listOf("open", "side by side false", "cat"), done)
-    }
-
-    @Test
-    fun theBarIsBuiltAgainOnlyWhenWhatItShowsChanges() {
-        assertEquals(shownOf(menus()), shownOf(menus()))
-        assertNotEquals(shownOf(menus()), shownOf(menus(checked = false)))
     }
 }
