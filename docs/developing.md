@@ -285,10 +285,13 @@ The test classes' comments say what each of them holds.
   within 2 in each channel; the captions are left out, as fonts differ between systems.
 - **`./gradlew :cli:renderFigures` renders the figures again**, from the apple photo beside them;
   [`Figures.kt`](../cli/src/jvmTest/kotlin/cz/loplex/dogvision/cli/Figures.kt) says what each shows.
-- **The screenshots are not checked.**\
-  `android.png`, `web.png`, `window.png` and `window-swing.png` show the programs as they were when taken,
-  with the apple photo open and in English:
-  the app on a phone, the page in headless Chrome, and the windows under Xvfb at 1400 x 820.
+- **The screenshots are not checked, but [`tools/take_screenshots.sh`](../tools/take_screenshots.sh) takes them again**,
+  each in English with the apple photo open:
+  `window.png` and `window-swing.png` under Xvfb at 1400 x 820, `web.png` in headless Chrome at the same size,
+  and `android.png` on the device adb sees, by `DocsScreenshotTest` in `:android:connectedDebugAndroidTest`,
+  which writes what the app draws between the system's bars, scaled to 580 wide.\
+  The documents' `android.png` comes from an emulator with Android 17 and a screen of 1080 x 2400 at 420 dpi;
+  the windows' fonts and widgets are the machine's, so their pixels differ between machines.
 
 ### The Kotlin style is ktlint's
 

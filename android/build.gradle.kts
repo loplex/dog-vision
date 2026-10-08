@@ -52,9 +52,35 @@ val writeAppName = tasks.register<WriteAppName>("writeAppName") {
     output = layout.buildDirectory.dir("generated/appName")
 }
 
+/** Copies one file into a folder of its own, to be a generated source folder of a variant. */
+abstract class CopyFile : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract val source: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val directory = output.get().asFile
+        directory.deleteRecursively()
+        directory.mkdirs()
+        val file = source.get().asFile
+        file.copyTo(directory.resolve(file.name))
+    }
+}
+
+val copyDocsPhoto = tasks.register<CopyFile>("copyDocsPhoto") {
+    description = "Copies the documents' apple photo into the instrumented tests' assets, for DocsScreenshotTest."
+    source = rootProject.file("docs/images/shiny-red-apples.jpg")
+    output = layout.buildDirectory.dir("generated/docsPhoto")
+}
+
 androidComponents {
     onVariants { variant ->
         variant.sources.res?.addGeneratedSourceDirectory(writeAppName, WriteAppName::output)
+        variant.androidTest?.sources?.assets?.addGeneratedSourceDirectory(copyDocsPhoto, CopyFile::output)
     }
 }
 
