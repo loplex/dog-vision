@@ -577,6 +577,10 @@ class LiveSessionTest {
         assertEquals(1 to 1, opened to quit)
         assertTrue(menus().press(MenuKey.CONTROLS))
         assertFalse(session.state.value.panelShown)
+        assertTrue(menus().press(MenuKey.MENU_BAR))
+        assertFalse(session.state.value.menuBarShown)
+        val view = menus().single { it.label == "View" }.entries
+        assertEquals(listOf("Controls", "Menu bar"), view.take(2).map { (it as MenuEntry.Check).label })
         assertTrue(menus().press(MenuKey.SIDE_BY_SIDE))
         assertFalse(session.state.value.view.sideBySide)
         val camera = menus().first().entries.filterIsInstance<MenuEntry.Action>().single { it.label == "Camera" }
@@ -629,6 +633,32 @@ class LiveSessionTest {
         assertEquals(Settings(chosen), readSettings(settings))
         assertEquals("Snapshots and recordings go to $chosen", session.state.value.status?.invoke(Texts.of("en")))
         assertEquals(chosen, session().state.value.outputDir)
+    }
+
+    @Test
+    fun theMenuBarIsShownUntilToggledAndStaysHiddenForTheNextRun() {
+        val texts = Texts.of("en")
+        val session = session()
+        assertTrue(session.state.value.menuBarShown)
+        session.toggleMenuBar()
+        assertFalse(session.state.value.menuBarShown)
+        assertEquals("The menu bar is hidden; Ctrl+M shows it again", session.state.value.status?.invoke(texts))
+        assertFalse(readSettings(settings).menuBarShown)
+        assertFalse(session().state.value.menuBarShown)
+        session.toggleMenuBar()
+        assertTrue(session.state.value.menuBarShown)
+        assertEquals(null, session.state.value.status)
+        assertTrue(session().state.value.menuBarShown)
+    }
+
+    @Test
+    fun aMenuBarHiddenButNotSavedSaysSoAndIsHiddenStill() {
+        File(directory, "config").writeText("a file where the folder should be")
+        val session = session()
+        session.toggleMenuBar()
+        assertFalse(session.state.value.menuBarShown)
+        val status = session.state.value.status?.invoke(Texts.of("en")).orEmpty()
+        assertTrue(status.startsWith("Cannot save the settings: "), status)
     }
 
     @Test

@@ -14,9 +14,14 @@ import java.nio.file.StandardCopyOption
 /**
  * What the windows keep from one run to the next, in [settingsFile]:
  * [outputDir], where snapshots and recordings go, null for [picturesFolder],
- * and [convertToOutputDir], whether a converted file goes there too, in place of next to its original.
+ * [convertToOutputDir], whether a converted file goes there too, in place of next to its original,
+ * and [menuBarShown], whether the window shows its menu bar.
  */
-data class Settings(val outputDir: File? = null, val convertToOutputDir: Boolean = false)
+data class Settings(
+    val outputDir: File? = null,
+    val convertToOutputDir: Boolean = false,
+    val menuBarShown: Boolean = true,
+)
 
 /**
  * settings.json in the folder each system keeps a program's settings in: dog-vision in %APPDATA% on Windows,
@@ -43,7 +48,8 @@ internal fun configHome(environment: Map<String, String>, home: String): File =
  * The settings [file] holds, and the defaults for what it does not:
  * a file that is missing, cannot be read or is no JSON object gives them all;
  * an output folder that is no string, or an empty one, is none;
- * and a converted file goes to the output folder only where `convert_to_output_dir` is true.
+ * a converted file goes to the output folder only where `convert_to_output_dir` is true;
+ * and the menu bar is hidden only where `menu_bar_shown` is false.
  */
 fun readSettings(file: File): Settings {
     val json = try {
@@ -55,7 +61,8 @@ fun readSettings(file: File): Settings {
     } ?: return Settings()
     val outputDir = (json[OUTPUT_DIR] as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { it.isNotEmpty() }
     val convert = (json[CONVERT_TO_OUTPUT_DIR] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull == true
-    return Settings(outputDir?.let(::File), convert)
+    val menuBar = (json[MENU_BAR_SHOWN] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull != false
+    return Settings(outputDir?.let(::File), convert, menuBar)
 }
 
 /**
@@ -75,6 +82,7 @@ fun writeSettings(file: File, settings: Settings) {
         kept.orEmpty() + mapOf(
             OUTPUT_DIR to (settings.outputDir?.path?.let(::JsonPrimitive) ?: JsonNull),
             CONVERT_TO_OUTPUT_DIR to JsonPrimitive(settings.convertToOutputDir),
+            MENU_BAR_SHOWN to JsonPrimitive(settings.menuBarShown),
         )
     val folder = file.absoluteFile.parentFile
     if (!folder.isDirectory && !folder.mkdirs()) throw IOException("Cannot make $folder")
@@ -89,5 +97,6 @@ fun writeSettings(file: File, settings: Settings) {
 
 private const val OUTPUT_DIR = "output_dir"
 private const val CONVERT_TO_OUTPUT_DIR = "convert_to_output_dir"
+private const val MENU_BAR_SHOWN = "menu_bar_shown"
 
 private val PRETTY = Json { prettyPrint = true }

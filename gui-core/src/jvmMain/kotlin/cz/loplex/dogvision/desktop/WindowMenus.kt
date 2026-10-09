@@ -11,7 +11,7 @@ import cz.loplex.dogvision.texts.panelMenus
  * A window's menus, worded in [state]'s texts: File, which opens a file through [open],
  * shows the camera, saves a snapshot, records, converts the file shown,
  * picks the output folder through [chooseOutputDir], says where a converted file goes and quits through [quit],
- * then everything the panel holds, the controls' own toggle at the top of View.\
+ * then everything the panel holds, the toggles of the controls and of the menu bar at the top of View.\
  * While recording, what would change the video's size is disabled.\
  * A window lays them out, and its keys press them.
  */
@@ -52,6 +52,7 @@ fun LiveSession<*>.menus(
         ),
     )
     val controls = MenuEntry.Check(texts.get(Str.CONTROLS), state.panelShown, MenuKey.CONTROLS) { togglePanel() }
+    val menuBar = MenuEntry.Check(texts.get(Str.MENU_BAR), state.menuBarShown, MenuKey.MENU_BAR) { toggleMenuBar() }
     val shown = PanelShown(state.view, state.camera, state.language, state.recording)
-    return listOf(file) + texts.panelMenus(shown, this, listOf(controls))
+    return listOf(file) + texts.panelMenus(shown, this, listOf(controls, menuBar))
 }

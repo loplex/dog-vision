@@ -8,6 +8,7 @@ import javax.swing.JCheckBoxMenuItem
 import javax.swing.JMenu
 import javax.swing.JMenuBar
 import javax.swing.JMenuItem
+import javax.swing.JPopupMenu
 import javax.swing.JRadioButtonMenuItem
 import javax.swing.KeyStroke
 
@@ -17,6 +18,11 @@ import javax.swing.KeyStroke
  * as Swing gives a menu bar a key only when nothing else in the window took it.
  */
 internal fun menuBar(menus: List<Menu>): JMenuBar = JMenuBar().apply {
+    for ((label, entries) in menus) add(JMenu(label).apply { addEntries(entries) })
+}
+
+/** [menus] as a list that pops up, each of them a submenu of it, as the menu button at the images' edge shows them. */
+internal fun popupMenu(menus: List<Menu>): JPopupMenu = JPopupMenu().apply {
     for ((label, entries) in menus) add(JMenu(label).apply { addEntries(entries) })
 }
 

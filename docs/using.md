@@ -297,6 +297,14 @@ It runs on Linux and Windows on x86-64.
 - **The panel's last section, *The model and its checks*, shows what `--info` prints**
   for the species and the settings shown, as they change; it starts closed, and its text can be selected.
 - **F9 or the arrow at the images' edge hides the controls**, and the images take their room; the same again shows them.
+- **Ctrl+M or *View* → *Menu bar* hides the menu bar**,
+  and the window starts without it from then on, until Ctrl+M shows it again.
+- **While the menu bar is hidden, three dots under that arrow drop the menus down**:
+  in the Swing window each a submenu of the list,
+  and in the Compose window a menu chosen shows its entries in the list's place,
+  under a row back up, as the app's menu does.
+- **The pointer resting at the window's top edge for a moment lays the menu bar over the images**,
+  as it does past the edge on the title bar, until the pointer leaves it or a menu of it closes.
 - **Ctrl+Q closes it**, but for while a list is dropped down, which then takes the key.
 - **Escape closes a list dropped down or a menu open, and not the window.**
 - **A menu bar holds what the panel holds**: *File* holds the window's commands,
@@ -304,10 +312,11 @@ It runs on Linux and Windows on x86-64.
   and *Camera*, *Species*, *Simulation*, *Acuity*, *View* and *Language* hold the panel's controls.
 - **A slider is a menu of fixed values**: 0, 25, 50, 75 and 100 % for the adaptation and the strength,
   and 10°, 30°, 60°, 90° and 120° for the angle the image spans; the panel's slider still sets any.
-- **Ctrl+M turns side by side on or off, Ctrl+D the map of differences, and Ctrl+0 resets**, as Ctrl+0 resets a zoom;
+- **Ctrl+B turns side by side on or off, Ctrl+D the map of differences, and Ctrl+0 resets**, as Ctrl+0 resets a zoom;
   the menus show each key beside its entry, and a key does nothing while its entry is disabled.
 - **The keys follow the desktop's conventions**: Ctrl+O to open, Ctrl+Q to quit,
-  and F9 for the controls at the side, as KDE's programs show and hide their side panel.
+  F9 for the controls at the side, as KDE's programs show and hide their side panel,
+  and Ctrl+M for the menu bar, as they show and hide theirs.
 - **Ctrl+S or *File* → *Save snapshot* saves the view as a PNG**: its images,
   side by side or one above another as the window shows them, without the captions, at the size they are composed at:
   the photo's, the video's or the camera's, scaled down to 1280 pixels on its longest side.\

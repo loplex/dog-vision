@@ -14,7 +14,6 @@ import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.press
-import cz.loplex.dogvision.texts.shownOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +35,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import javax.swing.AbstractAction
 import javax.swing.BorderFactory
+import javax.swing.Box
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -60,6 +60,7 @@ fun showWindow(arguments: WindowArguments): Int {
 }
 
 /** Opens the window, on the event thread; [onClosed] is told once it is closed and the session with it. */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     if (systemPrefersDark()) FlatDarkLaf.setup() else FlatLightLaf.setup()
     smoothTextAtEverySize()
@@ -89,9 +90,19 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
         putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON)
         addActionListener { session.togglePanel() }
     }
+    val menuButton = JButton(ShapeIcon(ShapeIcon.MORE)).apply {
+        putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON)
+        addActionListener { popupMenu(menuBar.menus).show(this, 0, height) }
+    }
     val edge = JPanel(BorderLayout()).apply {
         border = BorderFactory.createEmptyBorder(UIScale.scale(8), 0, 0, 0)
-        add(panelToggle, BorderLayout.NORTH)
+        add(
+            Box.createVerticalBox().apply {
+                add(panelToggle)
+                add(menuButton)
+            },
+            BorderLayout.NORTH,
+        )
     }
     val east = JPanel(BorderLayout()).apply {
         add(edge, BorderLayout.WEST)
@@ -119,6 +130,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
                 },
                 quit = frame::dispose,
             ),
+            inFrame = state.menuBarShown,
         )
         frame.title = state.texts.get(Str.APP_NAME)
         open.text = state.texts.get(Str.OPEN_MEDIA)
@@ -127,6 +139,9 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
         panelToggle.icon = ShapeIcon(ShapeIcon.CHEVRON, if (state.panelShown) -90.0 else 90.0)
         panelToggle.toolTipText = toggleText
         panelToggle.accessibleContext.accessibleName = toggleText
+        menuButton.isVisible = !state.menuBarShown
+        menuButton.toolTipText = state.texts.get(Str.MENU)
+        menuButton.accessibleContext.accessibleName = menuButton.toolTipText
         if (column.isVisible != state.panelShown) {
             column.isVisible = state.panelShown
             east.revalidate()
@@ -147,6 +162,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
         object : WindowAdapter() {
             override fun windowClosed(event: WindowEvent) {
                 scope.cancel()
+                menuBar.close()
                 session.close()
                 onClosed()
             }
@@ -170,23 +186,6 @@ private class StatusBar :
         conversion.text = state.conversionStatus?.invoke(state.texts).orEmpty()
         recording.text = state.recordingStatus?.invoke(state.texts).orEmpty()
         status.text = state.status?.invoke(state.texts).orEmpty()
-    }
-}
-
-/** The menu bar of [frame], built again only when what its menus show changes, which would close a menu open. */
-private class MenuBarOf(private val frame: JFrame) {
-    /** The menus shown last, which the window's keys press. */
-    var menus = emptyList<Menu>()
-        private set
-    private var shown: List<Any>? = null
-
-    fun show(menus: List<Menu>) {
-        this.menus = menus
-        val now = shownOf(menus)
-        if (now == shown) return
-        shown = now
-        frame.jMenuBar = menuBar(menus)
-        frame.rootPane.revalidate()
     }
 }
 

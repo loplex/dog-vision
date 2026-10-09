@@ -103,6 +103,8 @@
     <string name="hide_panel">Skrýt ovládání (F9)</string>
     <string name="show_panel">Zobrazit ovládání (F9)</string>
     <string name="controls">Ovládání</string>
+    <string name="menu_bar">Panel nabídky</string>
+    <string name="menu_bar_hidden">Panel nabídky je skrytý, Ctrl+M ho zase zobrazí</string>
     <string name="open_media_menu">Otevřít fotku nebo video…</string>
     <string name="menu_file">Soubor</string>
     <string name="quit">Ukončit</string>

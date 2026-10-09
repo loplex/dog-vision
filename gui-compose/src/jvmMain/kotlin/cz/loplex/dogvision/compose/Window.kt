@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -73,6 +74,7 @@ import cz.loplex.dogvision.desktop.Source
 import cz.loplex.dogvision.desktop.WindowArguments
 import cz.loplex.dogvision.desktop.menus
 import cz.loplex.dogvision.desktop.windowIcon
+import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press
@@ -80,6 +82,7 @@ import cz.loplex.dogvision.ui.Controls
 import cz.loplex.dogvision.ui.EXPAND_ICON
 import cz.loplex.dogvision.ui.LocalOpenLists
 import cz.loplex.dogvision.ui.LocalTexts
+import cz.loplex.dogvision.ui.MenuButton
 import cz.loplex.dogvision.ui.OpenLists
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -98,7 +101,7 @@ private val GAP = 6.dp
  * or the camera --camera names; returns once the window is closed.\
  * Its menus hold what the panel holds, and their keys press them:
  * Ctrl+O opens another file from the system's dialog, F9 or the button at the images' edge hides the controls,
- * and Ctrl+Q closes it; a file dropped onto the window opens too.\
+ * Ctrl+M hides the menu bar, and Ctrl+Q closes it; a file dropped onto the window opens too.\
  * What it shows is a [LiveSession]'s, which the window only lays out.
  */
 @Suppress("SameReturnValue")
@@ -135,10 +138,10 @@ fun showWindow(arguments: WindowArguments): Int {
                 },
             ) {
                 dialogs.parent = window
-                WindowMenuBar(menus)
+                WindowMenuBar(menus, inFrame = state.menuBarShown)
                 MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                     Surface {
-                        Screen(session, state, onOpen = { open() })
+                        Screen(session, state, menus, onOpen = { open() })
                     }
                 }
             }
@@ -167,9 +170,17 @@ private class Dialogs {
     }
 }
 
-/** The images and the controls, which a file dropped anywhere on them opens in place of what [state] shows. */
+/**
+ * The images and the controls, which a file dropped anywhere on them opens in place of what [state] shows,
+ * with [menus] behind a button at the images' edge while the menu bar is hidden.
+ */
 @Composable
-private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, onOpen: () -> Unit) {
+private fun Screen(
+    session: LiveSession<ImageBitmap>,
+    state: LiveSession.State,
+    menus: List<Menu>,
+    onOpen: () -> Unit,
+) {
     val picture by session.picture.collectAsState()
     val drop = remember(session) {
         object : DragAndDropTarget {
@@ -185,17 +196,21 @@ private fun Screen(session: LiveSession<ImageBitmap>, state: LiveSession.State, 
             Modifier.weight(1f)
                 .dragAndDropTarget(shouldStartDragAndDrop = { droppedFiles(it).isNotEmpty() }, target = drop),
         ) {
-            Images(session, state, onOpen, picture)
+            Images(session, state, menus, onOpen, picture)
         }
         StatusBar(state)
     }
 }
 
-/** The images, the button at their edge and the controls, as [state] has them. */
+/**
+ * The images, the buttons at their edge and the controls, as [state] has them:
+ * the menu button, which drops [menus] down, only while the menu bar is hidden.
+ */
 @Composable
 private fun RowScope.Images(
     session: LiveSession<ImageBitmap>,
     state: LiveSession.State,
+    menus: List<Menu>,
     onOpen: () -> Unit,
     picture: Picture<ImageBitmap>?,
 ) {
@@ -208,7 +223,10 @@ private fun RowScope.Images(
         session::downloadFfmpeg,
         session::installFfmpeg,
     )
-    PanelToggle(state.panelShown, session::togglePanel)
+    Column {
+        PanelToggle(state.panelShown, session::togglePanel)
+        if (!state.menuBarShown) MenuButton(menus, LocalContentColor.current, keys = true)
+    }
     if (state.panelShown) {
         Column(Modifier.width(380.dp).fillMaxHeight()) {
             Row(

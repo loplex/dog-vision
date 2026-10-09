@@ -31,11 +31,14 @@ enum class MenuKey(val key: String, val withCtrl: Boolean = true) {
     /** The controls at the side, as KDE's programs show and hide their side panel. */
     CONTROLS("F9", withCtrl = false),
 
+    /** The menu bar, as KDE's programs show and hide theirs. */
+    MENU_BAR("M"),
+
     /** Back to the view the window started with, as Ctrl+0 resets a zoom. */
     RESET("0"),
 
-    /** Side by side, which has no convention. */
-    SIDE_BY_SIDE("M"),
+    /** Side by side, which has no convention: B for beside, as Ctrl+M is the menu bar's. */
+    SIDE_BY_SIDE("B"),
 
     /** The map of differences, which has no convention. */
     DIFFERENCE("D"),

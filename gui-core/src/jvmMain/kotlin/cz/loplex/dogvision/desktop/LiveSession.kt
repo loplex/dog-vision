@@ -108,6 +108,8 @@ class LiveSession<I>(
         val ffmpegFailure: Failure? = null,
         /** Whether the panel of controls is shown, or the images have the whole window, as F9 toggles it. */
         val panelShown: Boolean = true,
+        /** Whether the window shows its menu bar, as Ctrl+M toggles it, kept for the next run. */
+        val menuBarShown: Boolean = true,
         /** Where snapshots and recordings go. */
         val outputDir: File,
         /** What the window said it did last, worded when it is shown, in the language chosen then. */
@@ -165,6 +167,7 @@ class LiveSession<I>(
             wingetFound = wingetFound,
             outputDir = (arguments.outputDir ?: settings.outputDir ?: defaultOutputDir()).absoluteFile,
             convertToOutputDir = settings.convertToOutputDir,
+            menuBarShown = settings.menuBarShown,
         ),
     )
     val state: StateFlow<State> = mutableState.asStateFlow()
@@ -249,6 +252,23 @@ class LiveSession<I>(
 
     /** Hides the panel of controls if it is shown, and shows it if not, as F9 does. */
     fun togglePanel() = change { copy(panelShown = !panelShown) }
+
+    /**
+     * Hides the menu bar if it is shown, and shows it if not,
+     * as Ctrl+M does, and keeps that in settings.json for the next run;
+     * the status says how to show a bar hidden again, or that the settings could not be saved.
+     */
+    fun toggleMenuBar() {
+        val shown = !mutableState.value.menuBarShown
+        settings = settings.copy(menuBarShown = shown)
+        val failure = saveSettings()
+        val status: ((Texts) -> String)? = when {
+            failure != null -> { texts -> texts.get(Str.SETTINGS_UNSAVED, failure) }
+            shown -> null
+            else -> { texts -> texts.get(Str.MENU_BAR_HIDDEN) }
+        }
+        change { copy(menuBarShown = shown, status = status) }
+    }
 
     /**
      * Saves the images of the view shown as a PNG in the output folder, put together as the window shows them,

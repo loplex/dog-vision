@@ -335,6 +335,13 @@ internal class ShapeIcon(private val shape: Shape, private val degrees: Double =
             closePath()
         }
 
+        /** Three dots one above another, as ui's MORE_ICON: a menu of everything the window does. */
+        val MORE: Shape = Path2D.Double().apply {
+            append(Ellipse2D.Double(10.0, 4.0, 4.0, 4.0), false)
+            append(Ellipse2D.Double(10.0, 10.0, 4.0, 4.0), false)
+            append(Ellipse2D.Double(10.0, 16.0, 4.0, 4.0), false)
+        }
+
         /** An i in a circle, as ui's INFO_ICON: a ring from 8 to 10 about the centre, a dot and a bar. */
         val INFO: Shape = Path2D.Double(Path2D.WIND_EVEN_ODD).apply {
             append(Ellipse2D.Double(2.0, 2.0, 20.0, 20.0), false)

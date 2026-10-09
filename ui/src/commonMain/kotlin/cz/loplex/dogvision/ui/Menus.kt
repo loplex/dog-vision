@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.shownAt
 
@@ -32,42 +33,54 @@ import cz.loplex.dogvision.texts.shownAt
  * A button of three dots, tinted [tint], that drops [menus] down as one list:
  * their names first, and in place of the list, the entries of a menu or a submenu chosen, under a row back up.\
  * An entry chosen does what it does and closes the list, as Material's menus do;
- * Material's menu has no submenus of its own that open beside it.
+ * Material's menu has no submenus of its own that open beside it.\
+ * Each entry's key is shown beside it where [keys], as a desktop window's menus show them.
  */
 @Composable
-@Suppress("MagicNumber")
-fun MenuButton(menus: List<Menu>, tint: Color, modifier: Modifier = Modifier) {
+fun MenuButton(menus: List<Menu>, tint: Color, modifier: Modifier = Modifier, keys: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
-    // The menu shown, as the place of each menu and submenu on the way to it.
-    var path by remember { mutableStateOf(emptyList<Int>()) }
-    fun close() {
-        expanded = false
-        path = emptyList()
-    }
     Box(modifier) {
         IconButton(onClick = { expanded = true }) {
             Icon(MORE_ICON, contentDescription = text(Str.MENU), tint = tint)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = ::close) {
-            val shown = shownAt(menus, path)
-            if (shown == null) {
-                menus.forEachIndexed { place, menu ->
-                    DropdownMenuItem(
-                        text = { Text(menu.label) },
-                        trailingIcon = { Icon(EXPAND_ICON, contentDescription = null, Modifier.rotate(-90f)) },
-                        onClick = { path = listOf(place) },
-                    )
-                }
-            } else {
+        MenuList(menus, expanded, keys, onClose = { expanded = false })
+    }
+}
+
+/**
+ * [menus] dropped down while [expanded]: their names,
+ * and in place of them, the entries of a menu or a submenu chosen, as [shownAt] finds it, under a row back up.\
+ * An entry's key is shown beside it where [keys].\
+ * [onClose] is told when it closes, as an entry chosen closes it.
+ */
+@Composable
+@Suppress("MagicNumber")
+private fun MenuList(menus: List<Menu>, expanded: Boolean, keys: Boolean, onClose: () -> Unit) {
+    // The menu shown, as the place of each menu and submenu on the way to it.
+    var path by remember { mutableStateOf(emptyList<Int>()) }
+    fun close() {
+        path = emptyList()
+        onClose()
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = ::close) {
+        val shown = shownAt(menus, path)
+        if (shown == null) {
+            menus.forEachIndexed { place, menu ->
                 DropdownMenuItem(
-                    text = { Text(shown.first) },
-                    leadingIcon = { Icon(EXPAND_ICON, contentDescription = text(Str.BACK), Modifier.rotate(90f)) },
-                    onClick = { path = path.dropLast(1) },
+                    text = { Text(menu.label) },
+                    trailingIcon = { Icon(EXPAND_ICON, contentDescription = null, Modifier.rotate(-90f)) },
+                    onClick = { path = listOf(place) },
                 )
-                HorizontalDivider()
-                shown.second.forEachIndexed { place, entry ->
-                    Entry(entry, onClose = ::close, onOpen = { path = path + place })
-                }
+            }
+        } else {
+            DropdownMenuItem(
+                text = { Text(shown.first) },
+                leadingIcon = { Icon(EXPAND_ICON, contentDescription = text(Str.BACK), Modifier.rotate(90f)) },
+                onClick = { path = path.dropLast(1) },
+            )
+            HorizontalDivider()
+            shown.second.forEachIndexed { place, entry ->
+                Entry(entry, keys, onClose = ::close, onOpen = { path = path + place })
             }
         }
     }
@@ -75,10 +88,11 @@ fun MenuButton(menus: List<Menu>, tint: Color, modifier: Modifier = Modifier) {
 
 @Composable
 @Suppress("MagicNumber")
-private fun Entry(entry: MenuEntry, onClose: () -> Unit, onOpen: () -> Unit) {
+private fun Entry(entry: MenuEntry, keys: Boolean, onClose: () -> Unit, onOpen: () -> Unit) {
     when (entry) {
         is MenuEntry.Action -> DropdownMenuItem(
             text = { Text(entry.label) },
+            trailingIcon = keyOf(entry.key, keys),
             enabled = entry.enabled,
             onClick = {
                 onClose()
@@ -94,6 +108,7 @@ private fun Entry(entry: MenuEntry, onClose: () -> Unit, onOpen: () -> Unit) {
                 toggleableState = ToggleableState(entry.checked)
             },
             leadingIcon = { Checkbox(entry.checked, onCheckedChange = null, enabled = entry.enabled) },
+            trailingIcon = keyOf(entry.key, keys),
             enabled = entry.enabled,
             onClick = {
                 onClose()
@@ -125,3 +140,7 @@ private fun Entry(entry: MenuEntry, onClose: () -> Unit, onOpen: () -> Unit) {
         MenuEntry.Separator -> HorizontalDivider()
     }
 }
+
+/** The [key] shown beside an entry where [keys], as Ctrl+M, or nothing. */
+private fun keyOf(key: MenuKey?, keys: Boolean): (@Composable () -> Unit)? =
+    key?.takeIf { keys }?.let { { Text(if (it.withCtrl) "Ctrl+${it.key}" else it.key) } }

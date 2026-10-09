@@ -14,11 +14,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuEntry
+import cz.loplex.dogvision.texts.MenuKey
 import cz.loplex.dogvision.texts.Texts
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** The app's menu drops the menus down as one list, a menu's entries in its place, with a row back up. */
+/**
+ * The menu drops the menus down as one list, a menu's entries in its place, with a row back up,
+ * and the entries' keys beside them only where asked for, as the Compose window asks.
+ */
 @OptIn(ExperimentalTestApi::class)
 class MenusTest {
     private val done = mutableListOf<String>()
@@ -34,7 +38,7 @@ class MenusTest {
         Menu(
             "View",
             listOf(
-                MenuEntry.Check("Side by side", true) { done += "side by side $it" },
+                MenuEntry.Check("Side by side", true, MenuKey.SIDE_BY_SIDE) { done += "side by side $it" },
                 MenuEntry.Submenu(
                     "Compared with",
                     listOf(
@@ -46,9 +50,9 @@ class MenusTest {
         ),
     )
 
-    private fun ComposeUiTest.show() = setContent {
+    private fun ComposeUiTest.show(keys: Boolean = false) = setContent {
         CompositionLocalProvider(LocalTexts provides Texts.of("en")) {
-            MaterialTheme { MenuButton(menus, Color.Black) }
+            MaterialTheme { MenuButton(menus, Color.Black, keys = keys) }
         }
     }
 
@@ -75,6 +79,18 @@ class MenusTest {
         onNodeWithText("Compared with").performClick()
         onNodeWithText("dog").assertIsSelected()
         onNodeWithText("cat").assertIsNotSelected()
+    }
+
+    @Test
+    fun theEntriesKeysAreShownBesideThemOnlyWhereAskedFor() {
+        for (keys in listOf(false, true)) {
+            runUiTest {
+                show(keys)
+                onNodeWithContentDescription("Menu").performClick()
+                onNodeWithText("View").performClick()
+                if (keys) onNodeWithText("Ctrl+B").assertExists() else onNodeWithText("Ctrl+B").assertDoesNotExist()
+            }
+        }
     }
 
     @Test
