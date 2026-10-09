@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dog Vision</string>
+    <!-- What a desktop's menu shows beside the windows' and the page's name,
+         and the words it finds them by besides it, each ended by a semicolon -->
     <string name="desktop_comment">How a dog or another animal sees a photo, a video or the camera</string>
+    <string name="desktop_keywords">dog;cat;animal;colour vision;color vision;colour blindness;dichromacy;camera;filter;</string>
 
     <!-- Captions under the images -->
     <string name="original">original</string>

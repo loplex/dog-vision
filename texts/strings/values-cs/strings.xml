@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Jak vidí pes</string>
     <string name="desktop_comment">Simuluje, jak zvíře vidí fotku, video nebo obraz z kamery</string>
+    <string name="desktop_keywords">pes;kočka;zvíře;barevné vidění;barvoslepost;dichromazie;kamera;filtr;</string>
     <string name="original">originál</string>
     <string name="species_label">%1$s (%2$s)</string>
     <string name="difference_caption">červeně: znatelně odlišné (%1$s pixelů)</string>

@@ -20,7 +20,8 @@ import javax.xml.parsers.DocumentBuilderFactory
  * `Name=` from values/strings.xml, and `Name[cs]=` and the like from values-cs/strings.xml,
  * so that the menu names the application in the system's language, as the window's title does,
  * each with [nameSuffix] after it.\
- * Its `Comment=`, which the menu shows beside the name, comes from [commentString] in each language alike.
+ * Its `Comment=`, which the menu shows beside the name, comes from [commentString],
+ * and its `Keywords=`, the words the menu finds it by besides its name, from [keywordsString], in each language alike.
  */
 abstract class DesktopEntry : DefaultTask() {
     /** Android's strings.xml files, as texts has them: values/ in English, values-<language>/ in each other one. */
@@ -37,6 +38,10 @@ abstract class DesktopEntry : DefaultTask() {
      */
     @get:Input
     abstract val nameSuffix: Property<String>
+
+    /** The string the keywords are, separated and ended by semicolons, such as desktop_keywords. */
+    @get:Input
+    abstract val keywordsString: Property<String>
 
     /** The string the comment is, such as desktop_comment. */
     @get:Input
@@ -73,24 +78,29 @@ abstract class DesktopEntry : DefaultTask() {
     fun write() {
         val folders = strings.get().asFile.listFiles { file -> file.isDirectory && file.name.startsWith("values") }
             .orEmpty().sortedBy { it.name }
-        val names = mutableListOf<String>()
-        val comments = mutableListOf<String>()
-        for (folder in folders) {
-            val file = folder.resolve("strings.xml")
-            // values-pt-rBR is pt_BR in a desktop entry's key.
-            val language = folder.name.removePrefix("values").removePrefix("-").replace("-r", "_")
-            val key = if (language.isEmpty()) "" else "[$language]"
-            androidString(file, nameString.get())?.let { names += "Name$key=$it${nameSuffix.get()}" }
-            androidString(file, commentString.get())?.let { comments += "Comment$key=$it" }
+
+        /** The key [key] in each language of [string], with [suffix] after it; in English at least. */
+        fun localized(key: String, string: String, suffix: String = ""): List<String> {
+            val lines = folders.mapNotNull { folder ->
+                val value = androidString(folder.resolve("strings.xml"), string)?.plus(suffix) ?: return@mapNotNull null
+                // values-pt-rBR is pt_BR in a desktop entry's key.
+                val language = folder.name.removePrefix("values").removePrefix("-").replace("-r", "_")
+                if (language.isEmpty()) "$key=$value" else "$key[$language]=$value"
+            }
+            check(lines.any { it.startsWith("$key=") }) { "values/strings.xml has no $string" }
+            return lines
         }
-        check(names.any { it.startsWith("Name=") }) { "values/strings.xml has no ${nameString.get()}" }
-        check(comments.any { it.startsWith("Comment=") }) { "values/strings.xml has no ${commentString.get()}" }
-        val lines = listOf("[Desktop Entry]", "Type=Application") + names + comments + listOf(
-            "Exec=${exec.get()}",
-            "Icon=${icon.get()}",
-            "Terminal=false",
-            "Categories=${categories.get().joinToString("") { "$it;" }}",
-        ) + listOfNotNull(startupWmClass.orNull?.let { "StartupWMClass=$it" })
+        val lines = listOf("[Desktop Entry]", "Type=Application") +
+            localized("Name", nameString.get(), nameSuffix.get()) +
+            localized("Comment", commentString.get()) +
+            listOf(
+                "Exec=${exec.get()}",
+                "Icon=${icon.get()}",
+                "Terminal=false",
+                "Categories=${categories.get().joinToString("") { "$it;" }}",
+            ) +
+            localized("Keywords", keywordsString.get()) +
+            listOfNotNull(startupWmClass.orNull?.let { "StartupWMClass=$it" })
         entry.get().asFile.writeText(lines.joinToString("\n", postfix = "\n"))
     }
 

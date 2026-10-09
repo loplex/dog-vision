@@ -469,6 +469,7 @@ val webDesktopEntry = tasks.register<DesktopEntry>("dogVisionWebDesktopEntry") {
     strings = rootProject.layout.projectDirectory.dir("texts/strings")
     nameString = "app_name"
     nameSuffix = " (web)"
+    keywordsString = "desktop_keywords"
     commentString = "desktop_comment"
     exec = webPackage
     icon = webApplicationId

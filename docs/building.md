@@ -223,7 +223,9 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   - each window's menu entry, named in the system's language, and its icons in the hicolor theme:
     `cz.loplex.dogvision.compose.desktop` ("Dog Vision (Kotlin Compose)", "Jak vidí pes (Kotlin Compose)")
     and `cz.loplex.dogvision.swing.desktop` ("Dog Vision (Java Swing)", "Jak vidí pes (Java Swing)"),
-    in `/usr/share/applications`.
+    in `/usr/share/applications`;
+  - the menu finds each entry by its name and by the words of `desktop_keywords` in [`texts/strings`](../texts/strings),
+    "dog", "colour blindness" and the like, in the system's language as well.
 - **Each deb's `/usr/share/doc/<package>/copyright` is in Debian's machine-readable format**:
   - the project's own files under `GPL-3+`, whose text is Debian's `/usr/share/common-licenses/GPL-3`;
   - a paragraph for each JAR and native library the package holds that is not the project's own,
@@ -248,7 +250,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   - a command, `/usr/bin/dog-vision-web`, which opens that `index.html` in the system's browser through `xdg-open`,
     with a manual page of its own, [`dog-vision-web.1`](../packaging/man/dog-vision-web.1);
   - its menu entry, `cz.loplex.dogvision.web.desktop` ("Dog Vision (web)", "Jak vidí pes (web)"),
-    which runs that command, and its icons.
+    which runs that command and is found by the same words as the windows', and its icons.
 - **The script's source map is a package of its own, `dog-vision-web-sourcemap`**:
   `dog-vision.js.map` in `/usr/share/dog-vision-web`, beside the script of `dog-vision-web` or `dog-vision`,
   with which a browser's developer tools show the Kotlin sources.

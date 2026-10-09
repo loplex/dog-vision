@@ -103,6 +103,7 @@ fun Project.windowPackages(
         strings.set(rootProject.layout.projectDirectory.dir("texts/strings"))
         nameString.set("app_name")
         this.nameSuffix.set(nameSuffix)
+        keywordsString.set("desktop_keywords")
         commentString.set("desktop_comment")
         exec.set(packageName)
         icon.set(applicationId)
