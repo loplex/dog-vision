@@ -32,8 +32,8 @@ Building the programs is [Building it](building.md)'s.
 It holds:
 
 - the tasks the packages are made with, which a module takes by applying the plugin `cz.loplex.dogvision.packaging`;
-- [`windowPackages`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/WindowPackages.kt), which registers them for a window's deb and rpm, once for both windows;
-- [`glNatives` and `windowsRuntime`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/DesktopNatives.kt), the natives that `gui-core`'s tests and the windows run with;
+- [`windowPackages`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/linux/WindowPackages.kt), which registers them for a window's deb and rpm, once for both windows;
+- [`glNatives` and `windowsRuntime`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/jvm/DesktopNatives.kt), the natives that `gui-core`'s tests and the windows run with;
 - [`artifact()`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/Artifact.kt), which marks a task that makes an artifact, for `./gradlew packageAll` to run;
 - `cz.loplex.dogvision.ktlint` and `cz.loplex.dogvision.detekt`,
   which apply ktlint and detekt of the catalog's versions to each module that lists them;

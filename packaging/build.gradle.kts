@@ -1,29 +1,29 @@
 @file:Suppress("UnstableApiUsage")
 
-import cz.loplex.dogvision.packaging.APACHE_TEXT
-import cz.loplex.dogvision.packaging.DebDepends
-import cz.loplex.dogvision.packaging.DebPackage
-import cz.loplex.dogvision.packaging.DesktopEntry
-import cz.loplex.dogvision.packaging.JavaLauncher
-import cz.loplex.dogvision.packaging.ManPage
-import cz.loplex.dogvision.packaging.RpmLibraryRequires
-import cz.loplex.dogvision.packaging.RpmPackage
-import cz.loplex.dogvision.packaging.ThirdPartyPart
 import cz.loplex.dogvision.packaging.WEB_PAGE_USAGE
-import cz.loplex.dogvision.packaging.WINDOWS_LAUNCHER_USAGE
 import cz.loplex.dogvision.packaging.artifact
-import cz.loplex.dogvision.packaging.debianPackages
-import cz.loplex.dogvision.packaging.javaRuntimeNote
-import cz.loplex.dogvision.packaging.jvmRuntimeOf
+import cz.loplex.dogvision.packaging.jvm.jvmRuntimeOf
+import cz.loplex.dogvision.packaging.licenses.APACHE_TEXT
+import cz.loplex.dogvision.packaging.licenses.ThirdPartyPart
+import cz.loplex.dogvision.packaging.licenses.javaRuntimeNote
+import cz.loplex.dogvision.packaging.licenses.thirdPartyLicenses
+import cz.loplex.dogvision.packaging.linux.DebDepends
+import cz.loplex.dogvision.packaging.linux.DebPackage
+import cz.loplex.dogvision.packaging.linux.DesktopEntry
+import cz.loplex.dogvision.packaging.linux.JavaLauncher
+import cz.loplex.dogvision.packaging.linux.ManPage
+import cz.loplex.dogvision.packaging.linux.RpmLibraryRequires
+import cz.loplex.dogvision.packaging.linux.RpmPackage
+import cz.loplex.dogvision.packaging.linux.debianPackages
+import cz.loplex.dogvision.packaging.linux.windowDebDepends
+import cz.loplex.dogvision.packaging.linux.windowPackages
+import cz.loplex.dogvision.packaging.linux.windowRpmRequires
+import cz.loplex.dogvision.packaging.linux.windowTarGz
 import cz.loplex.dogvision.packaging.temurinRelease
-import cz.loplex.dogvision.packaging.thirdPartyLicenses
-import cz.loplex.dogvision.packaging.windowDebDepends
-import cz.loplex.dogvision.packaging.windowPackages
-import cz.loplex.dogvision.packaging.windowRpmRequires
-import cz.loplex.dogvision.packaging.windowTarGz
-import cz.loplex.dogvision.packaging.windowsAppImage
-import cz.loplex.dogvision.packaging.windowsMsi
-import cz.loplex.dogvision.packaging.windowsRuntimeImage
+import cz.loplex.dogvision.packaging.windows.WINDOWS_LAUNCHER_USAGE
+import cz.loplex.dogvision.packaging.windows.windowsAppImage
+import cz.loplex.dogvision.packaging.windows.windowsMsi
+import cz.loplex.dogvision.packaging.windows.windowsRuntimeImage
 
 // Packages made apart from the modules they hold:
 // - the deb and the rpm of the JARs the command line runs on, which both windows run on as well,

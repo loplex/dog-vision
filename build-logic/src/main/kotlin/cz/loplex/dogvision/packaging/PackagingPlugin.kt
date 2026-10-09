@@ -1,5 +1,7 @@
 package cz.loplex.dogvision.packaging
 
+import cz.loplex.dogvision.packaging.linux.DebPackage
+import cz.loplex.dogvision.packaging.linux.RpmPackage
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 

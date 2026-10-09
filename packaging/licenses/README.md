@@ -1,7 +1,7 @@
 # The licences of what the packages bundle
 
 The texts the packages carry beside the project's own licence, each word for word from its source.\
-[`ThirdParty.kt`](../../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/ThirdParty.kt) says which part of which package each is the licence of.
+[`ThirdParty.kt`](../../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/licenses/ThirdParty.kt) says which part of which package each is the licence of.
 
 A text is fetched again when its library changes version: skiko's Skia, LWJGL, ANGLE, webpack.\
 The versions are those the build bundled when the text was taken.

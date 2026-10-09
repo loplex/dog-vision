@@ -1,7 +1,7 @@
 import cz.loplex.dogvision.packaging.artifact
-import cz.loplex.dogvision.packaging.uberJar
-import cz.loplex.dogvision.packaging.uberJarLicences
-import cz.loplex.dogvision.packaging.windowsLauncher
+import cz.loplex.dogvision.packaging.jvm.uberJar
+import cz.loplex.dogvision.packaging.jvm.uberJarLicences
+import cz.loplex.dogvision.packaging.windows.windowsLauncher
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 

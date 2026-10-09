@@ -1,4 +1,4 @@
-import cz.loplex.dogvision.packaging.glNatives
+import cz.loplex.dogvision.packaging.jvm.glNatives
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // What a desktop window draws with, in neither Compose nor skiko: a photo, a video or the camera through ffmpeg,

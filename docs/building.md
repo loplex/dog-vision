@@ -139,7 +139,7 @@ pwsh tools/package_cli_zip_on_windows.ps1
 - **Each JAR holds everything the window needs**, the natives for its system on x86-64 included,
   and runs as `java -jar dog-vision-compose-linux-x64-0.1.0.jar` on a JDK 17 or newer, with the window's options.
 - **A file two of the merged JARs both hold has to be the same in each**, or the JAR's task fails and names the JARs:
-  the uber JARs, the command line's as well, are made by [`uberJar()`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/UberJar.kt), whose comment says what it leaves out instead.
+  the uber JARs, the command line's as well, are made by [`uberJar()`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/jvm/UberJar.kt), whose comment says what it leaves out instead.
 - **Each uber JAR has `META-INF/THIRD-PARTY-LICENSES.txt`**, the command line's too:
   every library it merges and what their natives hold, each with its licence,
   and every licence's full text, as the packages list them.
@@ -190,7 +190,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   Its jlink links the MSI's runtime as well, from Temurin's jmods for Windows,
   which Gradle downloads too, of that JDK's release, as its `release` file names it.\
   The feature release, 25, is `temurin` in [`libs.versions.toml`](../gradle/libs.versions.toml).\
-  Both tar.gzs come from [`AppImage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/AppImage.kt) in `build-logic`, which `packaging` runs for each window,
+  Both tar.gzs come from [`AppImage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/linux/AppImage.kt) in `build-logic`, which `packaging` runs for each window,
   as it takes both the window and the command line, whose launcher each tar.gz holds beside the window's.\
   The deb and the rpm take none, as they run on the system's Java.
 - **The tar.gz needs nothing more**, and neither do the JARs.
@@ -231,7 +231,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   - a paragraph for each JAR and native library the package holds that is not the project's own,
     with its holders and licences;
   - each library's licence as its POM names it, and what a native library holds besides its own code,
-    Skia and the libraries Skia builds in among them, from the table in [`ThirdParty.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/ThirdParty.kt);
+    Skia and the libraries Skia builds in among them, from the table in [`ThirdParty.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/licenses/ThirdParty.kt);
   - Apache-2.0's text is Debian's too;
     every other licence's text, which names its holder, comes from [`packaging/licenses`](../packaging/licenses).
 - **Each deb has `/usr/share/doc/<package>/changelog.gz`**, as Debian Policy asks of every package:
@@ -281,7 +281,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 - **Each launcher finds its Java** in `JAVA_HOME`, then on `PATH`,
   then the newest in `/usr/lib/jvm` and `/usr/lib64/jvm`, and says so where none is 17 or newer:
   the alternatives may point `java` at an older one on a machine that has a newer one as well.\
-  It is [`launcher.sh`](../build-logic/src/main/resources/cz/loplex/dogvision/packaging/launcher.sh), filled in by the build.
+  It is [`launcher.sh`](../build-logic/src/main/resources/cz/loplex/dogvision/packaging/linux/launcher.sh), filled in by the build.
 - **A window's launcher passes over a headless Java**, one without `lib/libawt_xawt.so`:
   where `dog-vision-cli` brought a headless Java and a window a full one of another version,
   `java` may be the headless one.
@@ -352,7 +352,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
   which LWJGL opens only once it runs and the window runs apart for a video or the camera:
   - the deb names packages as Ubuntu 20.04 names them,
     which later releases keep or provide, so that the deb is the same wherever it is built;
-    the table `debianPackages` in [`DebDepends.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/DebDepends.kt) names them, and the build fails on a library it lacks;
+    the table `debianPackages` in [`DebDepends.kt`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/linux/DebDepends.kt) names them, and the build fails on a library it lacks;
   - the rpm names libraries and a file (`libX11.so.6()(64bit)`, `libEGL.so.1()(64bit)`, `/usr/bin/ffmpeg` and the like),
     as Fedora and openSUSE name their packages differently.
 - **A font, for the rpm of `dog-vision-swing`**, `(dejavu-sans-fonts or dejavu-fonts)`:
@@ -371,7 +371,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 - **Nothing else, and no scripts**:
   the menu entry and the icons are files of the package, which the desktop finds by itself.
 
-The tasks that make them, [`DebPackage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/DebPackage.kt) and [`RpmPackage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/RpmPackage.kt), call `dpkg-deb` and `rpmbuild` themselves,
+The tasks that make them, [`DebPackage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/linux/DebPackage.kt) and [`RpmPackage`](../build-logic/src/main/kotlin/cz/loplex/dogvision/packaging/linux/RpmPackage.kt), call `dpkg-deb` and `rpmbuild` themselves,
 in [`build-logic`](../build-logic), as jpackage always puts a runtime into its packages.
 
 ### Trying the Linux packages
