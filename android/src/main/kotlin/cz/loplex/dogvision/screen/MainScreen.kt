@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.ui
+package cz.loplex.dogvision.screen
 
 import android.Manifest
 import android.content.Context
@@ -84,6 +84,10 @@ import cz.loplex.dogvision.texts.PanelShown
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.panelMenus
 import cz.loplex.dogvision.texts.switchKey
+import cz.loplex.dogvision.ui.Controls
+import cz.loplex.dogvision.ui.LocalTexts
+import cz.loplex.dogvision.ui.MenuButton
+import cz.loplex.dogvision.ui.text
 import cz.loplex.dogvision.video.VideoFeed
 
 private val CAPTION_HEIGHT = 40.dp

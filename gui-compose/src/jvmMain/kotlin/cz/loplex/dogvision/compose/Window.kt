@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.compose
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -64,6 +64,15 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import cz.loplex.dogvision.common.info
+import cz.loplex.dogvision.desktop.Area
+import cz.loplex.dogvision.desktop.Failure
+import cz.loplex.dogvision.desktop.LiveSession
+import cz.loplex.dogvision.desktop.OpenDialog
+import cz.loplex.dogvision.desktop.Picture
+import cz.loplex.dogvision.desktop.Source
+import cz.loplex.dogvision.desktop.WindowArguments
+import cz.loplex.dogvision.desktop.menus
+import cz.loplex.dogvision.desktop.windowIcon
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.press

@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.Key

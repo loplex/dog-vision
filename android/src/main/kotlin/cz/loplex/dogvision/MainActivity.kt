@@ -10,9 +10,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import cz.loplex.dogvision.screen.MainScreen
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.ui.LocalTexts
-import cz.loplex.dogvision.ui.MainScreen
 
 class MainActivity : AppCompatActivity() {
     private val model: MainViewModel by viewModels()

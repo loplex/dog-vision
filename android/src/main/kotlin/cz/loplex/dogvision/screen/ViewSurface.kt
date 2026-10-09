@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.ui
+package cz.loplex.dogvision.screen
 
 import android.opengl.EGLExt
 import android.opengl.GLSurfaceView

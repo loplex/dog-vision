@@ -1,5 +1,7 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.compose
 
+import cz.loplex.dogvision.desktop.runWindow
+import cz.loplex.dogvision.desktop.sayFromWindow
 import cz.loplex.dogvision.texts.systemTexts
 import kotlin.system.exitProcess
 

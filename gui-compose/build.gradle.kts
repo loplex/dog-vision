@@ -21,7 +21,7 @@ plugins {
 }
 
 /** The class whose main the window and its JARs start with. */
-val mainClassName = "cz.loplex.dogvision.desktop.MainKt"
+val mainClassName = "cz.loplex.dogvision.compose.MainKt"
 
 kotlin {
     jvm {
