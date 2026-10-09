@@ -8,19 +8,20 @@ the red and the yellow-green merge for every dichromat, and all is grey for the 
 This is a Kotlin port of [dog-vision](https://github.com/loplex/dog-vision-python), a desktop program in Python.\
 [The model](docs/model.md) explains how it simulates each species, with its measurements and their sources.
 
-## Four ways to run it
+## Five ways to run it
 
-| Program                                                | Runs on                              | Shows                          |
-|--------------------------------------------------------|--------------------------------------|--------------------------------|
-| [The Android app](docs/using.md#the-android-app)       | Android 8.0 or later, OpenGL ES 3.0  | the camera, a photo or a video |
-| [The web page](docs/using.md#the-web-page)             | a browser with WebGL 2               | the camera, a photo or a video |
-| [The command line](docs/using.md#the-command-line)     | a JVM, 17 or newer; ffmpeg for video | a photo or a video, converted  |
-| [The desktop window](docs/using.md#the-desktop-window) | Linux and Windows on x86-64          | the camera, a photo or a video |
+| Program                                                                                | Runs on                              | Shows                          |
+|----------------------------------------------------------------------------------------|--------------------------------------|--------------------------------|
+| [The Android app](docs/using.md#the-android-app)                                       | Android 8.0 or later, OpenGL ES 3.0  | the camera, a photo or a video |
+| [The web page](docs/using.md#the-web-page)                                             | a browser with WebGL 2               | the camera, a photo or a video |
+| [The command line](docs/using.md#the-command-line)                                     | a JVM, 17 or newer; ffmpeg for video | a photo or a video, converted  |
+| [The desktop window in Compose](docs/using.md#the-desktop-window)                      | Linux and Windows on x86-64          | the camera, a photo or a video |
+| [The desktop window in Swing](docs/using.md#the-same-window-in-swing-dog-vision-swing) | Linux and Windows on x86-64          | the camera, a photo or a video |
 
-- **The app, the web page and the window draw the view with the same GPU passes**, and the same controls,
+- **The app, the web page and the windows draw the view with the same GPU passes**, and the same controls,
   so each shows what the others do.
-- **The desktop window comes in two toolkits**:
-  `dog-vision-compose` in Compose, with the app's controls, and [`dog-vision-swing`](docs/using.md#the-same-window-in-swing-dog-vision-swing) in Swing,
+- **The two desktop windows are one program in two toolkits**:
+  `dog-vision-compose` in Compose, with the app's controls, and `dog-vision-swing` in Swing,
   which shows the same from the same state and needs neither Compose nor skiko.
 - **Each is built from this repository**, as [Building it](docs/building.md) says:
 
