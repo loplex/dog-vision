@@ -1,5 +1,9 @@
 package cz.loplex.dogvision.desktop
 
+import cz.loplex.dogvision.desktop.gl.EglContext
+import cz.loplex.dogvision.desktop.gl.GlContext
+import cz.loplex.dogvision.desktop.gl.WglContext
+
 /**
  * The two APIs the window draws through, each in the context this system makes for it:
  * on Windows, ANGLE's OpenGL ES and WGL's desktop OpenGL, as the window takes them;

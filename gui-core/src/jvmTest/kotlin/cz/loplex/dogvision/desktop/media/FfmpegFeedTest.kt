@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.media
 
 import org.junit.jupiter.api.io.TempDir
 import java.io.File

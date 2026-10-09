@@ -11,6 +11,9 @@ import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
 import cz.loplex.dogvision.core.rgb
+import cz.loplex.dogvision.desktop.media.Frame
+import cz.loplex.dogvision.desktop.media.RECORDING_FPS
+import cz.loplex.dogvision.desktop.media.RecordingSink
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import cz.loplex.dogvision.texts.MenuEntry

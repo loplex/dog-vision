@@ -4,6 +4,7 @@ import cz.loplex.dogvision.common.UsageException
 import cz.loplex.dogvision.common.ViewOptions
 import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
+import cz.loplex.dogvision.desktop.gl.WindowsGl
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.io.File

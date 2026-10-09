@@ -2,6 +2,9 @@ package cz.loplex.dogvision.desktop
 
 import cz.loplex.dogvision.common.readPhoto
 import cz.loplex.dogvision.core.Image
+import cz.loplex.dogvision.desktop.media.FfmpegFeed
+import cz.loplex.dogvision.desktop.media.frameOf
+import cz.loplex.dogvision.desktop.media.preview
 import cz.loplex.dogvision.ffmpeg.FfmpegMissing
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts

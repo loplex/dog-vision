@@ -1,5 +1,8 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.gl
 
+import cz.loplex.dogvision.desktop.Passes
+import cz.loplex.dogvision.desktop.TestApi
+import cz.loplex.dogvision.desktop.media.frameOf
 import cz.loplex.dogvision.testing.pattern
 import kotlin.test.Test
 import kotlin.test.assertEquals

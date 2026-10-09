@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.gl
 
 import org.lwjgl.egl.EGL10.EGL_NONE
 import org.lwjgl.egl.EGL10.EGL_NO_CONTEXT

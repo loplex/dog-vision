@@ -1,5 +1,6 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.media
 
+import cz.loplex.dogvision.desktop.onWindows
 import cz.loplex.dogvision.ffmpeg.FfmpegMissing
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms
 import java.io.File

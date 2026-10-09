@@ -1,7 +1,8 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.media
 
 import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.Facing
+import cz.loplex.dogvision.desktop.onWindows
 import cz.loplex.dogvision.ffmpeg.FfmpegMissing
 import java.io.File
 import java.io.IOException

@@ -1,76 +1,75 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.gl
 
-import org.lwjgl.opengl.GL33C.GL_ALREADY_SIGNALED
-import org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT
-import org.lwjgl.opengl.GL33C.GL_COMPILE_STATUS
-import org.lwjgl.opengl.GL33C.GL_CONDITION_SATISFIED
-import org.lwjgl.opengl.GL33C.GL_LINK_STATUS
-import org.lwjgl.opengl.GL33C.GL_MAP_READ_BIT
-import org.lwjgl.opengl.GL33C.GL_RGBA
-import org.lwjgl.opengl.GL33C.GL_SYNC_GPU_COMMANDS_COMPLETE
-import org.lwjgl.opengl.GL33C.GL_UNSIGNED_BYTE
-import org.lwjgl.opengl.GL33C.glActiveTexture
-import org.lwjgl.opengl.GL33C.glAttachShader
-import org.lwjgl.opengl.GL33C.glBindBuffer
-import org.lwjgl.opengl.GL33C.glBindFramebuffer
-import org.lwjgl.opengl.GL33C.glBindTexture
-import org.lwjgl.opengl.GL33C.glBindVertexArray
-import org.lwjgl.opengl.GL33C.glBufferData
-import org.lwjgl.opengl.GL33C.glCheckFramebufferStatus
-import org.lwjgl.opengl.GL33C.glClear
-import org.lwjgl.opengl.GL33C.glClearColor
-import org.lwjgl.opengl.GL33C.glClientWaitSync
-import org.lwjgl.opengl.GL33C.glCompileShader
-import org.lwjgl.opengl.GL33C.glCreateProgram
-import org.lwjgl.opengl.GL33C.glCreateShader
-import org.lwjgl.opengl.GL33C.glDeleteBuffers
-import org.lwjgl.opengl.GL33C.glDeleteFramebuffers
-import org.lwjgl.opengl.GL33C.glDeleteProgram
-import org.lwjgl.opengl.GL33C.glDeleteShader
-import org.lwjgl.opengl.GL33C.glDeleteSync
-import org.lwjgl.opengl.GL33C.glDeleteTextures
-import org.lwjgl.opengl.GL33C.glDeleteVertexArrays
-import org.lwjgl.opengl.GL33C.glDisable
-import org.lwjgl.opengl.GL33C.glDrawArrays
-import org.lwjgl.opengl.GL33C.glFenceSync
-import org.lwjgl.opengl.GL33C.glFlush
-import org.lwjgl.opengl.GL33C.glFramebufferTexture2D
-import org.lwjgl.opengl.GL33C.glGenBuffers
-import org.lwjgl.opengl.GL33C.glGenFramebuffers
-import org.lwjgl.opengl.GL33C.glGenTextures
-import org.lwjgl.opengl.GL33C.glGenVertexArrays
-import org.lwjgl.opengl.GL33C.glGetProgramInfoLog
-import org.lwjgl.opengl.GL33C.glGetProgrami
-import org.lwjgl.opengl.GL33C.glGetShaderInfoLog
-import org.lwjgl.opengl.GL33C.glGetShaderi
-import org.lwjgl.opengl.GL33C.glGetUniformLocation
-import org.lwjgl.opengl.GL33C.glLinkProgram
-import org.lwjgl.opengl.GL33C.glMapBufferRange
-import org.lwjgl.opengl.GL33C.glPixelStorei
-import org.lwjgl.opengl.GL33C.glReadPixels
-import org.lwjgl.opengl.GL33C.glShaderSource
-import org.lwjgl.opengl.GL33C.glTexImage2D
-import org.lwjgl.opengl.GL33C.glTexParameteri
-import org.lwjgl.opengl.GL33C.glUniform1f
-import org.lwjgl.opengl.GL33C.glUniform1i
-import org.lwjgl.opengl.GL33C.glUniform2i
-import org.lwjgl.opengl.GL33C.glUniform4f
-import org.lwjgl.opengl.GL33C.glUniformMatrix3fv
-import org.lwjgl.opengl.GL33C.glUnmapBuffer
-import org.lwjgl.opengl.GL33C.glUseProgram
-import org.lwjgl.opengl.GL33C.glViewport
+import org.lwjgl.opengles.GLES30.GL_ALREADY_SIGNALED
+import org.lwjgl.opengles.GLES30.GL_COLOR_BUFFER_BIT
+import org.lwjgl.opengles.GLES30.GL_COMPILE_STATUS
+import org.lwjgl.opengles.GLES30.GL_CONDITION_SATISFIED
+import org.lwjgl.opengles.GLES30.GL_LINK_STATUS
+import org.lwjgl.opengles.GLES30.GL_MAP_READ_BIT
+import org.lwjgl.opengles.GLES30.GL_RGBA
+import org.lwjgl.opengles.GLES30.GL_SYNC_GPU_COMMANDS_COMPLETE
+import org.lwjgl.opengles.GLES30.GL_UNSIGNED_BYTE
+import org.lwjgl.opengles.GLES30.glActiveTexture
+import org.lwjgl.opengles.GLES30.glAttachShader
+import org.lwjgl.opengles.GLES30.glBindBuffer
+import org.lwjgl.opengles.GLES30.glBindFramebuffer
+import org.lwjgl.opengles.GLES30.glBindTexture
+import org.lwjgl.opengles.GLES30.glBindVertexArray
+import org.lwjgl.opengles.GLES30.glBufferData
+import org.lwjgl.opengles.GLES30.glCheckFramebufferStatus
+import org.lwjgl.opengles.GLES30.glClear
+import org.lwjgl.opengles.GLES30.glClearColor
+import org.lwjgl.opengles.GLES30.glClientWaitSync
+import org.lwjgl.opengles.GLES30.glCompileShader
+import org.lwjgl.opengles.GLES30.glCreateProgram
+import org.lwjgl.opengles.GLES30.glCreateShader
+import org.lwjgl.opengles.GLES30.glDeleteBuffers
+import org.lwjgl.opengles.GLES30.glDeleteFramebuffers
+import org.lwjgl.opengles.GLES30.glDeleteProgram
+import org.lwjgl.opengles.GLES30.glDeleteShader
+import org.lwjgl.opengles.GLES30.glDeleteSync
+import org.lwjgl.opengles.GLES30.glDeleteTextures
+import org.lwjgl.opengles.GLES30.glDeleteVertexArrays
+import org.lwjgl.opengles.GLES30.glDisable
+import org.lwjgl.opengles.GLES30.glDrawArrays
+import org.lwjgl.opengles.GLES30.glFenceSync
+import org.lwjgl.opengles.GLES30.glFlush
+import org.lwjgl.opengles.GLES30.glFramebufferTexture2D
+import org.lwjgl.opengles.GLES30.glGenBuffers
+import org.lwjgl.opengles.GLES30.glGenFramebuffers
+import org.lwjgl.opengles.GLES30.glGenTextures
+import org.lwjgl.opengles.GLES30.glGenVertexArrays
+import org.lwjgl.opengles.GLES30.glGetProgramInfoLog
+import org.lwjgl.opengles.GLES30.glGetProgrami
+import org.lwjgl.opengles.GLES30.glGetShaderInfoLog
+import org.lwjgl.opengles.GLES30.glGetShaderi
+import org.lwjgl.opengles.GLES30.glGetUniformLocation
+import org.lwjgl.opengles.GLES30.glLinkProgram
+import org.lwjgl.opengles.GLES30.glMapBufferRange
+import org.lwjgl.opengles.GLES30.glPixelStorei
+import org.lwjgl.opengles.GLES30.glReadPixels
+import org.lwjgl.opengles.GLES30.glShaderSource
+import org.lwjgl.opengles.GLES30.glTexImage2D
+import org.lwjgl.opengles.GLES30.glTexParameteri
+import org.lwjgl.opengles.GLES30.glUniform1f
+import org.lwjgl.opengles.GLES30.glUniform1i
+import org.lwjgl.opengles.GLES30.glUniform2i
+import org.lwjgl.opengles.GLES30.glUniform4f
+import org.lwjgl.opengles.GLES30.glUniformMatrix3fv
+import org.lwjgl.opengles.GLES30.glUnmapBuffer
+import org.lwjgl.opengles.GLES30.glUseProgram
+import org.lwjgl.opengles.GLES30.glViewport
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * gl's Gl over desktop OpenGL 3.3's core profile through LWJGL, in the context current on the calling thread,
- * as [LwjglGles] is over OpenGL ES 3.0, for the WGL context on Windows.\
- * gl's shaders are GLSL ES 3.00, which desktop GLSL 3.30 reads as it is but for its first line,
- * so that line is rewritten; precision qualifiers are allowed there and mean nothing,
- * and desktop GL's floats are as wide as ES's highp ones.
+ * gl's Gl over OpenGL ES 3.0 through LWJGL, in the context current on the calling thread,
+ * as the Android app's `Gles` is over Android's bindings.\
+ * LWJGL takes pixels only in direct buffers, so they are copied through one kept for the purpose;
+ * [readPixels] and [texImage2D] take a direct buffer as well, for a frame that is one already.
  */
 @Suppress("TooManyFunctions")
-class LwjglGl : DesktopGl {
+class LwjglGles : DesktopGl {
     private var scratch: ByteBuffer = ByteBuffer.allocateDirect(0)
 
     /** A direct buffer of [size] bytes, from the start, reused while it is large enough. */
@@ -83,7 +82,7 @@ class LwjglGl : DesktopGl {
 
     override fun createShader(type: Int) = glCreateShader(type)
 
-    override fun shaderSource(shader: Int, source: String) = glShaderSource(shader, desktopShader(source))
+    override fun shaderSource(shader: Int, source: String) = glShaderSource(shader, source)
 
     override fun compileShader(shader: Int) = glCompileShader(shader)
 
@@ -225,6 +224,10 @@ class LwjglGl : DesktopGl {
         buffer.get(pixels)
     }
 
+    /** Reads RGBA bytes of the framebuffer bound into the direct buffer [pixels], from its position on. */
+    fun readPixels(x: Int, y: Int, width: Int, height: Int, pixels: ByteBuffer) =
+        glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels)
+
     override fun readPixelsIntoPackBuffer(x: Int, y: Int, width: Int, height: Int) =
         glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, 0L)
 
@@ -244,12 +247,3 @@ class LwjglGl : DesktopGl {
         glClear(GL_COLOR_BUFFER_BIT)
     }
 }
-
-/** [source], a GLSL ES 3.00 shader, as desktop GLSL 3.30, which differs from it in its first line alone. */
-internal fun desktopShader(source: String): String {
-    check(source.startsWith(ES_VERSION)) { "Not a GLSL ES 3.00 shader: ${source.lineSequence().first()}" }
-    return DESKTOP_VERSION + source.removePrefix(ES_VERSION)
-}
-
-private const val ES_VERSION = "#version 300 es\n"
-private const val DESKTOP_VERSION = "#version 330 core\n"

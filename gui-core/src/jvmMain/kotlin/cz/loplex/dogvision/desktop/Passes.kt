@@ -3,6 +3,7 @@ package cz.loplex.dogvision.desktop
 import cz.loplex.dogvision.core.Box
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.View
+import cz.loplex.dogvision.desktop.gl.DesktopGl
 import cz.loplex.dogvision.gl.GL_FRAMEBUFFER
 import cz.loplex.dogvision.gl.GL_PIXEL_PACK_BUFFER
 import cz.loplex.dogvision.gl.GL_RGBA

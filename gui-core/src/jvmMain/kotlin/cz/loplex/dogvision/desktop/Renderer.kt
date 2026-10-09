@@ -4,6 +4,9 @@ import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.ScreenLayout
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.layOut
+import cz.loplex.dogvision.desktop.gl.GlContext
+import cz.loplex.dogvision.desktop.gl.WindowsGl
+import cz.loplex.dogvision.desktop.media.Frame
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit

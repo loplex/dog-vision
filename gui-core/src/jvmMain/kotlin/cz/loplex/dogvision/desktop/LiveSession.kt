@@ -13,6 +13,12 @@ import cz.loplex.dogvision.core.Mirroring
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.snapshotName
 import cz.loplex.dogvision.core.stitch
+import cz.loplex.dogvision.desktop.media.Frame
+import cz.loplex.dogvision.desktop.media.Recorder
+import cz.loplex.dogvision.desktop.media.RecordingSink
+import cz.loplex.dogvision.desktop.media.ffmpegRecording
+import cz.loplex.dogvision.desktop.media.ffmpegRuns
+import cz.loplex.dogvision.desktop.media.listCameras
 import cz.loplex.dogvision.ffmpeg.FfmpegDownload
 import cz.loplex.dogvision.ffmpeg.FfmpegInstall
 import cz.loplex.dogvision.ffmpeg.FfmpegPrograms

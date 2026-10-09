@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.media
 
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.ffmpeg.VideoStream

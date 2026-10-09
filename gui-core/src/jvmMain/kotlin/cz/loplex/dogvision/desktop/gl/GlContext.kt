@@ -1,5 +1,7 @@
-package cz.loplex.dogvision.desktop
+package cz.loplex.dogvision.desktop.gl
 
+import cz.loplex.dogvision.desktop.Passes
+import cz.loplex.dogvision.desktop.onWindows
 import cz.loplex.dogvision.gl.Gl
 import org.lwjgl.system.Configuration
 import java.nio.ByteBuffer
@@ -30,6 +32,15 @@ interface DesktopGl : Gl {
 
     /** Clears the framebuffer bound to transparent black. */
     fun clear()
+}
+
+/** The two ways the window can draw on Windows, as --gl names them. */
+enum class WindowsGl(val id: String) {
+    /** OpenGL ES over Direct3D 11. */
+    ANGLE("angle"),
+
+    /** The graphics driver's own desktop OpenGL. */
+    WGL("wgl"),
 }
 
 /**

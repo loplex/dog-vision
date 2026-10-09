@@ -7,6 +7,8 @@ import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.core.rgb
+import cz.loplex.dogvision.desktop.gl.GlContext
+import cz.loplex.dogvision.desktop.media.frameOf
 import cz.loplex.dogvision.testing.coreImages
 import cz.loplex.dogvision.testing.pattern
 import cz.loplex.dogvision.testing.worstChannelDifference

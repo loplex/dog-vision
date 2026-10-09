@@ -5,6 +5,7 @@ import cz.loplex.dogvision.common.ViewOptions
 import cz.loplex.dogvision.common.readCommandLine
 import cz.loplex.dogvision.common.usage
 import cz.loplex.dogvision.core.View
+import cz.loplex.dogvision.desktop.gl.WindowsGl
 import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import java.awt.Font
@@ -30,15 +31,6 @@ data class WindowArguments(
     /** The view the window starts with: side by side. */
     val windowView: View
         get() = View(view.params, sideBySide = true, compare = view.compare, difference = view.difference)
-}
-
-/** The two ways the window can draw on Windows, as --gl names them. */
-enum class WindowsGl(val id: String) {
-    /** OpenGL ES over Direct3D 11. */
-    ANGLE("angle"),
-
-    /** The graphics driver's own desktop OpenGL. */
-    WGL("wgl"),
 }
 
 /** Reads [args] as a window takes them. */

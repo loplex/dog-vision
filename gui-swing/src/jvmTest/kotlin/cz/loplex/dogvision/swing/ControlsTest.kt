@@ -9,11 +9,11 @@ import cz.loplex.dogvision.core.Params
 import cz.loplex.dogvision.core.Species
 import cz.loplex.dogvision.core.View
 import cz.loplex.dogvision.desktop.Area
-import cz.loplex.dogvision.desktop.Frame
 import cz.loplex.dogvision.desktop.LiveSession
 import cz.loplex.dogvision.desktop.Renderer
 import cz.loplex.dogvision.desktop.Source
 import cz.loplex.dogvision.desktop.WindowArguments
+import cz.loplex.dogvision.desktop.media.Frame
 import cz.loplex.dogvision.texts.Texts
 import java.awt.Component
 import java.awt.Container
