@@ -25,7 +25,8 @@ val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEG
  * each named after the package, as packageDogVisionSwingDeb and dogVisionSwingTree are dog-vision-swing's:
  * [jars], the window's JARs, in /usr/share/[packageName]/lib,
  * the natives they load unpacked in /usr/lib/[packageName], where the FHS puts what depends on the architecture,
- * a launcher in /usr/bin, which finds a Java 17 or newer, and the desktop entry and the icons, named [applicationId].\
+ * a launcher in /usr/bin, which finds a Java 17 or newer, the desktop entry and the icons, named [applicationId],
+ * and a link under the package's name to the manual page dog-vision.1 that [sharedPackage] installs.\
  * The command line is the package dog-vision-cli, which each recommends.
  *
  * - [shared] resolves the JARs of [jars] that the package [sharedPackage] installs,
@@ -53,6 +54,7 @@ fun Project.windowPackages(
     nativesLeftIn: List<String> = emptyList(),
     rpmRequires: List<String> = emptyList(),
 ): TaskProvider<Sync> {
+    val manPageLink = mapOf("usr/share/man/man1/$packageName.1.gz" to "dog-vision.1.gz")
     val home = "/usr/share/$packageName"
     // The files the packages are made of, in a folder of the package's own.
     val work = "linux/$packageName"
@@ -164,6 +166,7 @@ fun Project.windowPackages(
         depends.add(this.version.map { "$sharedPackage (= $it)" })
         recommends.set(listOf("dog-vision-cli"))
         license.set(licences.flatMap { it.copyright })
+        links.set(manPageLink)
     }
 
     val packageRpm = tasks.register("package${suffix}Rpm", RpmPackage::class.java) {
@@ -184,6 +187,7 @@ fun Project.windowPackages(
         )
         requires.add(this.version.zip(release) { version, release -> "$sharedPackage = $version-$release" })
         recommends.set(listOf("dog-vision-cli"))
+        links.set(manPageLink)
         licenseName.set(licences.flatMap { it.spdx }.map { it.asFile.readText() })
         thirdPartyLicenses.set(licences.flatMap { it.notices })
     }

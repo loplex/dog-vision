@@ -218,6 +218,8 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     and which skiko and LWJGL load them from rather than unpack their own copies at run time:
     skiko's and LWJGL's for `dog-vision-compose`, LWJGL's alone for `dog-vision-swing`;
   - the launchers, `dog-vision-compose`, `dog-vision-swing` and `dog-vision-cli`, in `/usr/bin`, on `PATH`;
+  - one manual page of the three, [`dog-vision.1`](../packaging/man/dog-vision.1), which `dog-vision-common` installs in `/usr/share/man/man1`,
+    and a link to it under each command's name, `dog-vision-cli.1.gz` and the like, in each command's package;
   - each window's menu entry, named in the system's language, and its icons in the hicolor theme:
     `cz.loplex.dogvision.compose.desktop` ("Dog Vision (Kotlin Compose)", "Jak vidí pes (Kotlin Compose)")
     and `cz.loplex.dogvision.swing.desktop` ("Dog Vision (Java Swing)", "Jak vidí pes (Java Swing)"),

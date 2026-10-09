@@ -5,6 +5,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
@@ -86,12 +87,17 @@ abstract class DebPackage : DefaultTask() {
     @get:Input
     abstract val changelogDate: Property<String>
 
+    /** The symbolic links the deb installs besides [tree], each path as installed from / to its target. */
+    @get:Input
+    abstract val links: MapProperty<String, String>
+
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
 
     init {
         conflicts.convention(emptyList())
         replaces.convention(emptyList())
+        links.convention(emptyMap())
     }
 
     @get:OutputFile
@@ -112,7 +118,9 @@ abstract class DebPackage : DefaultTask() {
             val changelog = "${packageName.get()} (${version.get()}) unstable; urgency=medium\n\n" +
                 "  * Version ${version.get()}.\n\n -- ${maintainer.get()}  ${changelogDate.get()}\n"
             place(gzip(changelog.toByteArray()), root, "usr/share/doc/${packageName.get()}/changelog.gz")
-            val files = root.walkTopDown().filter { it.isFile }.toList()
+            for ((path, target) in links.get()) link(root, path, target)
+            // The regular files: a link has no sum of its own in md5sums, and takes no space.
+            val files = root.walkTopDown().filter { it.isFile && !Files.isSymbolicLink(it.toPath()) }.toList()
             val installedSize = files.sumOf { (it.length() + 1023) / 1024 }
             val control = buildString {
                 appendLine("Package: ${packageName.get()}")
@@ -142,13 +150,5 @@ abstract class DebPackage : DefaultTask() {
         } finally {
             root.deleteRecursively()
         }
-    }
-
-    private fun gzip(bytes: ByteArray): ByteArray {
-        val process = ProcessBuilder("gzip", "-9n").start()
-        process.outputStream.use { it.write(bytes) }
-        val compressed = process.inputStream.readBytes()
-        check(process.waitFor() == 0) { "gzip failed: ${process.errorReader().readText()}" }
-        return compressed
     }
 }

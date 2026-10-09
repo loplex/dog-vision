@@ -5,6 +5,7 @@ import cz.loplex.dogvision.packaging.DebDepends
 import cz.loplex.dogvision.packaging.DebPackage
 import cz.loplex.dogvision.packaging.DesktopEntry
 import cz.loplex.dogvision.packaging.JavaLauncher
+import cz.loplex.dogvision.packaging.ManPage
 import cz.loplex.dogvision.packaging.RpmLibraryRequires
 import cz.loplex.dogvision.packaging.RpmPackage
 import cz.loplex.dogvision.packaging.ThirdPartyPart
@@ -177,10 +178,22 @@ val commonPackage = "dog-vision-common"
 val commonHome = "/usr/share/$commonPackage"
 val commonJars = jvmRuntimeOf(":cli")
 
+// The manual page of the command line and both windows, which their packages link to under each command's name.
+val manPage = tasks.register<ManPage>("dogVisionManPage") {
+    description = "Compresses packaging/man/dog-vision.1 into build/linux/dog-vision-common/dog-vision.1.gz."
+    page = layout.projectDirectory.file("man/dog-vision.1")
+    compressed = layout.buildDirectory.file("linux/$commonPackage/dog-vision.1.gz")
+}
+
+/** The link a package of [command] installs to the manual page of dog-vision-common, which it depends on. */
+fun manPageLink(command: String) = mapOf("usr/share/man/man1/$command.1.gz" to "dog-vision.1.gz")
+
 val commonTree = tasks.register<Sync>("dogVisionCommonTree") {
-    description = "Lays out in build/linux/dog-vision-common/tree the files its deb and its rpm install: the JARs."
+    description = "Lays out in build/linux/dog-vision-common/tree the files its deb and its rpm install: the JARs " +
+        "and the manual page."
     into(layout.buildDirectory.dir("linux/$commonPackage/tree"))
     from(commonJars) { into(commonHome.removePrefix("/") + "/lib") }
+    from(manPage) { into("usr/share/man/man1") }
 }
 
 /** What the deb and the rpm are listed with, in a package manager's search and its details. */
@@ -191,7 +204,7 @@ val commonDescription = """
 
     This package is what the command line and the desktop windows share,
     the packages dog-vision-cli, dog-vision-compose and dog-vision-swing:
-    their Java libraries. It does nothing on its own.
+    their Java libraries and their manual page. It does nothing on its own.
 """.trimIndent()
 
 // What its JARs are that is not this project's own.
@@ -390,6 +403,7 @@ val packageCliDeb = tasks.register<DebPackage>("packageDogVisionCliDeb") {
     // ffmpeg reads and writes a video; a photo needs none.
     recommends = listOf("ffmpeg")
     license = cliLicences.flatMap { it.copyright }
+    links = manPageLink(cliPackage)
 }
 artifact(packageCliDeb)
 
@@ -413,6 +427,7 @@ val packageCliRpm = tasks.register<RpmPackage>("packageDogVisionCliRpm") {
     }
     // ffmpeg's command, as the windows' rpms name it, for a video.
     recommends = listOf("/usr/bin/ffmpeg")
+    links = manPageLink(cliPackage)
     licenseName = cliLicences.flatMap { it.spdx }.map { it.asFile.readText() }
     thirdPartyLicenses = cliLicences.flatMap { it.notices }
 }
@@ -592,6 +607,7 @@ val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
     depends = allInOneDebDepends.flatMap { it.depends }.map { it.asFile.readText().split(", ") }
     recommends = emptyList()
     license = allInOneLicences.flatMap { it.copyright }
+    links = manPageLink(cliPackage) + manPageLink(composePackage) + manPageLink(swingPackage)
 }
 artifact(packageAllInOneDeb)
 
@@ -611,6 +627,7 @@ val packageAllInOneRpm = tasks.register<RpmPackage>("packageDogVisionRpm") {
         file.asFile.readText().split(',') + others
     }
     recommends = emptyList()
+    links = manPageLink(cliPackage) + manPageLink(composePackage) + manPageLink(swingPackage)
     licenseName = allInOneLicences.flatMap { it.spdx }.map { it.asFile.readText() }
     thirdPartyLicenses = allInOneLicences.flatMap { it.notices }
 }

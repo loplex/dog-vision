@@ -5,6 +5,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
@@ -88,12 +89,17 @@ abstract class RpmPackage : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val thirdPartyLicenses: RegularFileProperty
 
+    /** The symbolic links the rpm installs besides [tree], each path as installed from / to its target. */
+    @get:Input
+    abstract val links: MapProperty<String, String>
+
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
 
     init {
         conflicts.convention(emptyList())
         folderNames.convention(packageName.map { listOf(it) })
+        links.convention(emptyMap())
     }
 
     @get:OutputFile
@@ -111,14 +117,16 @@ abstract class RpmPackage : DefaultTask() {
             val root = top.resolve("SOURCES/root")
             root.mkdirs()
             stage(tree.get().asFile, root)
+            for ((path, target) in links.get()) link(root, path, target)
             license.get().asFile.copyTo(top.resolve("SOURCES/LICENSE"))
             thirdPartyLicenses.get().asFile.copyTo(top.resolve("SOURCES/$THIRD_PARTY"))
             val owned = folderNames.get()
             val entries = root.walkTopDown().drop(1).sortedBy { it.path }.mapNotNull { file ->
                 val path = "/" + file.relativeTo(root).invariantSeparatorsPath
                 check(path.none { it.isWhitespace() || it == '"' }) { "rpm's %files cannot take $path as it is" }
+                // A link whatever it points at, as one whose target another package installs is no file here.
                 when {
-                    file.isFile -> path
+                    Files.isSymbolicLink(file.toPath()) || file.isFile -> path
                     path.split('/').any { it in owned } -> "%dir $path"
                     else -> null
                 }

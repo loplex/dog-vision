@@ -1,0 +1,44 @@
+.\" The manual page of the command line and both windows,
+.\" which dog-vision-common installs and the packages of the three commands link to under each command's name.
+.\" Each command lists its own options with --help, which this page leaves to it.
+.TH DOG-VISION 1 "" "dog-vision" "User Commands"
+.SH NAME
+dog-vision-cli, dog-vision-compose, dog-vision-swing \- how a dog or another animal sees colours
+.SH SYNOPSIS
+.B dog-vision-cli
+[\fIoptions\fR] \fIfile\fR
+.br
+.B dog-vision-compose
+[\fIoptions\fR] [\fIfile\fR]
+.br
+.B dog-vision-swing
+[\fIoptions\fR] [\fIfile\fR]
+.SH DESCRIPTION
+dog-vision shows a photo, a video or the camera
+with the colours a dog, a cat or another animal can tell apart, beside the original.
+.TP
+.B dog-vision-cli
+converts a photo or a video, given as \fIfile\fR, and writes the result beside it,
+such as \fIphoto.dog.png\fR or \fIclip.dog.mp4\fR; it opens no window.
+.TP
+.BR dog-vision-compose ", " dog-vision-swing
+are the same desktop window, in Compose and in Swing: the camera, or \fIfile\fR where one is given,
+as the chosen animal sees it; they save snapshots and recordings into an output folder, and convert the file shown.
+.SH OPTIONS
+Each command lists its options with \fB\-\-help\fR: the animal, a second one to compare with,
+a map of the differences, the strength of the simulation and the blur to the animal's acuity,
+and the command's own, such as \fB\-\-output\-dir\fR.
+.SH ENVIRONMENT
+.TP
+.BR LANGUAGE ", " LC_ALL ", " LC_MESSAGES ", " LANG
+the language the commands speak, English or Czech, as gettext reads them.
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/dog-vision/settings.json
+the windows' settings, such as the output folder; in \fI~/.config\fR where \fBXDG_CONFIG_HOME\fR is not set.
+.SH NOTES
+A video, and the camera in a window, need ffmpeg.
+.SH SEE ALSO
+.BR ffmpeg (1)
+.PP
+https://github.com/loplex/dog-vision
