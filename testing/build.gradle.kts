@@ -6,8 +6,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // which the Android app's instrumented tests run it on too, and for JavaScript.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.detekt)
+    id("cz.loplex.dogvision.detekt")
     id("cz.loplex.dogvision.ktlint")
+    id("cz.loplex.dogvision.nodejs")
 }
 
 kotlin {

@@ -3,11 +3,12 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.compose.multiplatform) apply false
-    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kover)
     id("cz.loplex.dogvision.packaging") apply false
+    // The root sets Node.js up for the Kotlin/JS modules, so it takes it as they do.
+    id("cz.loplex.dogvision.nodejs")
 }
 
 // Which lines and branches the JVM tests reach: Kover measures the modules that apply it,
@@ -40,34 +41,6 @@ if (gradle.startParameter.systemPropertiesArgs["idea.sync.active"] == "true") {
     pluginManager.apply("idea")
     val excluded = listOf(file("tools/cache"), file("tools/build"))
     the<org.gradle.plugins.ide.idea.model.IdeaModel>().module.excludeDirs.addAll(excluded)
-}
-
-// The Kotlin/JS modules download Node.js from the repository declared in settings.gradle.kts,
-// which is where the build declares every repository, instead of adding one of their own;
-// the root project sets it up for them.
-allprojects {
-    plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
-        the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().downloadBaseUrl = null
-    }
-}
-
-// detekt, in each module that applies it, in `check`: its default rules, as detekt.yml changes them,
-// over every source set, with the types of the JVM and Android compilations where it has them.
-// Code the build generates is not checked.
-subprojects {
-    plugins.withId("dev.detekt") {
-        configure<dev.detekt.gradle.extensions.DetektExtension> {
-            buildUponDefaultConfig = true
-            config.from(rootProject.file("detekt.yml"))
-        }
-        tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
-            exclude { it.file.invariantSeparatorsPath.contains("/build/") }
-        }
-        // The typed tasks cover commonMain, jvmMain and androidMain through their compilations;
-        // the JS source sets, which no JVM compilation takes, are checked alone.
-        val checked = Regex("detekt(Main|Test|Dev)(Jvm|Android)|detekt(Js|Web)(Main|Test)SourceSet")
-        tasks.named("check") { dependsOn(tasks.matching { checked.matches(it.name) }) }
-    }
 }
 
 // ktlint leaves a line that holds a comment and nothing else as long as it is, and nothing measures Markdown,

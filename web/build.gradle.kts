@@ -4,8 +4,9 @@ import cz.loplex.dogvision.packaging.webPage
 // The web page: a photo, a video or the camera shown as a species sees it, rendered by the shared shaders in WebGL 2.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.detekt)
+    id("cz.loplex.dogvision.detekt")
     id("cz.loplex.dogvision.ktlint")
+    id("cz.loplex.dogvision.nodejs")
 }
 
 kotlin {

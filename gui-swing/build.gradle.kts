@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kover)
-    alias(libs.plugins.detekt)
+    id("cz.loplex.dogvision.detekt")
     id("cz.loplex.dogvision.packaging")
     id("cz.loplex.dogvision.ktlint")
 }
