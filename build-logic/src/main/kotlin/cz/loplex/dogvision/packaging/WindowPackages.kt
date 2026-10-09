@@ -37,6 +37,7 @@ val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEG
  * - [summary] and [description] are what a package manager lists the packages with, in its search and its details.
  * - [nativesLeftIn] names the JARs, by the start of their names, whose natives are not unpacked.
  * - [rpmRequires] is what the rpm requires besides what every window's does.
+ * - [lintianOverrides] are the lintian tags the deb overrides, as [DebPackage] takes them.
  *
  * Returns the task that lays out the files the packages install, less the shared JARs.
  */
@@ -53,6 +54,7 @@ fun Project.windowPackages(
     description: String,
     nativesLeftIn: List<String> = emptyList(),
     rpmRequires: List<String> = emptyList(),
+    lintianOverrides: String = "",
 ): TaskProvider<Sync> {
     val manPageLink = mapOf("usr/share/man/man1/$packageName.1.gz" to "dog-vision.1.gz")
     val home = "/usr/share/$packageName"
@@ -167,6 +169,7 @@ fun Project.windowPackages(
         recommends.set(listOf("dog-vision-cli"))
         license.set(licences.flatMap { it.copyright })
         links.set(manPageLink)
+        this.lintianOverrides.set(lintianOverrides)
     }
 
     val packageRpm = tasks.register("package${suffix}Rpm", RpmPackage::class.java) {

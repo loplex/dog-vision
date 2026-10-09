@@ -234,6 +234,10 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     every other licence's text, which names its holder, comes from [`packaging/licenses`](../packaging/licenses).
 - **Each deb has `/usr/share/doc/<package>/changelog.gz`**, as Debian Policy asks of every package:
   one entry, of its version, dated by the last commit, so that a deb built again of the same commit is the same.
+- **Each deb passes lintian with no error and no warning**: the tags of what a package bundles as its makers ship it,
+  Compose's JARs that hold no class, skiko's library, unstripped and with zlib, libjpeg, FreeType and expat linked in,
+  LWJGL's class files of Java 25, which lintian does not know, and ICU's licence, which gives the FSF's old address,
+  are overridden in `/usr/share/lintian/overrides/<package>`, each with why.
 - **Each rpm names the same licences**: its `License` is the SPDX expression of the project's own and theirs,
   and `THIRD-PARTY-LICENSES.txt`, which lists each part with every licence's full text,
   is a `%license` beside `LICENSE` in `/usr/share/licenses/<package>`.

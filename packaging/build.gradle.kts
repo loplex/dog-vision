@@ -241,6 +241,25 @@ val packageCommonRpm = tasks.register<RpmPackage>("packageDogVisionCommonRpm") {
 }
 artifact(packageCommonRpm)
 
+/**
+ * The lintian tags a deb of [packageName] overrides, each after why:
+ * of what it bundles as the makers ship it, LWJGL's JARs, in the lib folder of [lwjglIn],
+ * and, with [composeIn], Compose's JARs and skiko's library there.
+ */
+fun lintianOverrides(packageName: String, lwjglIn: String, composeIn: String? = null): String = buildString {
+    appendLine("# LWJGL's JAR holds a module descriptor of Java 25, class file version 69, unknown to lintian.")
+    appendLine("$packageName: unknown-java-class-version * [usr/share/$lwjglIn/lib/lwjgl-*.jar]")
+    if (composeIn == null) return@buildString
+    appendLine("# The desktop JARs JetBrains publishes of Compose and its AndroidX libraries that hold no class: each")
+    appendLine("# hands over to the JAR of the same library that holds the code, and the class path names both.")
+    appendLine("$packageName: codeless-jar [usr/share/$composeIn/lib/*-desktop-*.jar]")
+    appendLine("# skiko, Skia for the JVM, as JetBrains builds it: with these libraries linked in, and not stripped.")
+    appendLine("$packageName: embedded-library * [usr/lib/$composeIn/libskiko-linux-x64.so]")
+    appendLine("$packageName: unstripped-binary-or-object [usr/lib/$composeIn/libskiko-linux-x64.so]")
+    appendLine("# ICU's licence, which the copyright file quotes word for word, gives the FSF's old address.")
+    appendLine("$packageName: old-fsf-address-in-copyright-file")
+}
+
 // The deb and the rpm, dog-vision-compose, on the system's Java.
 val composePackage = "dog-vision-compose"
 val composeJars = jvmRuntimeOf(":gui-compose")
@@ -268,6 +287,7 @@ val composeTree = windowPackages(
         The command line, which converts a photo or a video, is the package
         dog-vision-cli.
     """.trimIndent(),
+    lintianOverrides = lintianOverrides(composePackage, composePackage, composePackage),
 )
 
 // The deb and the rpm, dog-vision-swing, on the system's Java, as the Compose window's dog-vision-compose,
@@ -305,6 +325,7 @@ val swingTree = windowPackages(
     // which the window does not use, and they link GTK 3.
     nativesLeftIn = listOf("flatlaf-"),
     rpmRequires = swingRpmRequires,
+    lintianOverrides = lintianOverrides(swingPackage, swingPackage),
 )
 
 // The tar.gz of each window, on a runtime of the modules its launcher and dog-vision-cli's need,
@@ -620,6 +641,7 @@ val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
     recommends = emptyList()
     license = allInOneLicences.flatMap { it.copyright }
     links = manPageLink(cliPackage) + manPageLink(composePackage) + manPageLink(swingPackage)
+    lintianOverrides = lintianOverrides(allInOnePackage, "dog-vision-*", composePackage)
 }
 artifact(packageAllInOneDeb)
 

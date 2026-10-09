@@ -341,7 +341,7 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
   and the coverage report, which is the run's artifact;
   then the debs and the rpms of `dog-vision-compose`, `dog-vision-swing`, `dog-vision-cli`, `dog-vision-common`,
   `dog-vision-web`, `dog-vision-web-sourcemap` and `dog-vision`, each built in two versions,
-  the debs held to lintian's tags of their copyright and changelog,
+  the debs held to lintian's errors and warnings,
   and tried by `test_deb.sh --upgrade` in Ubuntu 20.04 and `test_rpm.sh --upgrade` in Fedora 42, each window under Xvfb,
   with `--switch` from `dog-vision-compose` and the source map's `dog-vision-web` to `dog-vision`,
   and from `dog-vision` to `dog-vision-cli`, and in Fedora `dog-vision-compose` installed beside `dog-vision-cli`,

@@ -91,6 +91,13 @@ abstract class DebPackage : DefaultTask() {
     @get:Input
     abstract val links: MapProperty<String, String>
 
+    /**
+     * The lintian tags the deb overrides, as lintian reads them from /usr/share/lintian/overrides/<name>,
+     * each after a comment that says why; none if empty.
+     */
+    @get:Input
+    abstract val lintianOverrides: Property<String>
+
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
 
@@ -98,6 +105,7 @@ abstract class DebPackage : DefaultTask() {
         conflicts.convention(emptyList())
         replaces.convention(emptyList())
         links.convention(emptyMap())
+        lintianOverrides.convention("")
     }
 
     @get:OutputFile
@@ -118,6 +126,9 @@ abstract class DebPackage : DefaultTask() {
             val changelog = "${packageName.get()} (${version.get()}) unstable; urgency=medium\n\n" +
                 "  * Version ${version.get()}.\n\n -- ${maintainer.get()}  ${changelogDate.get()}\n"
             place(gzip(changelog.toByteArray()), root, "usr/share/doc/${packageName.get()}/changelog.gz")
+            if (lintianOverrides.get().isNotEmpty()) {
+                place(lintianOverrides.get().toByteArray(), root, "usr/share/lintian/overrides/${packageName.get()}")
+            }
             for ((path, target) in links.get()) link(root, path, target)
             // The regular files: a link has no sum of its own in md5sums, and takes no space.
             val files = root.walkTopDown().filter { it.isFile && !Files.isSymbolicLink(it.toPath()) }.toList()
