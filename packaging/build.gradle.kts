@@ -68,11 +68,11 @@ dependencies {
 
 // What the page's script holds besides this project's own code: Kotlin's standard library for JavaScript,
 // which the compiler builds in, and webpack's runtime, which bundles it; the source map holds their sources.
-// No JVM configuration names them, so they are listed here, webpack at the version kotlin-js-store locks.
+// No JVM configuration names them, so they are listed here, webpack at the version gradle/package-lock.json locks.
 val webpackVersion = checkNotNull(
     Regex(""""node_modules/webpack": \{\s*"version": "([^"]+)"""")
-        .find(rootProject.file("kotlin-js-store/package-lock.json").readText()),
-) { "kotlin-js-store/package-lock.json locks no webpack" }.groupValues[1]
+        .find(rootProject.file("gradle/package-lock.json").readText()),
+) { "gradle/package-lock.json locks no webpack" }.groupValues[1]
 
 fun webParts(file: String) = listOf(
     ThirdPartyPart(

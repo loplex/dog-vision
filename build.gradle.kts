@@ -45,6 +45,14 @@ if (gradle.startParameter.systemPropertiesArgs["idea.sync.active"] == "true") {
     the<org.gradle.plugins.ide.idea.model.IdeaModel>().module.excludeDirs.addAll(excluded)
 }
 
+// The npm packages of the Kotlin/JS modules, webpack, Karma, Mocha and what they need,
+// are locked in gradle/package-lock.json,
+// beside the catalog of the build's other versions, in place of Kotlin's own kotlin-js-store.
+plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    val npm = the<org.jetbrains.kotlin.gradle.targets.js.npm.NpmExtension>()
+    npm.lockFileDirectory = layout.projectDirectory.dir("gradle")
+}
+
 // ktlint leaves a line that holds a comment and nothing else as long as it is, and nothing measures Markdown,
 // so every line of either is held to .editorconfig's max_line_length for it here, in `check`.
 fun maxLineLength(section: String) = file(".editorconfig").readLines()
