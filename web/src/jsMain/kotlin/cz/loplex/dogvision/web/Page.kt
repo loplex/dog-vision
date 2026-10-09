@@ -17,6 +17,11 @@ import cz.loplex.dogvision.texts.Str
 import cz.loplex.dogvision.texts.Texts
 import cz.loplex.dogvision.texts.panelMenus
 import cz.loplex.dogvision.texts.switchKey
+import cz.loplex.dogvision.web.gl.WebGL2RenderingContext
+import cz.loplex.dogvision.web.media.Camera
+import cz.loplex.dogvision.web.media.Recording
+import cz.loplex.dogvision.web.media.VideoFeed
+import cz.loplex.dogvision.web.media.encodePng
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.khronos.webgl.Uint8Array

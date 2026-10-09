@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import org.w3c.files.Blob
 import kotlin.js.Promise

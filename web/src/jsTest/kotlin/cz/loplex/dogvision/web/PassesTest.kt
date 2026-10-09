@@ -12,6 +12,7 @@ import cz.loplex.dogvision.testing.coreImages
 import cz.loplex.dogvision.testing.coreMap
 import cz.loplex.dogvision.testing.pattern
 import cz.loplex.dogvision.testing.worstChannelDifference
+import cz.loplex.dogvision.web.gl.WebGL2RenderingContext
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.khronos.webgl.Uint8Array

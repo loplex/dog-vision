@@ -1,7 +1,7 @@
 // The offsets and sizes of the MP4 format's boxes and fields, as ISO/IEC 14496-12 lays them out.
 @file:Suppress("MagicNumber")
 
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array

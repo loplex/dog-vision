@@ -11,6 +11,9 @@ import cz.loplex.dogvision.gl.GL_UNSIGNED_BYTE
 import cz.loplex.dogvision.gl.Target
 import cz.loplex.dogvision.gl.ViewPasses
 import cz.loplex.dogvision.gl.texture
+import cz.loplex.dogvision.web.gl.Gl2
+import cz.loplex.dogvision.web.gl.WebGL2RenderingContext
+import cz.loplex.dogvision.web.gl.WebGl
 import kotlinx.browser.document
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array

@@ -1,7 +1,7 @@
 // The offsets and values of the PNG format's header and chunks, as its specification lays them out.
 @file:Suppress("MagicNumber")
 
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import cz.loplex.dogvision.core.Image
 import cz.loplex.dogvision.core.blue

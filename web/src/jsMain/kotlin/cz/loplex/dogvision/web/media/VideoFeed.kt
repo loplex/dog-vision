@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import kotlinx.browser.document
 import org.w3c.dom.HTMLVideoElement

@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.gl
 
 import org.khronos.webgl.ArrayBufferView
 import org.khronos.webgl.WebGLObject

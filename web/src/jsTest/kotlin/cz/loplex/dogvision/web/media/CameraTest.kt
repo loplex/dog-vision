@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import cz.loplex.dogvision.core.CameraOption
 import cz.loplex.dogvision.core.Facing

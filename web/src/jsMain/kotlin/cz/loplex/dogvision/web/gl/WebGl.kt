@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.gl
 
 import cz.loplex.dogvision.gl.Gl
 import org.khronos.webgl.Float32Array

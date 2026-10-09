@@ -1,4 +1,4 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.gl
 
 import cz.loplex.dogvision.gl.GL_BLEND
 import cz.loplex.dogvision.gl.GL_CLAMP_TO_EDGE

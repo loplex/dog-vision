@@ -1,8 +1,10 @@
-package cz.loplex.dogvision.web
+package cz.loplex.dogvision.web.media
 
 import cz.loplex.dogvision.core.Arrangement
 import cz.loplex.dogvision.core.Box
 import cz.loplex.dogvision.core.View
+import cz.loplex.dogvision.web.Passes
+import cz.loplex.dogvision.web.gl.WebGL2RenderingContext
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.khronos.webgl.Uint8Array
