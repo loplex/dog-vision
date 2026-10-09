@@ -68,7 +68,7 @@ The root project declares the plugin, so these are on every module's build scrip
 
 ### Which module uses which
 
-The modules stand in six layers, each a band of the graphs,
+The modules stand in six layers, each a row of the graphs named on its left,
 and a module's code uses only modules in the layers below its own:
 
 1. the foundations: `core`, the model, and `ffmpeg`, which uses no other module;
@@ -84,138 +84,32 @@ An arrow points from a module to one it uses:
 
 - **a thick arrow is `api`**: whatever uses the module gets the one it points at too;
 - **a thin arrow is `implementation`**: the module keeps the one it points at to itself;
-- **a dotted arrow is for tests alone**: the module's tests use it, and its code does not.
+- **a dashed arrow is for tests alone**: the module's tests use it, and its code does not.
 
 A module in bold is a program: its build makes something to run,
-the app's APK, the web page, or the packages of the command line and the windows.
+the app's APK, the web page, or the packages of the command line and the windows.\
+Under its name, in small letters, is what it is, as the table in [How the code is laid out](#how-the-code-is-laid-out) says.
 
 What each module uses, less `texts` and the tests:
 
-```mermaid
-graph TD
-    subgraph programs [the programs]
-        cli
-        gui-compose
-        android
-        gui-swing
-        web
-    end
-    subgraph frames [what the app and the windows are built on]
-        gui-core
-        ui
-    end
-    subgraph jvm [what the command line and the windows share]
-        jvm-common
-    end
-    subgraph services [built on the model]
-        gl
-    end
-    subgraph foundations [the foundations]
-        ffmpeg
-        core
-    end
-    gl --> core
-    gui-compose --> ui
-    android --> gl
-    web --> core
-    gui-compose --> gui-core
-    gui-core ==> ffmpeg
-    jvm-common ==> core
-    android --> ui
-    gui-swing --> gui-core
-    gui-core ==> jvm-common
-    gui-core --> gl
-    web --> gl
-    cli --> jvm-common
-    jvm-common ==> ffmpeg
-    android --> core
-    classDef program font-weight:bold
-    class android,gui-compose,gui-swing,web,cli program
-```
+![What each module uses, less texts and the tests](modules/uses.svg)
 
 What uses `texts`:
 
-```mermaid
-graph TD
-    subgraph programs [the programs]
-        android
-        web
-    end
-    subgraph frames [what the app and the windows are built on]
-        ui
-    end
-    subgraph jvm [what the command line and the windows share]
-        jvm-common
-    end
-    subgraph services [built on the model]
-        texts
-    end
-    subgraph foundations [the foundations]
-        core
-    end
-    android --> texts
-    web --> texts
-    ui ==> texts
-    jvm-common ==> texts
-    texts ==> core
-    programs ~~~ frames
-    frames ~~~ jvm
-    classDef program font-weight:bold
-    class android,web program
-```
+![What uses texts](modules/texts.svg)
 
 What uses `testing`, in tests alone:
 
-```mermaid
-graph TD
-    subgraph programs [the programs]
-        android
-        web
-    end
-    subgraph frames [what the app and the windows are built on]
-        gui-core
-    end
-    subgraph services [built on the model]
-        testing
-    end
-    subgraph foundations [the foundations]
-        core
-    end
-    android -.-> testing
-    web -.-> testing
-    gui-core -.-> testing
-    testing ==> core
-    core -.-> testing
-    programs ~~~ frames
-    classDef program font-weight:bold
-    class android,web program
-```
+![What uses testing, in tests alone](modules/testing.svg)
 
 What the packages take, which `packaging` makes of the windows, the command line and the web page:
 
-```mermaid
-graph TD
-    subgraph packages [the packages]
-        packaging
-    end
-    subgraph programs [the programs]
-        gui-compose
-        gui-swing
-        cli
-        web
-    end
-    packaging --> gui-compose
-    packaging --> gui-swing
-    packaging --> cli
-    packaging --> web
-    classDef program font-weight:bold
-    class packaging,gui-compose,gui-swing,cli,web program
-```
+![What the packages take](modules/packaging.svg)
 
 - **`texts` has a graph of its own, as with it in the first one lines have to cross**, however the modules are placed:
   `android`, `web`, and `jvm-common` with `gui-core`, are three that each reach the same three,
   `core`, `gl` and `texts`, and no drawing on a plane joins three to three without a crossing.\
-  Without `texts` the first graph could be drawn with none.
+  Without `texts` the first graph has two crossings, the fewest it can have with each layer a row of its own.
 - **`jvm-common` holds what the command line and the windows share**:
   the view's options, which each reads from its command line,
   a photo read as it is meant to be seen, and a photo or a video converted at full size.
@@ -229,9 +123,14 @@ graph TD
 - **Only tests use `testing`**, so no program ships it.\
   `core`'s tests use `testing`, which in turn uses `core`;
   Gradle builds `core` itself first, as its code does not use `testing`.
+- **Each graph is drawn by Graphviz from its source in [`docs/modules`](modules)**, a `.dot` file:
+  `./gradlew drawModuleGraphs` runs Graphviz's `dot` on each into the SVG shown here,
+  and writes the `.dot`'s SHA-256 into it.
 - **`./gradlew checkModuleGraph` holds the four graphs together to the modules' build files**, and runs in `check`:
   every arrow declared is drawn in one of them, and none is drawn that is not.\
-  It holds the layers too: an arrow but a dotted one points into a band below its own.
+  It holds the layers too: an arrow but a dashed one points into a row below its own.\
+  It holds each SVG to its `.dot` through the SHA-256, and fails when the `.dot` has changed since,
+  so it needs no Graphviz.
 
 ### The view is rendered on the GPU, and a photo at full size on the CPU
 

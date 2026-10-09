@@ -1,0 +1,53 @@
+// What each module uses, less texts and the tests.
+// ./gradlew drawModuleGraphs draws uses.svg from it.
+digraph uses {
+    newrank=true
+    bgcolor=white
+    nodesep=0.35
+    node [fontname="Helvetica,Arial,sans-serif", margin="0.15,0.08"]
+    edge [arrowsize=0.8]
+
+    // The layers' titles, top to bottom, each above the next.
+    {
+        node [shape=plaintext, fontcolor="#555555"]
+        edge [style=invis]
+        layer_programs [label="the programs"]
+        layer_frames [label="what the app and the\nwindows are built on"]
+        layer_jvm [label="what the command line\nand the windows share"]
+        layer_services [label="built on the model"]
+        layer_foundations [label="the foundations"]
+        layer_programs -> layer_frames -> layer_jvm -> layer_services -> layer_foundations
+    }
+
+    // Each layer's modules, on a floor with its title, which stands left of them.
+    node [shape=box, style=rounded]
+    { rank=same; layer_programs -> { cli; "gui-compose"; android; "gui-swing"; web } [style=invis] }
+    { rank=same; layer_frames -> { "gui-core"; ui } [style=invis] }
+    { rank=same; layer_jvm -> { "jvm-common" } [style=invis] }
+    { rank=same; layer_services -> { gl } [style=invis] }
+    { rank=same; layer_foundations -> { ffmpeg; core } [style=invis] }
+
+    // The programs, in bold, each with what it is in small letters under its name.
+    cli [label=<<b>cli</b><br/><font point-size="10" color="#555555">command line</font>>]
+    "gui-compose" [label=<<b>gui-compose</b><br/><font point-size="10" color="#555555">window in Compose</font>>]
+    android [label=<<b>android</b><br/><font point-size="10" color="#555555">Android app</font>>]
+    "gui-swing" [label=<<b>gui-swing</b><br/><font point-size="10" color="#555555">window in Swing</font>>]
+    web [label=<<b>web</b><br/><font point-size="10" color="#555555">web page</font>>]
+
+    // What uses what: a thick arrow is api, a thin one implementation.
+    gl -> core
+    "gui-compose" -> ui
+    android -> gl
+    web -> core
+    "gui-compose" -> "gui-core"
+    "gui-core" -> ffmpeg [penwidth=2.5]
+    "jvm-common" -> core [penwidth=2.5]
+    android -> ui
+    "gui-swing" -> "gui-core"
+    "gui-core" -> "jvm-common" [penwidth=2.5]
+    "gui-core" -> gl
+    web -> gl
+    cli -> "jvm-common"
+    "jvm-common" -> ffmpeg [penwidth=2.5]
+    android -> core
+}

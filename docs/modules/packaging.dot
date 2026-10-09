@@ -1,0 +1,36 @@
+// What the packages take.
+// ./gradlew drawModuleGraphs draws packaging.svg from it.
+digraph packaging {
+    newrank=true
+    bgcolor=white
+    nodesep=0.35
+    node [fontname="Helvetica,Arial,sans-serif", margin="0.15,0.08"]
+    edge [arrowsize=0.8]
+
+    // The layers' titles, top to bottom, each above the next.
+    {
+        node [shape=plaintext, fontcolor="#555555"]
+        edge [style=invis]
+        layer_packages [label="the packages"]
+        layer_programs [label="the programs"]
+        layer_packages -> layer_programs
+    }
+
+    // Each layer's modules, on a floor with its title, which stands left of them.
+    node [shape=box, style=rounded]
+    { rank=same; layer_packages -> { packaging } [style=invis] }
+    { rank=same; layer_programs -> { "gui-compose"; "gui-swing"; cli; web } [style=invis] }
+
+    // The programs, in bold, each with what it is in small letters under its name.
+    packaging [label=<<b>packaging</b><br/><font point-size="10" color="#555555">debs, rpms, MSI, zip</font>>]
+    "gui-compose" [label=<<b>gui-compose</b><br/><font point-size="10" color="#555555">window in Compose</font>>]
+    "gui-swing" [label=<<b>gui-swing</b><br/><font point-size="10" color="#555555">window in Swing</font>>]
+    cli [label=<<b>cli</b><br/><font point-size="10" color="#555555">command line</font>>]
+    web [label=<<b>web</b><br/><font point-size="10" color="#555555">web page</font>>]
+
+    // What uses what: a thin arrow is implementation.
+    packaging -> "gui-compose"
+    packaging -> "gui-swing"
+    packaging -> cli
+    packaging -> web
+}

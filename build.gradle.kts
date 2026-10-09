@@ -106,13 +106,13 @@ val checkLineLength = tasks.register("checkLineLength") {
     }
 }
 
-// docs/developing.md draws which module uses which, in Mermaid's graphs, split so that fewer lines cross;
-// together they are held here to the dependencies the modules declare on each other, in `check`.
-// An arrow is `==>` for api, `-->` for implementation, and `-.->` for a dependency that only tests have;
-// `~~~`, which only places a layer, is no dependency.
+// docs/developing.md shows which module uses which in Graphviz's graphs,
+// each drawn from its source in docs/modules, split so that fewer lines cross.
+// Together they are held here to the dependencies the modules declare on each other, in `check`:
+// a dependency is `api`, `implementation`, or `tests` when only tests have it.
 // The modules' dependencies are read once all of them are evaluated.
 val moduleUses = objects.setProperty<String>()
-// A graph's `class ... program` line makes bold the programs it draws:
+// A graph's bold modules are the programs it draws:
 // the modules whose build makes something to run, an APK, a desktop package or a web page.
 val programs = objects.setProperty<String>()
 gradle.projectsEvaluated {
@@ -120,14 +120,14 @@ gradle.projectsEvaluated {
         subprojects.flatMap { module ->
             module.configurations.flatMap { configuration ->
                 val name = configuration.name
-                val arrow = when {
-                    "test" in name.lowercase() -> "-.->"
-                    name == "api" || name.endsWith("Api") -> "==>"
-                    else -> "-->"
+                val kind = when {
+                    "test" in name.lowercase() -> "tests"
+                    name == "api" || name.endsWith("Api") -> "api"
+                    else -> "implementation"
                 }
                 // The Android app's instrumented tests depend on the app itself, which is no use of another module.
                 configuration.dependencies.withType<ProjectDependency>().filter { it.path != module.path }
-                    .map { "${module.name} $arrow ${it.path.removePrefix(":")}" }
+                    .map { "${module.name} $kind ${it.path.removePrefix(":")}" }
             }
         }.toSet(),
     )
@@ -145,51 +145,170 @@ gradle.projectsEvaluated {
         }.map { it.name }.toSet(),
     )
 }
+
+// The comment each SVG in docs/modules carries before its <svg> element: the name of the .dot it is drawn from,
+// and that file's SHA-256 with its lines ended by \n, as a checkout on Windows may end them by \r\n.
+// checkModuleGraph holds the SVG to its .dot through it, with no Graphviz to run.
+object ModuleGraphSource {
+    fun text(dot: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(dot.readText().replace("\r\n", "\n").toByteArray())
+        return "Drawn from ${dot.name}, SHA-256 ${digest.joinToString("") { "%02x".format(it) }}"
+    }
+
+    fun comment(dot: File): String = "<!-- ${text(dot)} -->"
+}
+
+// The SVG dot writes, tidied: each element on a line of its own, indented by two spaces,
+// and without the namespace declarations nothing in it uses, such as the xlink one dot writes into every graph;
+// [comment] goes before <svg>.
+object ModuleGraphSvg {
+    fun tidied(svg: String, comment: String): String {
+        val factory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+        factory.isNamespaceAware = true
+        // The DOCTYPE names the SVG 1.1 DTD, which is not fetched.
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+        val document = factory.newDocumentBuilder().parse(org.xml.sax.InputSource(java.io.StringReader(svg)))
+        val blanks = mutableListOf<org.w3c.dom.Node>()
+        val prefixes = mutableSetOf<String>()
+        fun visit(node: org.w3c.dom.Node) {
+            if (node.nodeType == org.w3c.dom.Node.TEXT_NODE && node.nodeValue.isBlank()) blanks += node
+            node.prefix?.let { prefixes += it }
+            val attributes = node.attributes
+            if (attributes != null) {
+                for (i in 0 until attributes.length) {
+                    attributes.item(i).prefix?.takeIf { it != "xmlns" }?.let { prefixes += it }
+                }
+            }
+            val children = node.childNodes
+            for (i in 0 until children.length) visit(children.item(i))
+        }
+        visit(document)
+        blanks.forEach { it.parentNode.removeChild(it) }
+        val root = document.documentElement
+        val declarations = root.attributes
+        (0 until declarations.length).map { declarations.item(it) }
+            .filter { it.prefix == "xmlns" && it.localName !in prefixes }
+            .forEach { root.removeAttributeNode(it as org.w3c.dom.Attr) }
+        // What goes before <svg> is written here, as the serializer puts a DOCTYPE after the comments and runs them on.
+        val out = java.io.StringWriter()
+        if (svg.startsWith("<?xml")) out.appendLine(svg.substringBefore("?>") + "?>")
+        document.doctype?.let { out.appendLine("<!DOCTYPE ${it.name} PUBLIC \"${it.publicId}\"\n \"${it.systemId}\">") }
+        val children = document.childNodes
+        for (i in 0 until children.length) {
+            val child = children.item(i)
+            if (child.nodeType == org.w3c.dom.Node.COMMENT_NODE) out.appendLine("<!--${child.nodeValue}-->")
+        }
+        out.appendLine("<!-- $comment -->")
+        val transformer = javax.xml.transform.TransformerFactory.newInstance().newTransformer()
+        transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "yes")
+        transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes")
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
+        transformer.transform(javax.xml.transform.dom.DOMSource(root), javax.xml.transform.stream.StreamResult(out))
+        return out.toString()
+    }
+}
+val moduleGraphs = layout.projectDirectory.dir("docs/modules")
+tasks.register("drawModuleGraphs") {
+    description = "Draws each docs/modules/*.dot into its SVG, with Graphviz's dot, which has to be on the PATH."
+    val sources = fileTree(moduleGraphs) { include("*.dot") }
+    doLast {
+        sources.files.sortedBy { it.name }.forEach { dot ->
+            val process = try {
+                ProcessBuilder("dot", "-Tsvg", dot.path).redirectError(ProcessBuilder.Redirect.INHERIT).start()
+            } catch (e: java.io.IOException) {
+                throw GradleException("Graphviz's dot does not run; is it installed and on the PATH?", e)
+            }
+            val svg = process.inputStream.bufferedReader().readText()
+            if (process.waitFor() != 0) throw GradleException("dot failed on ${dot.name}")
+            val target = File(dot.parentFile, dot.nameWithoutExtension + ".svg")
+            target.writeText(ModuleGraphSvg.tidied(svg, ModuleGraphSource.text(dot)))
+        }
+    }
+}
 val checkModuleGraph = tasks.register("checkModuleGraph") {
-    description = "Fails when the graphs of the modules in docs/developing.md differ from their dependencies."
+    description = "Fails when the graphs of the modules in docs/modules differ from the dependencies, or their SVGs " +
+        "from them."
     val doc = file("docs/developing.md")
+    val sources = fileTree(moduleGraphs) { include("*.dot", "*.svg") }
     val uses = moduleUses
     val runnable = programs
     inputs.file(doc)
+    inputs.files(sources)
     inputs.property("moduleUses", uses)
     inputs.property("programs", runnable)
     doLast {
-        val graphs = Regex("^```mermaid\n(.*?)^```", setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
-            .findAll(doc.readText()).map { it.groupValues[1] }.toList()
-        if (graphs.isEmpty()) throw GradleException("docs/developing.md: no ```mermaid block")
-        val arrows = graphs.map { graph ->
-            graph.lines().mapNotNull { Regex("""\s*([\w-]+) (==>|-->|-\.->) ([\w-]+)""").matchEntire(it)?.groupValues }
-        }
-        val drawn = arrows.flatten().map { it.drop(1).joinToString(" ") }.toSet()
-        // The bands, top to bottom, are the layers: a module's code uses only modules in a band below its own.
-        val upward = graphs.zip(arrows).withIndex().flatMap { (i, graphAndArrows) ->
-            val (graph, graphArrows) = graphAndArrows
-            val band = mutableMapOf<String, Int>()
-            var current = -1
-            for (line in graph.lines().map { it.trim() }) {
-                when {
-                    line.startsWith("subgraph ") -> current++
-                    line != "end" && line.matches(Regex("""[\w-]+""")) -> band[line] = current
+        val files = sources.files.sortedBy { it.name }
+        val dots = files.filter { it.extension == "dot" }
+        if (dots.isEmpty()) throw GradleException("docs/modules: no .dot")
+        val problems = mutableListOf<String>()
+        // A module's name, in quotes where it holds a hyphen, as dot asks.
+        val module = """"?([\w-]+)"?"""
+        // The layers' titles, top to bottom: `layer_a -> layer_b -> …`.
+        val titles = Regex("""\s*(layer_\w+(?: -> layer_\w+)+)""")
+        // A layer's floor: `{ rank=same; layer_a -> { m; "n-o" } [style=invis] }`.
+        val floor = Regex("""\s*\{ rank=same; (layer_\w+) -> \{ ([^}]*) } \[style=invis] }""")
+        // A program's label: its name in bold, then what it is in small letters.
+        val bold = Regex("""\s*$module \[label=<<b>([\w-]+)</b><br/><font [^>]*>[^<]+</font>>]""")
+        val arrow = Regex("""\s*$module -> $module(?: \[([^\]]*)])?""")
+        // The look of each kind of arrow; core's tests point up, where an arrow must not place the layers.
+        val kinds = mapOf(
+            "" to "implementation",
+            "penwidth=2.5" to "api",
+            "style=dashed" to "tests",
+            "style=dashed, constraint=false" to "tests",
+        )
+        val drawn = mutableSetOf<String>()
+        dots.forEach { dot ->
+            val name = dot.name
+            val lines = dot.readLines()
+            val layers = lines.firstNotNullOfOrNull { titles.matchEntire(it)?.groupValues?.get(1)?.split(" -> ") }
+            if (layers == null) problems += "$name: no line of the layers' titles, `layer_a -> layer_b -> …`"
+            val layerOf = lines.mapNotNull { floor.matchEntire(it)?.groupValues }.flatMap { (_, layer, modules) ->
+                modules.split(";").map { it.trim().removeSurrounding("\"") to layer }
+            }.toMap()
+            val arrows = lines.filter { "->" in it && titles.matchEntire(it) == null && floor.matchEntire(it) == null }
+                .mapNotNull { line ->
+                    val match = arrow.matchEntire(line)?.groupValues
+                    val kind = match?.let { kinds[it[3]] }
+                    if (kind == null) problems += "$name: not an arrow of a known kind: ${line.trim()}"
+                    if (match == null || kind == null) null else Triple(match[1], kind, match[2])
+                }
+            arrows.forEach { (from, kind, to) ->
+                drawn += "$from $kind $to"
+                val unplaced = listOf(from, to).filter { it !in layerOf }
+                unplaced.forEach { problems += "$name: on no layer's floor: $it" }
+                // The layers, top to bottom: a module's code uses only modules in a layer below its own.
+                if (unplaced.isEmpty() && layers != null && kind != "tests" &&
+                    layers.indexOf(layerOf.getValue(to)) <= layers.indexOf(layerOf.getValue(from))
+                ) {
+                    problems += "$name: not to a layer below: $from $kind $to"
                 }
             }
-            graphArrows.filter { it[2] != "-.->" && band.getValue(it[3]) <= band.getValue(it[1]) }
-                .map { "graph ${i + 1}: not to a band below: ${it.drop(1).joinToString(" ")}" }
-        }
-        val declared = uses.get()
-        val problems = (declared - drawn).sorted().map { "not drawn: $it" } + upward +
-            (drawn - declared).sorted().map { "drawn, not declared: $it" } +
-            graphs.zip(arrows).withIndex().flatMap { (i, graphAndArrows) ->
-                val (graph, graphArrows) = graphAndArrows
-                val modules = graphArrows.flatMap { listOf(it[1], it[3]) }.toSet()
-                val bold = graph.lines()
-                    .mapNotNull { Regex("""\s*class ([\w,-]+) program""").matchEntire(it)?.groupValues?.get(1) }
-                    .flatMap { it.split(",") }.toSet()
-                val shouldBe = modules intersect runnable.get()
-                (shouldBe - bold).sorted().map { "graph ${i + 1}: not bold: $it" } +
-                    (bold - shouldBe).sorted().map { "graph ${i + 1}: bold, but no program drawn there: $it" }
+            val modules = arrows.flatMap { listOf(it.first, it.third) }.toSet()
+            val labels = lines.mapNotNull { bold.matchEntire(it)?.groupValues }
+            labels.filter { it[1] != it[2] }.forEach { problems += "$name: ${it[1]} labelled as ${it[2]}" }
+            val bolded = labels.map { it[1] }.toSet()
+            val shouldBe = modules intersect runnable.get()
+            problems += (shouldBe - bolded).sorted().map { "$name: not bold: $it" } +
+                (bolded - shouldBe).sorted().map { "$name: bold, but no program drawn there: $it" }
+            val svg = File(dot.parentFile, dot.nameWithoutExtension + ".svg")
+            if (!svg.isFile || ModuleGraphSource.comment(dot) !in svg.readText()) {
+                problems += "${svg.name} is not drawn from $name as it is: run ./gradlew drawModuleGraphs"
             }
+        }
+        files.filter { it.extension == "svg" && File(it.parentFile, it.nameWithoutExtension + ".dot") !in dots }
+            .forEach { problems += "${it.name}: no .dot to draw it from" }
+        // Every graph is in docs/developing.md, as an image.
+        val shown = Regex("""!\[[^\]]*]\(modules/([\w-]+)\.svg\)""").findAll(doc.readText())
+            .map { it.groupValues[1] }.toSet()
+        problems += (dots.map { it.nameWithoutExtension }.toSet() - shown).sorted()
+            .map { "$it.svg: not shown in docs/developing.md" }
+        val declared = uses.get()
+        problems += (declared - drawn).sorted().map { "not drawn: $it" } +
+            (drawn - declared).sorted().map { "drawn, not declared: $it" }
         if (problems.isNotEmpty()) {
-            throw GradleException("docs/developing.md's graphs of the modules:\n" + problems.joinToString("\n"))
+            throw GradleException("docs/modules' graphs of the modules:\n" + problems.distinct().joinToString("\n"))
         }
     }
 }
