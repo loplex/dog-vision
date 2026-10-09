@@ -66,9 +66,13 @@ tasks.register<JavaExec>("renderFigures") {
     args(figures.asFile.absolutePath)
 }
 
+/** The JVM target's JAR and the JARs it runs on, which the uber JAR and the launcher below take. */
+val jvmJar = tasks.named<Jar>("jvmJar")
+val jvmRuntimeClasspath = configurations.named("jvmRuntimeClasspath")
+
 // One JAR with core and the Kotlin standard library in it, which `java -jar` runs alone on a JDK 17 or newer.
 val uberJarNotices =
-    uberJarLicences("uberJarLicences", "dog-vision-cli.jar", configurations.named("jvmRuntimeClasspath"))
+    uberJarLicences("uberJarLicences", "dog-vision-cli.jar", jvmRuntimeClasspath)
 val uberJar = tasks.register<Jar>("uberJar") {
     description = "Assembles build/jars/dog-vision-cli.jar, the command line with everything it needs."
     group = "distribution"
@@ -76,8 +80,8 @@ val uberJar = tasks.register<Jar>("uberJar") {
     uberJar(
         "dog-vision-cli.jar",
         mainClassName,
-        tasks.named<Jar>("jvmJar").flatMap { it.archiveFile },
-        configurations.named("jvmRuntimeClasspath"),
+        jvmJar.flatMap { it.archiveFile },
+        jvmRuntimeClasspath,
         uberJarNotices,
     )
 }
@@ -93,8 +97,8 @@ val windowsModules = listOf("java.base", "java.desktop")
 // in the MSI beside the windows, and alone in the zip, both of which :packaging makes.
 windowsLauncher(
     name = "dog-vision-cli",
-    ownJar = tasks.named<Jar>("jvmJar").flatMap { it.archiveFile },
-    classpath = configurations.named("jvmRuntimeClasspath"),
+    ownJar = jvmJar.flatMap { it.archiveFile },
+    classpath = jvmRuntimeClasspath,
     mainClass = mainClassName,
     console = true,
     runtimeModules = windowsModules,

@@ -42,7 +42,9 @@ kotlin {
     }
 }
 
-// The page's artifact, the page for production, whose task Kotlin's plugin registers.
-artifact("jsBrowserDistribution")
+/** The page for production, whose task Kotlin's plugin registers. */
+val jsBrowserDistribution = tasks.named<Sync>("jsBrowserDistribution")
+// The page's artifact.
+artifact(jsBrowserDistribution)
 // The same page, handed to :packaging, which installs it with the other programs.
-webPage(tasks.named<Sync>("jsBrowserDistribution"))
+webPage(jsBrowserDistribution)

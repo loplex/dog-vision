@@ -64,6 +64,10 @@ windowsRuntime()
 /** The version in the JARs' names, as the packages have it. */
 val packageVersion = providers.gradleProperty("appVersion")
 
+/** The JARs the JVM target runs on, here and on Windows. */
+val jvmRuntimeClasspath = configurations.named("jvmRuntimeClasspath")
+val windowsRuntime = configurations.named("windowsRuntime")
+
 /** The window's own JAR, which each uber JAR below merges with the JARs the window needs. */
 val windowJar = tasks.named<Jar>("jvmJar").flatMap { it.archiveFile }
 
@@ -74,7 +78,7 @@ val linuxUberJarNotices =
     uberJarLicences(
         "linuxUberJarLicences",
         "dog-vision-swing-linux-x64-${packageVersion.get()}.jar",
-        configurations.named("jvmRuntimeClasspath"),
+        jvmRuntimeClasspath,
     )
 val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
     description = "Assembles build/jars/dog-vision-swing-linux-x64-<version>.jar, the window for this machine."
@@ -84,7 +88,7 @@ val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
         "dog-vision-swing-linux-x64-${packageVersion.get()}.jar",
         mainClassName,
         windowJar,
-        configurations.named("jvmRuntimeClasspath"),
+        jvmRuntimeClasspath,
         linuxUberJarNotices,
     )
 }
@@ -95,7 +99,7 @@ val windowsUberJarNotices =
     uberJarLicences(
         "windowsUberJarLicences",
         "dog-vision-swing-windows-x64-${packageVersion.get()}.jar",
-        configurations.named("windowsRuntime"),
+        windowsRuntime,
     )
 val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
     description = "Assembles build/jars/dog-vision-swing-windows-x64-<version>.jar, the window for Windows."
@@ -105,7 +109,7 @@ val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
         "dog-vision-swing-windows-x64-${packageVersion.get()}.jar",
         mainClassName,
         windowJar,
-        configurations.named("windowsRuntime"),
+        windowsRuntime,
         windowsUberJarNotices,
         excludes = listOf("$armAngle/**"),
     )
@@ -120,7 +124,7 @@ val runtimeModules = listOf("java.base", "java.desktop", "java.instrument", "jdk
 windowsLauncher(
     name = "dog-vision-swing",
     ownJar = windowJar,
-    classpath = configurations.named("windowsRuntime"),
+    classpath = windowsRuntime,
     mainClass = mainClassName,
     runtimeModules = runtimeModules,
     leftOut = listOf(armAngle),
