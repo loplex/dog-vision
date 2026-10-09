@@ -332,7 +332,7 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
 
 - **Each window gets a shortcut in the Start menu and on the desktop**,
   *Dog Vision (Kotlin Compose)* and *Dog Vision (Java Swing)*, the Start menu's in a group *Dog Vision*.\
-  The command line gets none, as started from one it would only say that the window is the desktop app's,
+  The command line gets none, as started from one it would only print its usage,
   but `Program Files\dog-vision` goes at the end of the system's `PATH`,
   for the consoles opened after, and comes off it again when the MSI is removed.
 - **The web page gets a shortcut in the Start menu's group alone**, *Dog Vision (web)*, with the app's icon,

@@ -9,7 +9,7 @@
   It installs for every user into Program Files\$(var.InstallFolder): the Compose window's dog-vision-compose.exe,
   the Swing window's dog-vision-swing.exe and the command line's dog-vision-cli.exe, each on the runtime beside them.
   Each window gets a shortcut in the Start menu's group of the product's name and one on the desktop;
-  the command line, which started from a shortcut would only say that the window is the desktop app's, gets none,
+  the command line, which started from a shortcut would only print its usage, gets none,
   but the installation folder goes on the system's PATH.
   The web page, in the folder web, gets a shortcut in the Start menu's group,
   which opens its index.html in the system's browser.

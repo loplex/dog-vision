@@ -283,7 +283,6 @@
     <string name="photo_written">Zapsáno %1$s</string>
     <string name="video_written">Zapsáno %1$s: %2$s</string>
     <string name="pixels_differ">%1$s pixelů se znatelně liší</string>
-    <string name="no_window">Okno patří desktopové aplikaci; tento příkazový řádek jen převádí fotky a videa</string>
     <!-- What the command line prints for its info option, and the windows show in a section of the first title;
          the formulas and their symbols stay as they are -->
     <string name="info_section">Model a jeho kontroly</string>

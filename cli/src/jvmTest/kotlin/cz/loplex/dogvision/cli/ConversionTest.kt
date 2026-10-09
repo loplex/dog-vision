@@ -79,10 +79,10 @@ class ConversionTest {
     fun noPhotoAndTheUsageAreNotConversions() {
         val (none, _, noneErr) = run()
         assertEquals(2, none)
-        assertTrue("The window is the desktop app's" in noneErr, noneErr)
         val (help, out, _) = run("--help")
         assertEquals(0, help)
         assertTrue(out.startsWith("usage: dog-vision-cli [options] file"), out)
+        assertEquals(out, noneErr)
         val (wrong, _, err) = run("--species", "unicorn")
         assertEquals(2, wrong)
         assertTrue("dog-vision-cli: error: --species: no species unicorn" in err, err)

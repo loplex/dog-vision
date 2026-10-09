@@ -236,7 +236,7 @@ dog-vision-cli --species cat clip.mp4                           # a video, throu
   `photo.horse-vs-cat.png` with `--compare horse` too, and `clip.dog.mp4` for a video.
 - **It takes options for the view**:
   `--species`, `--compare`, `--difference`, `--adaptation`, `--strength`, `--chroma-scale`, `--acuity` and `--fov`;
-  `--help` lists them.\
+  `--help` lists them, and so does the command line given no file.\
   The window is not in it.
 - **`--info` prints the model derived for `--species`**:
   the cone and simulation matrices, the checks they pass, and the species' facts.

@@ -304,7 +304,6 @@
     <string name="photo_written">Wrote %1$s</string>
     <string name="video_written">Wrote %1$s: %2$s</string>
     <string name="pixels_differ">%1$s of pixels differ noticeably</string>
-    <string name="no_window">The window is the desktop app\'s; this command line only converts a photo or a video</string>
     <!-- What the command line prints for its info option, and the windows show in a section of the first title;
          the formulas and their symbols stay as they are -->
     <string name="info_section">The model and its checks</string>

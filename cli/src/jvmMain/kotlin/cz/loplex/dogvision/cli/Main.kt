@@ -9,7 +9,7 @@ import java.io.Console
 import java.io.PrintStream
 import kotlin.system.exitProcess
 
-/** The command line: it converts a photo or a video, and says that the window is the desktop app's. */
+/** The command line: it converts a photo or a video, and prints its usage when given none. */
 fun main(args: Array<String>) {
     exitProcess(runCommandLine(args.toList(), systemTexts(), System.out, System.err, onTerminal()))
 }
@@ -27,9 +27,8 @@ fun onTerminal(): Boolean {
 
 /**
  * Reads [args] and does what they ask for, worded by [texts]:
- * prints the usage, or the model derived for the species,
- * or converts a photo or a video, showing how far a video is where [err] is a [terminal],
- * or says that the window is the desktop app's when given no file.\
+ * prints the usage, or the model derived for the species, or converts a photo or a video,
+ * showing how far a video is where [err] is a [terminal], or prints the usage on [err] when given no file.\
  * Returns the exit status: 2 for a command line that cannot be read, or that gives no file.
  */
 fun runCommandLine(
@@ -49,7 +48,7 @@ fun runCommandLine(
     return when {
         arguments.help -> 0.also { out.println(usage(texts)) }
         arguments.info -> 0.also { out.println(info(arguments.view.params, texts)) }
-        arguments.file == null -> 2.also { err.println(texts.get(Str.NO_WINDOW)) }
+        arguments.file == null -> 2.also { err.println(usage(texts)) }
         else -> convertFile(arguments, texts, out, err, terminal)
     }
 }
