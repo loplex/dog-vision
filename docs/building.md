@@ -80,6 +80,7 @@ The phone needs Android 8.0 (API 26) or later, and OpenGL ES 3.0.
 ```sh
 ./gradlew :web:jsBrowserDevelopmentRun   # serves the page; with -t, builds it again on every change
 ./gradlew :web:jsBrowserDistribution     # web/build/dist/js/productionExecutable
+tools/run_web_on_linux.sh                # serves that page on localhost:8000 and opens it in the browser
 ```
 
 Its deb and its rpm, `dog-vision-web`, are among [the desktop packages](#the-desktop-packages).
@@ -89,6 +90,8 @@ Its deb and its rpm, `dog-vision-web`, are among [the desktop packages](#the-des
 ```sh
 ./gradlew :cli:uberJar           # cli/build/jars/dog-vision-cli.jar, with everything it needs
 ./gradlew :cli:installJvmDist    # or a start script and its JARs, in cli/build/install/dog-vision-cli-jvm
+tools/run_cli_on_linux.sh photo.jpg
+                                 # runs the JAR the uberJar task built
 ```
 
 ### The command line's zip for Windows
@@ -133,6 +136,8 @@ pwsh tools/package_cli_zip_on_windows.ps1
 ./gradlew :gui-swing:runJvm --args="photo.jpg"               # the Swing window, on a photo or a video
 ./gradlew :gui-swing:linuxUberJar                            # gui-swing/build/jars/dog-vision-swing-linux-x64-0.1.0.jar
 ./gradlew :gui-swing:windowsUberJar                          # gui-swing/build/jars/dog-vision-swing-windows-x64-0.1.0.jar
+tools/run_compose_on_linux.sh photo.jpg                      # runs the Linux JAR, on the camera without a file
+tools/run_swing_on_linux.sh photo.jpg                        # the same for the Swing window
 ```
 
 - **`gui-compose` is the Compose window and `gui-swing` the Swing one**, each with its own JARs and packages.
