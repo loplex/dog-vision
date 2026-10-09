@@ -1,4 +1,6 @@
 import cz.loplex.dogvision.packaging.artifact
+import cz.loplex.dogvision.packaging.jvm.LWJGL_JAVA_OPTIONS
+import cz.loplex.dogvision.packaging.jvm.LWJGL_MANIFEST_ATTRIBUTES
 import cz.loplex.dogvision.packaging.jvm.glNatives
 import cz.loplex.dogvision.packaging.jvm.uberJar
 import cz.loplex.dogvision.packaging.jvm.uberJarLicences
@@ -59,6 +61,7 @@ compose.desktop {
     application {
         mainClass = mainClassName
         javaHome = packagingJdk.get().metadata.installationPath.asFile.path
+        jvmArgs += LWJGL_JAVA_OPTIONS
         nativeDistributions {
             packageName = "dog-vision-compose"
             packageVersion = providers.gradleProperty("appVersion").get()
@@ -102,6 +105,7 @@ val linuxUberJar = tasks.register<Jar>("linuxUberJar") {
         windowJar,
         jvmRuntimeClasspath,
         linuxUberJarNotices,
+        manifestAttributes = LWJGL_MANIFEST_ATTRIBUTES,
     )
 }
 artifact(linuxUberJar)
@@ -125,6 +129,7 @@ val windowsUberJar = tasks.register<Jar>("windowsUberJar") {
         windowsRuntime,
         windowsUberJarNotices,
         excludes = listOf("$armAngle/**"),
+        manifestAttributes = LWJGL_MANIFEST_ATTRIBUTES,
     )
 }
 artifact(windowsUberJar)
@@ -137,7 +142,7 @@ windowsLauncher(
     ownJar = windowJar,
     classpath = windowsRuntime,
     mainClass = mainClassName,
-    javaOptions = listOf("-Dcompose.application.configure.swing.globals=true"),
+    javaOptions = LWJGL_JAVA_OPTIONS + "-Dcompose.application.configure.swing.globals=true",
     runtimeModules = compose.desktop.application.nativeDistributions.modules,
     leftOut = listOf(armAngle),
 )

@@ -31,6 +31,10 @@ import javax.inject.Inject
  *
  * [notices], what it holds that is not this project's own and under which licences,
  * goes in as META-INF/THIRD-PARTY-LICENSES.txt, as [uberJarLicences] writes it.
+ *
+ * The manifest has [manifestAttributes] besides Main-Class, and Multi-Release,
+ * without which Java ignores the classes for its later versions under META-INF/versions:
+ * those of LWJGL, FlatLaf and JetBrains' JBR API, multi-release JARs each.
  */
 fun Jar.uberJar(
     fileName: String,
@@ -39,9 +43,10 @@ fun Jar.uberJar(
     classpath: Provider<out Iterable<File>>,
     notices: Provider<RegularFile>,
     excludes: List<String> = emptyList(),
+    manifestAttributes: Map<String, String> = emptyMap(),
 ) {
     archiveFileName.set(fileName)
-    manifest { attributes(mapOf("Main-Class" to mainClass)) }
+    manifest { attributes(mapOf("Main-Class" to mainClass, "Multi-Release" to "true") + manifestAttributes) }
     // The service rather than the project, which the configuration cache cannot keep.
     val archives = project.objects.newInstance(Archives::class.java).operations
     from(ownJar.map { archives.zipTree(it) })

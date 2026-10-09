@@ -1,6 +1,7 @@
 package cz.loplex.dogvision.packaging.linux
 
 import cz.loplex.dogvision.packaging.artifact
+import cz.loplex.dogvision.packaging.jvm.LWJGL_JAVA_OPTIONS
 import cz.loplex.dogvision.packaging.jvm.NativesOnly
 import cz.loplex.dogvision.packaging.jvm.UnpackNatives
 import cz.loplex.dogvision.packaging.jvm.installedJarNames
@@ -38,7 +39,8 @@ val windowRpmRequires = listOf("/bin/sh", "(jre-17 or jre-21 or jre-25)", "libEG
  * - [shared] resolves the JARs of [jars] that the package [sharedPackage] installs,
  *   in /usr/share/[sharedPackage]/lib, which the packages depend on at their own version and leave out.
  * - [mainClass] is the class the launcher starts, its main the window's.
- * - [jvmOptions] are the launcher's options before org.lwjgl.librarypath's, given the folder of the natives.
+ * - [jvmOptions] are the launcher's options after LWJGL's, [LWJGL_JAVA_OPTIONS],
+ *   and before org.lwjgl.librarypath's, given the folder of the natives.
  * - [nameSuffix] follows the desktop entry's name in each language.
  * - [summary] and [description] are what a package manager lists the packages with, in its search and its details.
  * - [nativesLeftIn] names the JARs, by the start of their names, whose natives are not unpacked.
@@ -96,7 +98,7 @@ fun Project.windowPackages(
         this.sharedJars.from(sharedJars)
         sharedJarDirectory.set("/usr/share/$sharedPackage/lib")
         jarNames.set(linuxJarNames)
-        this.jvmOptions.set(jvmOptions(nativesHome) + "-Dorg.lwjgl.librarypath=$nativesHome")
+        this.jvmOptions.set(LWJGL_JAVA_OPTIONS + jvmOptions(nativesHome) + "-Dorg.lwjgl.librarypath=$nativesHome")
         minimumJava.set(17)
         opensWindow.set(true)
         script.set(layout.buildDirectory.file("$work/launcher/$packageName"))

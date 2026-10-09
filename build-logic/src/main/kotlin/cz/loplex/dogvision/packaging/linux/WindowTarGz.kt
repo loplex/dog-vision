@@ -1,5 +1,6 @@
 package cz.loplex.dogvision.packaging.linux
 
+import cz.loplex.dogvision.packaging.jvm.LWJGL_JAVA_OPTIONS
 import cz.loplex.dogvision.packaging.jvm.installedJarNames
 import cz.loplex.dogvision.packaging.jvm.renameJars
 import cz.loplex.dogvision.packaging.licenses.javaRuntimeNote
@@ -30,7 +31,8 @@ import java.util.concurrent.Callable
  * The natives of the JARs whose names start with one of [nativesBeside] are unpacked beside them too,
  * as Compose's app image has skiko's, which a Java option then points to as $APPDIR,
  * so that it does not unpack them into the user's home.\
- * The window's launcher starts [mainClass] from [module]'s JAR with [javaOptions];
+ * The window's launcher starts [mainClass] from [module]'s JAR
+ * with LWJGL's options, [LWJGL_JAVA_OPTIONS], and [javaOptions];
  * the runtime has the modules [moduleLists] name, as the launchers' .modules for Windows do.\
  * The archive holds the project's LICENSE and the notices of what it holds that is not this project's own,
  * the runtime's among them, in the app's folder.
@@ -83,7 +85,7 @@ fun Project.windowTarGz(
         appVersion.set(version)
         modules.set(emptyList())
         this.moduleLists.from(moduleLists)
-        this.javaOptions.set(javaOptions)
+        this.javaOptions.set(LWJGL_JAVA_OPTIONS + javaOptions)
         icon.set(packaging.file("dog-vision.png"))
         launchers.set(mapOf("dog-vision-cli" to packaging.file("dog-vision-cli.properties").asFile))
         destination.set(layout.buildDirectory.dir("$work/app-image"))
