@@ -19,7 +19,7 @@
 # Each window is then opened under Xvfb, which is installed only once the deb's own dependencies are,
 # so that its X libraries hide none the deb misses.
 # No browser runs there, so of dog-vision-web it checks the desktop entry, with desktop-file-validate,
-# and that the file it opens with xdg-open is there.
+# and that the file its launcher opens with xdg-open is there.
 # Each check says whether it held, and every check runs, so that one failing does not hide the others;
 # the script fails if any did.
 #
@@ -163,10 +163,11 @@ entry_is_valid() {
     [ -z "$said" ] || echo "$said" >&3
     return "$status"
 }
-# The desktop entry $1 runs xdg-open, which is on PATH, on a file that is there.
-opens_a_file() {
-    set -- $(sed -n 's/^Exec=//p' "$1")
-    [ "$#" -eq 2 ] && [ "$1" = xdg-open ] && command -v xdg-open && [ -f "$2" ]
+# The desktop entry $1 runs dog-vision-web, which is on PATH and opens with xdg-open, on PATH too, a
+# file that is there.
+opens_the_page() {
+    [ "$(sed -n 's/^Exec=//p' "$1")" = dog-vision-web ] && command -v dog-vision-web && command -v xdg-open &&
+        set -- $(sed -n 's/^exec xdg-open //p' "$(command -v dog-vision-web)") && [ "$#" -eq 1 ] && [ -f "$1" ]
 }
 # The debs in the folder $2 of the project's packages that the deb $1 depends on at a version, one a
 # line, of alternatives the first, as dog-vision-web of dog-vision-web-sourcemap's; it fails where
@@ -250,11 +251,10 @@ installed_web() {
     check "the page is in the desktop menu folder$1" \
         test -f /usr/share/applications/cz.loplex.dogvision.web.desktop
     check "the page's desktop entry is valid$1" entry_is_valid /usr/share/applications/cz.loplex.dogvision.web.desktop
-    check "the page's desktop entry opens it with xdg-open$1" \
-        opens_a_file /usr/share/applications/cz.loplex.dogvision.web.desktop
+    check "the page's desktop entry opens it through dog-vision-web$1" \
+        opens_the_page /usr/share/applications/cz.loplex.dogvision.web.desktop
     check "the page's script and style are beside it$1" \
         test -f /usr/share/dog-vision-web/dog-vision.js -a -f /usr/share/dog-vision-web/styles.css
-    check "/usr/bin has nothing of the page's$1" test ! -e /usr/bin/dog-vision-web
 }
 # What each part leaves behind once removed: nothing of its own.
 removed_compose() {
@@ -289,6 +289,7 @@ removed_web() {
     check "the page's menu entry is gone" test ! -e /usr/share/applications/cz.loplex.dogvision.web.desktop
     check "the page's icons are gone" test ! -e /usr/share/icons/hicolor/256x256/apps/cz.loplex.dogvision.web.png
     check "/usr/share/dog-vision-web is gone" test ! -e /usr/share/dog-vision-web
+    check "/usr/bin/dog-vision-web is gone" test ! -e /usr/bin/dog-vision-web
 }
 # The parts of the package: dog-vision's are the packages it holds.
 parts() {

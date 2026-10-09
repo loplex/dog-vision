@@ -435,8 +435,9 @@ artifact(packageCliRpm)
 
 // The deb and the rpm, dog-vision-web:
 // the page in /usr/share/dog-vision-web, as web hands it over but for the script's source map,
-// and a desktop entry that opens its index.html in the system's browser through xdg-open.
-// It needs no command in /usr/bin, and has no natives, so one package serves every architecture.
+// a command, /usr/bin/dog-vision-web, that opens its index.html in the system's browser through xdg-open,
+// with a manual page of its own, and a desktop entry that runs it.
+// It has no natives, so one package serves every architecture.
 val webPackage = "dog-vision-web"
 val webHome = "/usr/share/$webPackage"
 val webApplicationId = "cz.loplex.dogvision.web"
@@ -448,16 +449,27 @@ val webDesktopEntry = tasks.register<DesktopEntry>("dogVisionWebDesktopEntry") {
     nameString = "app_name"
     nameSuffix = " (web)"
     commentString = "desktop_comment"
-    exec = "xdg-open $webHome/index.html"
+    exec = webPackage
     icon = webApplicationId
     categories = listOf("Graphics")
     entry = layout.buildDirectory.file("linux/$webPackage/$webApplicationId.desktop")
 }
 
+val webManPage = tasks.register<ManPage>("dogVisionWebManPage") {
+    description = "Compresses packaging/man/dog-vision-web.1 into build/linux/dog-vision-web/dog-vision-web.1.gz."
+    page = layout.projectDirectory.file("man/dog-vision-web.1")
+    compressed = layout.buildDirectory.file("linux/$webPackage/dog-vision-web.1.gz")
+}
+
 val webTree = tasks.register<Sync>("dogVisionWebTree") {
-    description = "Lays out in build/linux/dog-vision-web/tree the files its deb and its rpm install: the page, the " +
-        "desktop entry and the icons."
+    description = "Lays out in build/linux/dog-vision-web/tree the files its deb and its rpm install: the page, its " +
+        "command and the command's manual page, the desktop entry and the icons."
     into(layout.buildDirectory.dir("linux/$webPackage/tree"))
+    from(layout.projectDirectory.file("web/$webPackage")) {
+        into("usr/bin")
+        filePermissions { unix("rwxr-xr-x") }
+    }
+    from(webManPage) { into("usr/share/man/man1") }
     from(webPageFiles) {
         into(webHome.removePrefix("/"))
         exclude("*.map")
@@ -500,7 +512,7 @@ val packageWebDeb = tasks.register<DebPackage>("packageDogVisionWebDeb") {
     architecture = "all"
     summary = webSummary
     longDescription = webDescription
-    // xdg-open, which the desktop entry runs; the browser is the user's.
+    // xdg-open, which its command runs; the browser is the user's.
     depends = listOf("xdg-utils")
     recommends = emptyList()
     license = webLicences.flatMap { it.copyright }

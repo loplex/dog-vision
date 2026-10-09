@@ -1,0 +1,3 @@
+#!/bin/sh
+# Opens dog-vision's web page, which the package dog-vision-web installs, in the system's browser.
+exec xdg-open /usr/share/dog-vision-web/index.html
