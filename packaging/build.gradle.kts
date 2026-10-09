@@ -188,6 +188,12 @@ val manPage = tasks.register<ManPage>("dogVisionManPage") {
 /** The link a package of [command] installs to the manual page of dog-vision-common, which it depends on. */
 fun manPageLink(command: String) = mapOf("usr/share/man/man1/$command.1.gz" to "dog-vision.1.gz")
 
+/** The tag lintian gives a deb of [packageName] for dog-vision.1, which no command is named. */
+fun manPageOverride(packageName: String): String = buildString {
+    appendLine("# The manual page of every command, which each command's page links to and man dog-vision finds.")
+    appendLine("$packageName: spare-manual-page [usr/share/man/man1/dog-vision.1.gz]")
+}
+
 val commonTree = tasks.register<Sync>("dogVisionCommonTree") {
     description = "Lays out in build/linux/dog-vision-common/tree the files its deb and its rpm install: the JARs " +
         "and the manual page."
@@ -223,6 +229,7 @@ val packageCommonDeb = tasks.register<DebPackage>("packageDogVisionCommonDeb") {
     depends = emptyList()
     recommends = emptyList()
     license = commonLicences.flatMap { it.copyright }
+    lintianOverrides = manPageOverride(commonPackage)
 }
 artifact(packageCommonDeb)
 
@@ -243,12 +250,21 @@ artifact(packageCommonRpm)
 
 /**
  * The lintian tags a deb of [packageName] overrides, each after why:
- * of what it bundles as the makers ship it, LWJGL's JARs, in the lib folder of [lwjglIn],
- * and, with [composeIn], Compose's JARs and skiko's library there.
+ * of what it bundles as the makers ship it, LWJGL's JARs and natives,
+ * in the folders of [lwjglIn], and, with [composeIn], Compose's JARs and skiko's library there;
+ * and of a package of one architecture that its JARs are most of.
  */
 fun lintianOverrides(packageName: String, lwjglIn: String, composeIn: String? = null): String = buildString {
     appendLine("# LWJGL's JAR holds a module descriptor of Java 25, class file version 69, unknown to lintian.")
     appendLine("$packageName: unknown-java-class-version * [usr/share/$lwjglIn/lib/lwjgl-*.jar]")
+    appendLine("# LWJGL's natives as LWJGL builds them: with a .comment section, linked without -z now, and")
+    appendLine("# liblwjgl.so with no fortified functions.")
+    appendLine("$packageName: binary-has-unneeded-section .comment [usr/lib/$lwjglIn/liblwjgl*.so]")
+    appendLine("$packageName: hardening-no-bindnow [usr/lib/$lwjglIn/liblwjgl*.so]")
+    appendLine("$packageName: hardening-no-fortify-functions [usr/lib/$lwjglIn/liblwjgl.so]")
+    appendLine("# The JARs, of no architecture, are most of the package; only one architecture is built, and the")
+    appendLine("# JARs belong to the natives of their own version.")
+    appendLine("$packageName: arch-dep-package-has-big-usr-share *")
     if (composeIn == null) return@buildString
     appendLine("# The desktop JARs JetBrains publishes of Compose and its AndroidX libraries that hold no class: each")
     appendLine("# hands over to the JAR of the same library that holds the code, and the class path names both.")
@@ -256,6 +272,8 @@ fun lintianOverrides(packageName: String, lwjglIn: String, composeIn: String? = 
     appendLine("# skiko, Skia for the JVM, as JetBrains builds it: with these libraries linked in, and not stripped.")
     appendLine("$packageName: embedded-library * [usr/lib/$composeIn/libskiko-linux-x64.so]")
     appendLine("$packageName: unstripped-binary-or-object [usr/lib/$composeIn/libskiko-linux-x64.so]")
+    appendLine("# Words misspelt in skiko's own strings.")
+    appendLine("$packageName: spelling-error-in-binary * [usr/lib/$composeIn/libskiko-linux-x64.so]")
     appendLine("# ICU's licence, which the copyright file quotes word for word, gives the FSF's old address.")
     appendLine("$packageName: old-fsf-address-in-copyright-file")
 }
@@ -463,6 +481,12 @@ val webPackage = "dog-vision-web"
 val webHome = "/usr/share/$webPackage"
 val webApplicationId = "cz.loplex.dogvision.web"
 
+/** The tag lintian gives a deb of [packageName] for the web page, which it takes for documentation. */
+fun webPageOverride(packageName: String): String = buildString {
+    appendLine("# The web page itself, which dog-vision-web opens, not a document about it.")
+    appendLine("$packageName: package-contains-documentation-outside-usr-share-doc [usr/share/$webPackage/index.html]")
+}
+
 val webDesktopEntry = tasks.register<DesktopEntry>("dogVisionWebDesktopEntry") {
     description = "Writes build/linux/dog-vision-web/$webApplicationId.desktop, the desktop entry that puts the page " +
         "in the desktop's menu, named in each language of texts/strings with \" (web)\" after it."
@@ -538,6 +562,7 @@ val packageWebDeb = tasks.register<DebPackage>("packageDogVisionWebDeb") {
     depends = listOf("xdg-utils")
     recommends = emptyList()
     license = webLicences.flatMap { it.copyright }
+    lintianOverrides = webPageOverride(webPackage)
 }
 artifact(packageWebDeb)
 
@@ -642,7 +667,8 @@ val packageAllInOneDeb = tasks.register<DebPackage>("packageDogVisionDeb") {
     recommends = emptyList()
     license = allInOneLicences.flatMap { it.copyright }
     links = manPageLink(cliPackage) + manPageLink(composePackage) + manPageLink(swingPackage)
-    lintianOverrides = lintianOverrides(allInOnePackage, "dog-vision-*", composePackage)
+    lintianOverrides = lintianOverrides(allInOnePackage, "dog-vision-*", composePackage) +
+        manPageOverride(allInOnePackage) + webPageOverride(allInOnePackage)
 }
 artifact(packageAllInOneDeb)
 

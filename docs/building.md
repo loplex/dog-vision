@@ -236,10 +236,18 @@ Besides the build's own needs, making them takes these tools, on Ubuntu from the
     every other licence's text, which names its holder, comes from [`packaging/licenses`](../packaging/licenses).
 - **Each deb has `/usr/share/doc/<package>/changelog.gz`**, as Debian Policy asks of every package:
   one entry, of its version, dated by the last commit, so that a deb built again of the same commit is the same.
-- **Each deb passes lintian with no error and no warning**: the tags of what a package bundles as its makers ship it,
-  Compose's JARs that hold no class, skiko's library, unstripped and with zlib, libjpeg, FreeType and expat linked in,
-  LWJGL's class files of Java 25, which lintian does not know, and ICU's licence, which gives the FSF's old address,
-  are overridden in `/usr/share/lintian/overrides/<package>`, each with why.
+- **Each deb passes lintian with no error, no warning and no informational tag** (`lintian -I`);
+  CI holds the debs to errors and warnings only.\
+  These are overridden in `/usr/share/lintian/overrides/<package>`, each with why:
+  - Compose's JARs that hold no class;
+  - skiko's library, unstripped, with zlib, libjpeg, FreeType and expat linked in, and words misspelt in its strings;
+  - LWJGL's class files of Java 25, which lintian does not know;
+  - LWJGL's natives, with a `.comment` section, linked without `-z now`, and `liblwjgl.so` with no fortified functions;
+  - ICU's licence, which gives the FSF's old address;
+  - the JARs, of no architecture,
+    that are most of `dog-vision-compose`, `dog-vision-swing` and `dog-vision`, packages of one architecture;
+  - the manual page `dog-vision.1`, which no command is named;
+  - the page's `index.html`, which lintian takes for documentation.
 - **Each rpm names the same licences**: its `License` is the SPDX expression of the project's own and theirs,
   and `THIRD-PARTY-LICENSES.txt`, which lists each part with every licence's full text,
   is a `%license` beside `LICENSE` in `/usr/share/licenses/<package>`.
