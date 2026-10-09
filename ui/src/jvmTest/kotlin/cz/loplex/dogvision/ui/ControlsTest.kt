@@ -23,7 +23,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -94,7 +93,7 @@ class ControlsTest {
     private fun ComposeUiTest.node(key: Str) = onNodeWithText(english.get(key))
 
     @Test
-    fun aSectionStartsOpenOnlyWhenTheViewUsesIt() = runComposeUiTest {
+    fun aSectionStartsOpenOnlyWhenTheViewUsesIt() = runUiTest {
         show()
         node(Str.ADAPTATION).assertIsDisplayed()
         node(Str.ACUITY_BLUR).assertDoesNotExist()
@@ -106,14 +105,14 @@ class ControlsTest {
     }
 
     @Test
-    fun theSectionsOfWhatTheViewUsesStartOpen() = runComposeUiTest {
+    fun theSectionsOfWhatTheViewUsesStartOpen() = runUiTest {
         show(View(Params(acuity = true), difference = true))
         node(Str.ACUITY_BLUR).assertExists()
         node(Str.SIDE_BY_SIDE).assertExists()
     }
 
     @Test
-    fun theModelsSectionIsThereOnlyWhereInfoIsGivenAndFollowsTheParameters() = runComposeUiTest {
+    fun theModelsSectionIsThereOnlyWhereInfoIsGivenAndFollowsTheParameters() = runUiTest {
         val held = show(info = { params, texts -> "${texts.get(params.species.nameKey)} model" })
         onNodeWithText("dog model").assertDoesNotExist()
         node(Str.INFO_SECTION).performScrollTo().performClick()
@@ -123,13 +122,13 @@ class ControlsTest {
     }
 
     @Test
-    fun withoutInfoThereIsNoModelsSection() = runComposeUiTest {
+    fun withoutInfoThereIsNoModelsSection() = runUiTest {
         show()
         node(Str.INFO_SECTION).assertDoesNotExist()
     }
 
     @Test
-    fun theFactsFollowTheSelectedSpecies() = runComposeUiTest {
+    fun theFactsFollowTheSelectedSpecies() = runUiTest {
         val held = show()
         onNodeWithText(english.speciesLabel(Species.DOG)).assertExists()
         node(Str.FACT_NEUTRAL_POINT).assertExists()
@@ -140,7 +139,7 @@ class ControlsTest {
     }
 
     @Test
-    fun aSourceTooWideForItsColumnBreaksOnlyAtItsSpaces() = runComposeUiTest {
+    fun aSourceTooWideForItsColumnBreaksOnlyAtItsSpaces() = runUiTest {
         // The app's panel in landscape: the cone peaks' citation is wider than the value's column.
         show(width = 360.dp)
         val values = onAllNodes(hasText("1989", substring = true), useUnmergedTree = true).fetchSemanticsNodes()
@@ -160,7 +159,7 @@ class ControlsTest {
     }
 
     @Test
-    fun aSliderSetsAShareInWholePercent() = runComposeUiTest {
+    fun aSliderSetsAShareInWholePercent() = runUiTest {
         val held = show()
         val sliders = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
         sliders[0].performSemanticsAction(SemanticsActions.SetProgress) { it(25f) }
@@ -170,7 +169,7 @@ class ControlsTest {
     }
 
     @Test
-    fun recordingLocksWhatChangesHowManyImagesTheViewHas() = runComposeUiTest {
+    fun recordingLocksWhatChangesHowManyImagesTheViewHas() = runUiTest {
         show(View(difference = true), recording = true)
         node(Str.SIDE_BY_SIDE).assertIsNotEnabled()
         node(Str.DIFFERENCE).assertIsNotEnabled()
@@ -178,7 +177,7 @@ class ControlsTest {
     }
 
     @Test
-    fun theLanguageChoiceNamesEachLanguageInItself() = runComposeUiTest {
+    fun theLanguageChoiceNamesEachLanguageInItself() = runUiTest {
         val held = show(texts = Texts.of("cs"))
         onNodeWithText("Podle systému").performScrollTo().performClick()
         onNodeWithText("English").assertExists()
@@ -189,7 +188,7 @@ class ControlsTest {
     }
 
     @Test
-    fun anInfoButtonShowsWhatItsControlMeans() = runComposeUiTest {
+    fun anInfoButtonShowsWhatItsControlMeans() = runUiTest {
         show()
         node(Str.ABOUT_SPECIES).assertDoesNotExist()
         onAllNodesWithContentDescription(english.get(Str.ABOUT)).onFirst().performClick()
@@ -199,14 +198,14 @@ class ControlsTest {
     }
 
     @Test
-    fun resetIsHandedOn() = runComposeUiTest {
+    fun resetIsHandedOn() = runUiTest {
         val held = show()
         node(Str.RESET).performScrollTo().performClick()
         assertEquals(1, held.resets)
     }
 
     @Test
-    fun theCameraSectionOffersOffAndTheCamerasByName() = runComposeUiTest {
+    fun theCameraSectionOffersOffAndTheCamerasByName() = runUiTest {
         val held = show()
         node(Str.CAMERA).performClick()
         node(Str.BACK_CAMERA).performClick()
@@ -219,7 +218,7 @@ class ControlsTest {
     }
 
     @Test
-    fun theCameraListDroppingDownIsHandedOn() = runComposeUiTest {
+    fun theCameraListDroppingDownIsHandedOn() = runUiTest {
         val held = show()
         node(Str.CAMERA).performClick()
         node(Str.BACK_CAMERA).performClick()
@@ -231,7 +230,7 @@ class ControlsTest {
     }
 
     @Test
-    fun automaticSaysWhereTheCameraFacesAndCannotBeChosenWhereThatIsUnknown() = runComposeUiTest {
+    fun automaticSaysWhereTheCameraFacesAndCannotBeChosenWhereThatIsUnknown() = runUiTest {
         val held = show()
         node(Str.CAMERA).performClick()
         onNodeWithText("Automatic (back)").assertIsSelected().assertIsEnabled()
@@ -243,7 +242,7 @@ class ControlsTest {
     }
 
     @Test
-    fun recordingLocksTheChoiceOfCameraButNotItsMirroring() = runComposeUiTest {
+    fun recordingLocksTheChoiceOfCameraButNotItsMirroring() = runUiTest {
         show(recording = true)
         node(Str.CAMERA).performClick()
         node(Str.BACK_CAMERA).assertIsNotEnabled()

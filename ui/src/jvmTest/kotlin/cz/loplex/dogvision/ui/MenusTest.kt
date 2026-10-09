@@ -12,7 +12,6 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.v2.runComposeUiTest
 import cz.loplex.dogvision.texts.Menu
 import cz.loplex.dogvision.texts.MenuEntry
 import cz.loplex.dogvision.texts.Texts
@@ -54,7 +53,7 @@ class MenusTest {
     }
 
     @Test
-    fun aMenuChosenShowsItsEntriesAndTheRowBackTheMenus() = runComposeUiTest {
+    fun aMenuChosenShowsItsEntriesAndTheRowBackTheMenus() = runUiTest {
         show()
         onNodeWithContentDescription("Menu").performClick()
         onNodeWithText("File").performClick()
@@ -68,7 +67,7 @@ class MenusTest {
     }
 
     @Test
-    fun aCheckOrAChoiceTellsAccessibilityServicesWhetherItIsChosen() = runComposeUiTest {
+    fun aCheckOrAChoiceTellsAccessibilityServicesWhetherItIsChosen() = runUiTest {
         show()
         onNodeWithContentDescription("Menu").performClick()
         onNodeWithText("View").performClick()
@@ -79,7 +78,7 @@ class MenusTest {
     }
 
     @Test
-    fun anEntryChosenDoesWhatItSaysAndClosesTheList() = runComposeUiTest {
+    fun anEntryChosenDoesWhatItSaysAndClosesTheList() = runUiTest {
         show()
         onNodeWithContentDescription("Menu").performClick()
         onNodeWithText("View").performClick()
