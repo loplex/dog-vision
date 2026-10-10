@@ -106,7 +106,10 @@ class LiveSession<I>(
         val downloadingFfmpeg: Int? = null,
         /** Why ffmpeg was neither downloaded nor installed, the last time either was tried. */
         val ffmpegFailure: Failure? = null,
-        /** Whether the panel of controls is shown, or the images have the whole window, as F9 toggles it. */
+        /**
+         * Whether the panel of controls is shown,
+         * or the images have the whole window, as F9 toggles it, kept for the next run.
+         */
         val panelShown: Boolean = true,
         /** Whether the window shows its menu bar, as Ctrl+M toggles it, kept for the next run. */
         val menuBarShown: Boolean = true,
@@ -168,6 +171,7 @@ class LiveSession<I>(
             outputDir = (arguments.outputDir ?: settings.outputDir ?: defaultOutputDir()).absoluteFile,
             convertToOutputDir = settings.convertToOutputDir,
             menuBarShown = settings.menuBarShown,
+            panelShown = settings.panelShown,
         ),
     )
     val state: StateFlow<State> = mutableState.asStateFlow()
@@ -255,8 +259,18 @@ class LiveSession<I>(
     /** Words the window in [language], a language tag, or in the system's language for "". */
     override fun setLanguage(language: String) = change { copy(language = language, texts = textsIn(language)) }
 
-    /** Hides the panel of controls if it is shown, and shows it if not, as F9 does. */
-    fun togglePanel() = change { copy(panelShown = !panelShown) }
+    /**
+     * Hides the panel of controls if it is shown, and shows it if not,
+     * as F9 does, and keeps that in settings.json for the next run;
+     * the status says if the settings could not be saved, and is left as it was otherwise.
+     */
+    fun togglePanel() {
+        val shown = !mutableState.value.panelShown
+        settings = settings.copy(panelShown = shown)
+        val failure = saveSettings()
+        val unsaved: ((Texts) -> String)? = failure?.let { error -> { it.get(Str.SETTINGS_UNSAVED, error) } }
+        change { copy(panelShown = shown, status = unsaved ?: status) }
+    }
 
     /**
      * Hides the menu bar if it is shown, and shows it if not,

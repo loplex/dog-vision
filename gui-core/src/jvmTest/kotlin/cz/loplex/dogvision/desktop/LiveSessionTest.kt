@@ -405,15 +405,28 @@ class LiveSessionTest {
     }
 
     @Test
-    fun thePanelIsShownUntilToggledAndResetLeavesIt() {
+    fun thePanelIsShownUntilToggledAndStaysHiddenForTheNextRunAndResetLeavesIt() {
         val session = session()
         assertTrue(session.state.value.panelShown)
         session.togglePanel()
         assertFalse(session.state.value.panelShown)
+        assertFalse(readSettings(settings).panelShown)
+        assertFalse(session().state.value.panelShown)
         session.reset()
         assertFalse(session.state.value.panelShown)
         session.togglePanel()
         assertTrue(session.state.value.panelShown)
+        assertTrue(session().state.value.panelShown)
+    }
+
+    @Test
+    fun aPanelHiddenButNotSavedSaysSoAndIsHiddenStill() {
+        File(directory, "config").writeText("a file where the folder should be")
+        val session = session()
+        session.togglePanel()
+        assertFalse(session.state.value.panelShown)
+        val status = session.state.value.status?.invoke(Texts.of("en")).orEmpty()
+        assertTrue(status.startsWith("Cannot save the settings: "), status)
     }
 
     @Test

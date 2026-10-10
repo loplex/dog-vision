@@ -58,17 +58,24 @@ class SettingsTest {
         }
         file.writeText("""{"menu_bar_shown": false}""")
         assertEquals(Settings(menuBarShown = false), readSettings(file))
+        for (flag in listOf("\"false\"", "0", "null", "true")) {
+            file.writeText("""{"panel_shown": $flag}""")
+            assertEquals(Settings(), readSettings(file), flag)
+        }
+        file.writeText("""{"panel_shown": false}""")
+        assertEquals(Settings(panelShown = false), readSettings(file))
     }
 
     @Test
     fun aWriteKeepsWhatElseTheFileHoldsAndLeavesNothingBeside() {
         file.writeText("""{"theme": "dark", "output_dir": "/old"}""")
-        val written = Settings(File("/shots"), convertToOutputDir = true, menuBarShown = false)
+        val written = Settings(File("/shots"), convertToOutputDir = true, menuBarShown = false, panelShown = false)
         writeSettings(file, written)
         val json = Json.parseToJsonElement(file.readText()) as JsonObject
         assertEquals(JsonPrimitive("dark"), json["theme"])
         assertEquals(JsonPrimitive(File("/shots").path), json["output_dir"])
         assertEquals(JsonPrimitive(false), json["menu_bar_shown"])
+        assertEquals(JsonPrimitive(false), json["panel_shown"])
         assertEquals(written, readSettings(file))
         assertEquals(listOf(file.name), directory.list()?.toList())
     }
