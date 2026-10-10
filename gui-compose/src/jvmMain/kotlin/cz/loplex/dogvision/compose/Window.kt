@@ -234,7 +234,7 @@ private fun RowScope.Images(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(onClick = onOpen) { Text(texts.get(Str.OPEN_MEDIA)) }
-                OutlinedButton(onClick = session::openCamera) { Text(texts.get(Str.SHOW_CAMERA)) }
+                OutlinedButton(onClick = session::toggleCamera) { Text(texts.get(Str.SHOW_CAMERA)) }
             }
             Controls(
                 view = state.view,

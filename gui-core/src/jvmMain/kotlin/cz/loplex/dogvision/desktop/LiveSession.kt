@@ -224,6 +224,11 @@ class LiveSession<I>(
         listCamerasAgain()
     }
 
+    /** Turns the camera off while it is shown, as the camera button does, and else shows it as [openCamera] does. */
+    fun toggleCamera() {
+        if (mutableState.value.source is Source.Camera) chooseCamera(null) else openCamera()
+    }
+
     /**
      * Shows [camera] in place of what is shown, one of those [State.camera] offers;
      * null turns the camera off, and does nothing while a file is shown, which is shown with the camera off already.

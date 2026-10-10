@@ -73,7 +73,7 @@ private fun openWindow(arguments: WindowArguments, onClosed: () -> Unit) {
     val statusBar = StatusBar()
     val menuBar = MenuBarOf(frame)
     val open = JButton().apply { addActionListener { openFromDialog(frame, dialog, session) } }
-    val camera = JButton().apply { addActionListener { session.openCamera() } }
+    val camera = JButton().apply { addActionListener { session.toggleCamera() } }
     val column = JPanel(BorderLayout()).apply {
         preferredSize = Dimension(UIScale.scale(COLUMN_WIDTH), 0)
         add(

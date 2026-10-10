@@ -513,6 +513,30 @@ class LiveSessionTest {
     }
 
     @Test
+    fun theCameraButtonTurnsTheCameraShownOffAndShowsItOtherwise() {
+        val session = session()
+        session.toggleCamera()
+        assertTrue(session.state.value.source is Source.Camera, "a file was shown")
+        session.toggleCamera()
+        assertEquals(Source.None, session.state.value.source)
+        session.toggleCamera()
+        assertTrue(session.state.value.source is Source.Camera, "nothing was shown")
+        assertEquals(
+            listOf(
+                "start a.jpg",
+                "close a.jpg",
+                "start camera 0",
+                "close camera 0",
+                "cleared",
+                "start nothing",
+                "close nothing",
+                "start camera 0",
+            ),
+            log,
+        )
+    }
+
+    @Test
     fun noPictureIsShownWhileTheCameraIsOff() {
         var onPicture: (Picture<Unit>) -> Unit = {}
         val session = LiveSession(
@@ -714,6 +738,7 @@ class LiveSessionTest {
         log.clear()
         session.openFile(File("b.jpg"))
         session.openCamera()
+        session.toggleCamera()
         session.chooseCamera(cameras.first())
         session.changeView { it.copy(sideBySide = false) }
         session.changeView { it.copy(difference = true) }
