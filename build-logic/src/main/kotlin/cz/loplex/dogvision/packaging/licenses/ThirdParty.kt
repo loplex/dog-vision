@@ -132,11 +132,11 @@ val EMBEDDED_PARTS: List<Pair<Regex, List<ThirdPartyPart>>> = listOf(
     Regex("""lwjgl-glfw-[0-9.]+-natives-windows\.jar""") to listOf(
         ThirdPartyPart("GLFW", "3.5.1", "Zlib", "Marcus Geelnard, Camilla Löwy", "glfw.txt", listOf("glfw.dll")),
     ),
-    // ANGLE chromium/8037, whose own licence its POM names.
+    // ANGLE chromium/8059, whose own licence its POM names.
     Regex("""nucleus\.angle-natives-.*\.jar""") to listOf(
         ThirdPartyPart(
             "Abseil",
-            "chromium/8037's",
+            "chromium/8059's",
             "Apache-2.0",
             "The Abseil Authors",
             APACHE_TEXT,

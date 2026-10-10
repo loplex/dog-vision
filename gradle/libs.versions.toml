@@ -23,7 +23,7 @@ ktlint-cli = "1.8.0"
 ktlint-gradle = "14.2.0"
 lifecycle = "2.11.0"
 lwjgl = "3.4.3"
-nucleus-angle = "8037.1"
+nucleus-angle = "8059"
 media3 = "1.11.1"
 # The release branch of BtbN's builds of ffmpeg for Windows that the desktop windows download where ffmpeg is missing:
 # the newest build of it, which brings the branch's fixes;
