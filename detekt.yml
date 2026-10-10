@@ -15,3 +15,8 @@ complexity:
   # A class of tests holds every test of its subject, however many that takes.
   LargeClass:
     excludes: ['**/*Test/**', '**/test/**']
+
+style:
+  # A preview is called by the IDE alone, which draws it.
+  UnusedPrivateFunction:
+    ignoreAnnotated: ['Preview']

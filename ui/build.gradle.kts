@@ -34,6 +34,7 @@ kotlin {
             implementation(libs.compose.multiplatform.foundation)
             implementation(libs.compose.multiplatform.ui)
             implementation(libs.compose.multiplatform.material3)
+            implementation(libs.compose.multiplatform.ui.tooling.preview)
         }
         // The controls are tested on the JVM, in Compose's test scene, with Skia's native library for this machine.
         jvmTest.dependencies {
@@ -45,6 +46,12 @@ kotlin {
             runtimeOnly(libs.junit.platform.launcher)
         }
     }
+}
+
+// What the IDE draws the previews in common code with, on the Android target,
+// as Compose Multiplatform's documentation sets it up for this Android plugin.
+dependencies {
+    "androidRuntimeClasspath"(libs.compose.multiplatform.ui.tooling)
 }
 
 tasks.named<Test>("jvmTest") {
