@@ -1,3 +1,7 @@
+import cz.loplex.dogvision.layout.Kind
+import cz.loplex.dogvision.layout.kindOf
+import cz.loplex.dogvision.layout.layoutProblems
+
 // Plugins are declared here once, so that every module shares one version of each.
 plugins {
     // The root's own `check`, which the checks of the whole repository below are in.
@@ -53,55 +57,37 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin>
     npm.lockFileDirectory = layout.projectDirectory.dir("gradle")
 }
 
-// ktlint leaves a line that holds a comment and nothing else as long as it is, and nothing measures Markdown,
-// so every line of either is held to .editorconfig's max_line_length for it here, in `check`.
+// The prose, Markdown and the comments of every kind, is held to the layout docs/developing.md describes, in `check`:
+// ktlint leaves a line that holds a comment and nothing else as long as it is, and nothing measures the rest.
+// A line is held to .editorconfig's max_line_length, Kotlin's in Kotlin and Markdown's, the cap of prose, elsewhere;
+// Markdown and doc comments are read as they render, by the parser in build-logic's layout.
 fun maxLineLength(section: String) = file(".editorconfig").readLines()
     .dropWhile { it.trim() != section }.drop(1)
     .takeWhile { !it.startsWith("[") }
     .firstNotNullOf { Regex("""max_line_length\s*=\s*(\d+)""").matchEntire(it.trim())?.groupValues?.get(1)?.toInt() }
-val checkLineLength = tasks.register("checkLineLength") {
-    description = "Fails on a line of Kotlin or Markdown longer than .editorconfig's max_line_length for it."
+val checkLayout = tasks.register("checkLayout") {
+    description = "Fails on a line that breaks the layout docs/developing.md describes."
     val root = rootDir
     val kotlinLimit = maxLineLength("[*.{kt,kts}]")
     val markdownLimit = maxLineLength("[*.md]")
-    // What git tracks, and the new files it does not ignore, as tools/check_links.py reads them.
-    fun listed(vararg patterns: String) = files(
+    // What git tracks, and the new files it does not ignore, as tools/check_links.py reads them, of a kind with prose.
+    val prose = files(
         providers.exec {
-            commandLine("git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", *patterns)
+            commandLine("git", "ls-files", "-z", "--cached", "--others", "--exclude-standard")
         }.standardOutput.asText.map { listed ->
-            listed.split('\u0000').filter { it.isNotEmpty() && File(root, it).isFile }
+            listed.split('\u0000').filter { it.isNotEmpty() && kindOf(it) != null && File(root, it).isFile }
         },
     )
-    val kotlin = listed("*.kt", "*.kts")
-    val markdown = listed("*.md")
-    inputs.files(kotlin, markdown)
+    inputs.files(prose)
     inputs.property("kotlinLimit", kotlinLimit)
     inputs.property("markdownLimit", markdownLimit)
     doLast {
-        fun tooLong(source: File, number: Int, line: String, limit: Int, counted: String = "characters") =
-            line.codePointCount(0, line.length).let {
-                if (it > limit) "${source.relativeTo(root)}:$number: $it > $limit $counted" else null
-            }
-        val kotlinTooLong = kotlin.files.sorted().flatMap { source ->
-            source.readLines().mapIndexedNotNull { i, line -> tooLong(source, i + 1, line, kotlinLimit) }
+        val failures = prose.files.sorted().flatMap { source ->
+            val path = source.relativeTo(root).invariantSeparatorsPath
+            val kind = checkNotNull(kindOf(path))
+            val limit = if (kind == Kind.KOTLIN) kotlinLimit else markdownLimit
+            layoutProblems(kind, source.readText(), limit).map { "$path:${it.line}: ${it.message}" }
         }
-        // Neither a code block's line nor a table's row can be broken, so they are left as long as they are;
-        // nor can a link's target, so a line is measured as though its targets were not there.
-        val fence = Regex("""^\s*(```|~~~)""")
-        val tableRow = Regex("""^\s*\|""")
-        val target = Regex("""(?<=\]\()[^)]*(?=\))|https?://\S+""")
-        val markdownTooLong = markdown.files.sorted().flatMap { source ->
-            var inCode = false
-            source.readLines().mapIndexedNotNull { i, line ->
-                if (fence.containsMatchIn(line)) inCode = !inCode
-                if (inCode || fence.containsMatchIn(line) || tableRow.containsMatchIn(line)) {
-                    null
-                } else {
-                    tooLong(source, i + 1, line.replace(target, ""), markdownLimit, "characters but links' targets")
-                }
-            }
-        }
-        val failures = kotlinTooLong + markdownTooLong
         if (failures.isNotEmpty()) throw GradleException(failures.joinToString("\n"))
     }
 }
@@ -370,5 +356,5 @@ val checkArtifactFolders = tasks.register("checkArtifactFolders") {
 // its ktlint and its tests.
 tasks.named("check") {
     val buildLogicCheck = gradle.includedBuild("build-logic").task(":check")
-    dependsOn(checkLineLength, checkModuleGraph, checkArtifactFolders, buildLogicCheck)
+    dependsOn(checkLayout, checkModuleGraph, checkArtifactFolders, buildLogicCheck)
 }

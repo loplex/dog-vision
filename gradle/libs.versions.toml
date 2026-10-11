@@ -23,6 +23,7 @@ ktlint-cli = "1.8.0"
 ktlint-gradle = "14.2.0"
 lifecycle = "2.11.0"
 lwjgl = "3.4.3"
+markdown = "0.7.8"
 nucleus-angle = "8059"
 media3 = "1.11.1"
 # The release branch of BtbN's builds of ffmpeg for Windows that the desktop windows download where ffmpeg is missing:
@@ -70,6 +71,7 @@ compose-multiplatform-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooli
 compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }
 detekt-gradle = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 flatlaf = { module = "com.formdev:flatlaf", version.ref = "flatlaf" }
+jetbrains-markdown = { module = "org.jetbrains:markdown", version.ref = "markdown" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

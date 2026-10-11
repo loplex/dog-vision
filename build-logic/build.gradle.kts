@@ -1,6 +1,6 @@
 // The tasks the packages are made with, applied as the packaging plugin below,
 // the natives the desktop modules run with, ktlint and detekt as the modules apply them,
-// and where the Kotlin/JS modules get Node.js.
+// where the Kotlin/JS modules get Node.js, and what the root's checkLayout holds the prose to.
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlint)
@@ -27,10 +27,12 @@ gradlePlugin {
     }
 }
 
-// The functions that write the packages' licences are tested here; `check` runs the tests.
+// The functions that write the packages' licences, and the layout's check, are tested here; `check` runs the tests.
 dependencies {
     implementation(libs.ktlint.gradle)
     implementation(libs.detekt.gradle)
+    // The parser IntelliJ IDEA reads Markdown and KDoc with, which tells the layout's check where a paragraph ends.
+    implementation(libs.jetbrains.markdown)
     // The modules' own Kotlin Gradle plugin, which the main build's root puts on their class path,
     // is the one whose types the Node.js plugin looks for; a second copy here would match none of them.
     compileOnly(libs.kotlin.gradle)

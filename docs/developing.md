@@ -5,7 +5,7 @@ Building the programs is [Building it](building.md)'s.
 
 - [How the code is laid out](#how-the-code-is-laid-out) — the modules, their layers and which uses which, and the GPU renderer they share.
 - [Checking it](#checking-it) — what each Gradle task tests, the documents held to `core`,
-  the Kotlin style, detekt, the tests' coverage, and what GitHub Actions runs.
+  the Kotlin style, the prose's layout, detekt, the tests' coverage, and what GitHub Actions runs.
 - The caveats: [the emulator's colours](#caveat-the-emulator-fails-the-video-tests-colour-checks), and [Windows without a GPU and under Wine](#caveat-windows-is-tested-without-a-gpu-and-under-wine).
 - [Where the test data comes from](#where-the-test-data-comes-from) — the test videos and the reference values.
 
@@ -148,7 +148,8 @@ What the packages take, which `packaging` makes of the windows, the command line
 
 ## Checking it
 
-`./gradlew check` runs every test task below that needs no phone, Android Lint, the Kotlin style, [detekt](#detekt-looks-for-likely-bugs-and-code-smells),
+`./gradlew check` runs every test task below that needs no phone, Android Lint, the Kotlin style,
+[the prose's layout](#the-prose-is-laid-out-one-information-to-a-line), [detekt](#detekt-looks-for-likely-bugs-and-code-smells),
 the check of [the modules' graphs](#which-module-uses-which), and that of [the artifacts' folders](building.md#every-artifact-at-once).\
 The test classes' comments say what each of them holds.
 
@@ -164,7 +165,7 @@ The test classes' comments say what each of them holds.
 | `./gradlew :ffmpeg:jvmTest`                    | finding ffmpeg, its download, video read and written |
 | `./gradlew :gui-swing:jvmTest`                 | image, theme, a drop, controls, menus, wrapped text  |
 | `./gradlew :web:jsTest`                        | the page's passes, snapshot and recording            |
-| `./gradlew :build-logic:test`                  | the licences a package lists, read and written       |
+| `./gradlew :build-logic:test`                  | the licences a package lists, the layout's check     |
 | `./gradlew :android:connectedDebugAndroidTest` | the renderer, recording and conversion, on a device  |
 | `./gradlew :android:lintDebug`                 | Android Lint alone                                   |
 
@@ -205,10 +206,47 @@ The style is [ktlint](https://pinterest.github.io/ktlint/)'s, as IntelliJ IDEA f
 - `./gradlew ktlintCheck` checks it, and `./gradlew ktlintFormat` fixes what it can;
   `build-logic`'s own are `:build-logic:ktlintCheck` and `:build-logic:ktlintFormat`,
   and `./gradlew check` runs `build-logic`'s;
-- `./gradlew checkLineLength` holds every line of Kotlin to 120 characters, comments included:
-  ktlint does not measure a line that is a comment and nothing else.\
-  It holds the Markdown's lines to 120 as well,
-  but for code blocks and tables, and without the links' targets, none of which can be broken.
+- `./gradlew checkLayout` holds the lines of Kotlin to 120 characters, comments included,
+  as ktlint does not measure a line that is a comment and nothing else.\
+  What may run past, and what else it holds, is [the prose's layout](#the-prose-is-laid-out-one-information-to-a-line).
+
+### The prose is laid out one information to a line
+
+The Markdown, and the comments of the code and the scripts, are laid out
+so that each information is found on a line of its own, and an edit changes only the lines it is about:
+
+- **Each information starts a line.**
+  Two sentences share one only where they are one information: a claim and its reason, a statement and its example.
+- **In Markdown and KDoc, a line that ends an information with another after it in its paragraph ends in `\`**,
+  a hard break, which a page of Markdown keeps;
+  IntelliJ IDEA's quick documentation shows KDoc without it, the lines joined.\
+  A paragraph's last line never ends in `\`, as there it renders as itself.\
+  A plain comment, which nothing renders, takes a plain line break.
+- **An information that fits in 120 characters stays on one line**;
+  a longer one breaks where the sentence pauses, after a comma, a semicolon, a colon or a dash,
+  its lines aiming under 100.
+- **No line is filled to a width**, so a word added moves no other line.
+- **No line breaks inside inline code or a link, nor so that it starts with markup**: `#`, `>`, `-`, `1.`, `<div>`,
+  which would render as something else.
+
+`./gradlew checkLayout` holds what a program can tell of it, in `check`:
+
+- **A line of prose fails past 120 characters**,
+  [`.editorconfig`](../.editorconfig)'s `max_line_length` of Kotlin, and of Markdown for every other kind:
+  every line of Kotlin, and of Markdown but code blocks and tables;
+  elsewhere the comments of `#`, `//`, `/* */` and `<!-- -->` that start a line,
+  and the manual pages' comments and text.\
+  The module graphs' SVG, which Graphviz draws, are left out.\
+  Markdown's lines are measured without a link's target or a bare URL.
+- **Only what cannot break may run past it**, alone on its line with nothing but punctuation around it:
+  a link with its label, an image, inline code, a URL.
+- **No paragraph of Markdown or KDoc ends in `\`.**
+- **No heading, quote, HTML block, code block, numbered list or rule starts on the line under a paragraph's**,
+  nor a list of `+` or `*`: the documents put each after a blank line,
+  so one there is a line of the paragraph that starts with markup.\
+  A list of `-` follows its lead-in so, and a line that starts with `- ` is not told from one.
+- **Where an information ends is not checked**:
+  whether two sentences on a line are one information is a judgment the text does not show.
 
 ### detekt looks for likely bugs and code smells
 
